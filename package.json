@@ -1,7 +1,7 @@
 {
   "name": "edgar-irt",
   "version": "1.0.0",
-  "description": "IRT question calculation service for Edgar exam application",
+  "description": "IRT question calculation and classification service for Edgar exam application",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
