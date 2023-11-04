@@ -1,0 +1,10 @@
+{
+    "compilerOptions": {
+        "rootDirs": [ "./ts/" ],
+        "moduleResolution": "Node",
+        "outDir": "./js/",
+        "strict": true,
+        "noImplicitAny": true,
+        "target": "ES2015"
+    }
+}
