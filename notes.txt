@@ -1,0 +1,4 @@
+- u edgar_db_schema_1-4-5.sql gdje god ima drop function ... ili drop table ... zamijeniti s
+  drop [function|table] if exists ...
+
+- u lib/Scorer.ts baca error da ne moze importat './TextCompletionQuestionScorer'

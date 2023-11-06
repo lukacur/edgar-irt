@@ -1,0 +1,1 @@
+cls && docker stop postgres-test && docker rm postgres-test & echo y | docker volume prune & docker rmi edgar-postgres:latest & docker volume rm edgar_postgres-volume & docker build . -t edgar-postgres:latest & docker run --name postgres-test -p 5432:5432 -it edgar-postgres:latest
