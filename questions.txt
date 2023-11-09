@@ -1,0 +1,7 @@
+Unositi u question_difficulty_computation izracune? ili stvoriti novu tablicu?
+question_computed_difficulty?
+
+R - ne koristi se
+Y - možda se koristi?
+G - koristi se
+O - možda se ne koristi?

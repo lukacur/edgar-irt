@@ -1,0 +1,8 @@
+Ideja:
+- izračunati globalni uspjeh svakog studenta u obliku postotka bodova ili ocjena
+- na temelju toga odrediti parametre c i d (c -> vjj točnog odg ako je student
+  niže razine sposobnosti; d -> vjj pogrešnog odg ako je student više razine
+  sposobnosti)
+  - vrijednosti parametara 'c' i 'd' mogu se odrediti koristeći globalni uspjeh
+    studenta na nekom ispitu koji ispituje sposobnost te na specifičnom pitanju
+    odrediti težinu temeljem uspjeha studenata na njemu
