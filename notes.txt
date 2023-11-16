@@ -1,4 +1,84 @@
-- u edgar_db_schema_1-4-5.sql gdje god ima drop function ... ili drop table ... zamijeniti s
-  drop [function|table] if exists ...
-
 - u lib/Scorer.ts baca error da ne moze importat './TextCompletionQuestionScorer'
+
+----------------------------------------------------------------------------------
+DB:
+ - zadržane relacije:
+   - academic_year
+   - course
+   - question_type
+   - test_part
+   - question
+   - app_user
+   - test_question
+   - c_question_answer
+   - test_instance_question
+   - c_question_test
+   - test_instance_question_manual_grade
+   - test_instance_question_comp_score
+   - test_correction
+   - test_instance_question_run
+   - question_answer
+   - test_instance
+   - test
+   - test_type
+   - student
+
+ - uklonjene relacije:
+   - sve relacije koje vidljivo nemaju veze s bodovanjem studenata
+   - ordered_element_correctness_model
+   - node_type
+   - node
+   - question_review
+   - question_node
+   - tutorial_step
+   - teacher_lecture_quiz_instance
+   - connected_elements_question_answer
+   - adaptivity_model
+   - tutorial_step_hint
+   - tutorial_course
+   - exercise_student
+   - tutorial
+   - exercise_student_question_attempt
+   - exercise
+   - tutorial_student_question_attempt
+   - app_user_course
+   - tutorial_code_question_hint
+   - generator_test
+   - random_test
+   - runtime_constraint_course
+   - fixed_test
+   - peer_shuffle
+   - test_instance_question_generated
+   - peer_test_group_question
+   - question_course_tag
+   - ordered_element_question
+   - test_pace
+   - tutorial_student
+   - question_scale
+   - exercise_student_question
+   - check_column_mode
+   - tutorial_student_question
+   - peer_test_group_question_calib
+   - peer_test_group
+   - connected_elements_question
+   - runtime_constraint_test
+   - feedback
+   - json_question_answer
+
+ - možda ukloniti:
+   - adaptivity_model_behaviour
+   - question_difficulty_level
+   - question_assigned_difficulty
+   - connected_elements_correctness_model
+
+ - možda ostaviti:
+   - scale
+   - scale_item
+   - runtime_constraint_question
+   - question_computed_difficulty
+   - student_course
+   - tutorial_question_hint
+   - text_question_answer
+   - question_data_object
+   - diagram_question_answer
+   - question_difficulty_computation
