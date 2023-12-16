@@ -1,6 +1,6 @@
 import { DistributionFunction } from "../../Functions/DistributionFunction.js";
-import { IItem } from "../../IRT/Item/Item.js";
-import { IItemParticipant } from "../Participant/IItemParticipant.js";
+import { IItem } from "../../IRT/Item/IItem.js";
+import { AbstractItemParticipant } from "../Participant/AbstractItemParticipant.js";
 import { AbstractStatisticsProcessor } from "./AbstractStatisticsProcessor.js";
 
 export class JSRuntimeStatisticsProcessor extends AbstractStatisticsProcessor {
@@ -56,12 +56,12 @@ export class JSRuntimeStatisticsProcessor extends AbstractStatisticsProcessor {
         return (await this.getScoreQuartiles())[1];
     }
 
-    public async getNBestParticipants(n: number): Promise<IItemParticipant[]> {
+    public async getNBestParticipants(n: number): Promise<AbstractItemParticipant[]> {
         const sortedParticipants = (await this.sortParticipantsByScore());
         return sortedParticipants.slice(0, Math.min(n, sortedParticipants.length));
     }
 
-    public async getNWorstParticipants(n: number): Promise<IItemParticipant[]> {
+    public async getNWorstParticipants(n: number): Promise<AbstractItemParticipant[]> {
         const sortedParticipants = (await this.sortParticipantsByScore()).reverse();
         return sortedParticipants.slice(0, Math.min(n, sortedParticipants.length));
     }

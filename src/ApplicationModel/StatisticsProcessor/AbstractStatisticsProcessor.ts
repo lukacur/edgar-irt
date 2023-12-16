@@ -1,13 +1,13 @@
 import { DistributionFunction } from "../../Functions/DistributionFunction.js";
-import { IItem } from "../../IRT/Item/Item.js";
-import { IItemParticipant } from "../Participant/IItemParticipant.js";
+import { IItem } from "../../IRT/Item/IItem.js";
+import { AbstractItemParticipant } from "../Participant/AbstractItemParticipant.js";
 
 export abstract class AbstractStatisticsProcessor {
     constructor(
         protected readonly item: IItem
     ) {}
 
-    protected async sortParticipantsByScore(): Promise<IItemParticipant[]> {
+    protected async sortParticipantsByScore(): Promise<AbstractItemParticipant[]> {
         return (await this.item.getParticipants())
             .sort((part1, part2) => part1.getScore() - part2.getScore());
     }
@@ -24,9 +24,9 @@ export abstract class AbstractStatisticsProcessor {
     
     public abstract getScoreMedian(): Promise<number>;
 
-    public abstract getNBestParticipants(n: number): Promise<IItemParticipant[]>;
+    public abstract getNBestParticipants(n: number): Promise<AbstractItemParticipant[]>;
 
-    public abstract getNWorstParticipants(n: number): Promise<IItemParticipant[]>;
+    public abstract getNWorstParticipants(n: number): Promise<AbstractItemParticipant[]>;
 
     public abstract getGaussianDistrib(): Promise<DistributionFunction>;
 
