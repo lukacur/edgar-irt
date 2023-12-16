@@ -6,3 +6,21 @@ Ideja:
   - vrijednosti parametara 'c' i 'd' mogu se odrediti koristeći globalni uspjeh
     studenta na nekom ispitu koji ispituje sposobnost te na specifičnom pitanju
     odrediti težinu temeljem uspjeha studenata na njemu
+
+Na razini parametara:
+Unutar batcha se treba ograničiti na jednu sposobnost.
+Tada za svaku stavku u batchu parametri log. funkcije se mogu izračunati na sljedeći način:
+  - levelOfKnowledge - pronaći najboljeg i najslabijeg kandidata koji je pristupao navedenim
+                       stavkama te naći razliku njihovog rezultata i na neki način prilagoditi
+                       rasponu [0, 1]
+
+  - itemDifficulty - računa se prema Gaussovoj distribuciji pojedine stavke ili prema 1, 2, 3
+                     i 4 kvartilima ostvarenih bodova (tj. ostvarene točnosti) odgovora na
+                     stavku
+                   - u ovaj izračun mogu ući i druge stavke batcha
+
+  - itemGuessProbability - pronaći X (globalno) najlošijih pristupnika te za stavku odrediti
+                           postotak točnih odgovora (uz određivanje stddev.)
+
+  - itemMistakeProbability - pronaći X (globalno) najboljih pristupnika te za stavku odrediti
+                             postotak netočnih odgovora (uz određivanje stddev.)
