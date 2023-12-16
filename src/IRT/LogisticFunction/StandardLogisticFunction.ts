@@ -13,7 +13,7 @@ export class StandardLogisticFunction implements ILogisticFunction {
             (1.0 +
                 Math.pow(
                     Math.E,
-                    -paramValues.levelOfKnowledge * this.defaultOffsetParameter * (theta - paramValues.itemDifficulty)
+                    -paramValues.levelOfItemKnowledge * this.defaultOffsetParameter * (theta - paramValues.itemDifficulty)
                 )
             );
     }
