@@ -22,6 +22,6 @@ export class StandardLogisticFunction implements ILogisticFunction {
         const paramValues = this.params.getParams();
 
         return paramValues.itemGuessProbability +
-            (paramValues.itemFailProbability - paramValues.itemGuessProbability) * this.calculateCommon(theta);
+            (paramValues.itemMistakeProbability - paramValues.itemGuessProbability) * this.calculateCommon(theta);
     }
 }

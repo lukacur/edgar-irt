@@ -2,7 +2,7 @@ export interface LogisticFunctionParams {
     readonly levelOfKnowledge: number;
     readonly itemDifficulty: number;
     readonly itemGuessProbability: number;
-    readonly itemFailProbability: number;
+    readonly itemMistakeProbability: number;
 }
 
 export abstract class AbstractLogisticFunctionParams {
@@ -37,7 +37,7 @@ export abstract class AbstractLogisticFunctionParams {
             levelOfKnowledge: this.levelOfKnowledge,
             itemDifficulty: this.itemDifficulty,
             itemGuessProbability: this.itemGuessProbability,
-            itemFailProbability: this.itemFailProbability,
+            itemMistakeProbability: this.itemFailProbability,
         };
     }
 }
