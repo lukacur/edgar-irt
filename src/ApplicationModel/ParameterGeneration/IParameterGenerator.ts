@@ -4,5 +4,5 @@ import { AbstractStatisticsProcessor } from "../StatisticsProcessor/AbstractStat
 
 export interface IParameterGenerator {
     generateParameters(statisticsProcessor: AbstractStatisticsProcessor, item: IItem):
-        Map<IItem, AbstractLogisticFunctionParams>;
+        Promise<Map<IItem, AbstractLogisticFunctionParams>>;
 }
