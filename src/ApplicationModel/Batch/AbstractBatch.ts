@@ -16,6 +16,10 @@ export abstract class AbstractBatch<TItem extends IItem> implements IItem {
 
     protected participantsCache: AbstractItemParticipant[] | null = null;
 
+    public getItems(): IItem[] {
+        return [...(this.items ?? [])];
+    }
+
     public async getParticipants(): Promise<AbstractItemParticipant[]> {
         if (this.items === null) {
             throw new ItemBatchException("Item batch wasn't initialized: no items loaded");

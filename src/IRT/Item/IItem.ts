@@ -3,4 +3,6 @@ import { AbstractItemParticipant } from "../../ApplicationModel/Participant/Abst
 export interface IItem {
     getParticipants(): Promise<AbstractItemParticipant[]>;
     getMaxScore(): Promise<number>;
+
+    getItems(): IItem[];
 }
