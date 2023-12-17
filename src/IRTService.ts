@@ -1,4 +1,5 @@
 import { AbstractIRTDriver } from "./ApplicationModel/Driver/AbstractIRTDriver.js";
+import { IParameterGenerator } from "./ApplicationModel/ParameterGeneration/IParameterGenerator.js";
 import { MasterRunner } from "./ApplicationModel/Runner/MasterRunner.js";
 import { AbstractStatisticsProcessor } from "./ApplicationModel/StatisticsProcessor/AbstractStatisticsProcessor.js";
 import { IRTServiceConfigurationException } from "./Exceptions/IRTServiceConfigurationException.js";
@@ -22,7 +23,8 @@ class ConfiguredIRTService<TItem extends IItem> {
 
     constructor(
         private readonly driver: AbstractIRTDriver<TItem>,
-        private readonly statProcessor: AbstractStatisticsProcessor
+        private readonly statProcessor: AbstractStatisticsProcessor,
+        private readonly parameterGenerator: IParameterGenerator,
     ) {}
 
     public initialize(): IRTServiceInitializer<TItem> {
@@ -62,6 +64,7 @@ class ConfiguredIRTService<TItem extends IItem> {
 
         masterRunner.registerDriver(this.driver);
         masterRunner.registerStatisticsProcessor(this.statProcessor);
+        masterRunner.registerParameterGenerator(this.parameterGenerator);
 
         masterRunner.start(ConfiguredIRTService.CONTROL_TOKEN);
 
@@ -89,6 +92,7 @@ class ConfiguredIRTService<TItem extends IItem> {
 class IRTServiceConfigurer<TItem extends IItem> {
     private driver?: AbstractIRTDriver<TItem>;
     private statisticsProcessor?: AbstractStatisticsProcessor;
+    private parameterGenerator?: IParameterGenerator;
 
     public useDriver(driver: AbstractIRTDriver<TItem>): IRTServiceConfigurer<TItem> {
         this.driver = driver;
@@ -100,16 +104,25 @@ class IRTServiceConfigurer<TItem extends IItem> {
         return this;
     }
 
+    public useParameterGenerator(parameterGenerator: IParameterGenerator): IRTServiceConfigurer<TItem> {
+        this.parameterGenerator = parameterGenerator;
+        return this;
+    }
+
+    private preBuildCheckPassed(): boolean {
+        return this.driver !== undefined &&
+            this.statisticsProcessor !== undefined &&
+            this.parameterGenerator !== undefined;
+    }
+
     public build(): ConfiguredIRTService<TItem> {
-        if (this.driver === undefined || this.statisticsProcessor === undefined) {
-            throw new IRTServiceConfigurationException(
-                "Service not properly configured. Missing driver or statistics processor"
-            );
+        if (!this.preBuildCheckPassed()) {
+            throw new IRTServiceConfigurationException("Service not properly configured.");
         }
 
         IRTService.setConfigured();
 
-        return new ConfiguredIRTService<TItem>(this.driver, this.statisticsProcessor);
+        return new ConfiguredIRTService<TItem>(this.driver!, this.statisticsProcessor!, this.parameterGenerator!);
     }
 }
 
