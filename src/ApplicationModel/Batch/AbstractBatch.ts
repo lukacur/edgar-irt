@@ -11,21 +11,47 @@ export abstract class AbstractBatch<TItem extends IItem> implements IItem {
     protected items: TItem[] | null = null;
     
     abstract loadItems(): Promise<TItem[]>;
-    abstract addItemToBatch(item: TItem): Promise<void>;
+    abstract addItemToBatch(item: TItem): Promise<AbstractBatch<TItem>>;
     abstract getLoadedItems(): TItem[];
+
+    protected participantsCache: AbstractItemParticipant[] | null = null;
 
     public async getParticipants(): Promise<AbstractItemParticipant[]> {
         if (this.items === null) {
             throw new ItemBatchException("Item batch wasn't initialized: no items loaded");
         }
 
-        const allParts: AbstractItemParticipant[] = [];
-
-        for (const item of this.items) {
-            allParts.push(...(await item.getParticipants()));
+        if (this.participantsCache !== null) {
+            return this.participantsCache;
         }
 
-        return allParts;
+        const allParts: Map<string, AbstractItemParticipant[]> = new Map();
+
+        for (const item of this.items) {
+            const participants = (await item.getParticipants());
+
+            for (const part of participants) {
+                const partId = part.identify();
+
+                if (!allParts.has(partId)) {
+                    allParts.set(partId, []);
+                }
+
+                allParts.get(partId)?.push(part);
+            }
+        }
+
+        const retVal: AbstractItemParticipant[] = [];
+
+        for (const participants of allParts.values()) {
+            const cloneable = participants[0];
+
+            retVal.push(
+                await cloneable.clone(participants.map(part => part.getScore()).reduce((acc, val) => acc + val, 0.0))
+            );
+        }
+
+        return this.participantsCache = retVal;
     }
 
     public async getMaxScore(): Promise<number> {
