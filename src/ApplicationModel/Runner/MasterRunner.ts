@@ -1,4 +1,5 @@
 import { IItem } from "../../IRT/Item/IItem.js";
+import { IRTService } from "../../IRTService.js";
 import { AbstractIRTDriver } from "../Driver/AbstractIRTDriver.js";
 import { AbstractStatisticsProcessor } from "../StatisticsProcessor/AbstractStatisticsProcessor.js";
 import { RunnerNotConfiguredException } from "./RunnerNotConfiguredException.js";
@@ -36,8 +37,8 @@ export class MasterRunner {
         }
     }
 
-    public start(): void {
-        if (this.runningDriver === null) {
+    public start(ctrlToken?: string): void {
+        if (this.runningDriver === null || !IRTService.isValidControlToken(ctrlToken)) {
             throw new RunnerNotConfiguredException("No driver was registered for this runner");
         }
 
@@ -45,8 +46,8 @@ export class MasterRunner {
         this.runningPromise = this.begin();
     }
 
-    public async stop(): Promise<void> {
-        if (!this.running || this.runningPromise === null) {
+    public async stop(ctrlToken?: string): Promise<void> {
+        if (!this.running || this.runningPromise === null || !IRTService.isValidControlToken(ctrlToken)) {
             return;
         }
 

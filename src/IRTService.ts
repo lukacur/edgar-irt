@@ -1,4 +1,5 @@
 import { AbstractIRTDriver } from "./ApplicationModel/Driver/AbstractIRTDriver.js";
+import { MasterRunner } from "./ApplicationModel/Runner/MasterRunner.js";
 import { AbstractStatisticsProcessor } from "./ApplicationModel/StatisticsProcessor/AbstractStatisticsProcessor.js";
 import { IRTServiceConfigurationException } from "./Exceptions/IRTServiceConfigurationException.js";
 import { IItem } from "./IRT/Item/IItem.js";
@@ -45,6 +46,11 @@ class ConfiguredIRTService<TItem extends IItem> {
         return this;
     }
 
+    private static readonly CONTROL_TOKEN = "a09088b8a4c039f7b9a89fbd007d93db49fa281928c7b690189c85bd2107c094";
+    public static isValidControlToken(token: string): boolean {
+        return token === ConfiguredIRTService.CONTROL_TOKEN;
+    }
+
     public startIRTService(): ConfiguredIRTService<TItem> {
         if (this.wasShutdown) {
             throw new IRTServiceConfigurationException(
@@ -52,15 +58,26 @@ class ConfiguredIRTService<TItem extends IItem> {
             );
         }
 
+        const masterRunner = MasterRunner.instance;
+
+        masterRunner.registerDriver(this.driver);
+        masterRunner.registerStatisticsProcessor(this.statProcessor);
+
+        masterRunner.start(ConfiguredIRTService.CONTROL_TOKEN);
+
         return this;
     }
 
-    public async shutdownIRTService(forceAfterSeconds?: number): Promise<void> {
+    public async shutdownIRTService(): Promise<void> {
         if (this.wasShutdown) {
             return;
         }
-        
+
         await Promise.all(this.shutdownHooks.map(sh => sh("PRE_SHUTDOWN")));
+        
+        const prom = Promise.all(this.shutdownHooks.map(sh => sh("SHUTDOWN")));
+        await MasterRunner.instance.stop(ConfiguredIRTService.CONTROL_TOKEN);
+        await prom;
 
         await Promise.all(this.shutdownHooks.map(sh => sh("POST_SHUTDOWN")));
 
@@ -100,6 +117,10 @@ export class IRTService {
     private static configured: boolean = false;
 
     private constructor() {}
+
+    public static isValidControlToken(token?: string) {
+        return ConfiguredIRTService.isValidControlToken(token ?? "");
+    }
 
     static setConfigured(): void {
         if (IRTService.configured) {
