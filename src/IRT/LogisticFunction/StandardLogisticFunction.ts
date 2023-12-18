@@ -1,4 +1,8 @@
-import { ILogisticFunction, AbstractLogisticFunctionParams } from "./LogisticFunctionTypes.js";
+import { AbstractLogisticFunctionParams } from "./LogisticFunctionTypes.js";
+
+export interface ILogisticFunction {
+    apply(theta: number): number;
+}
 
 export class StandardLogisticFunction implements ILogisticFunction {
     constructor(

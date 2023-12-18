@@ -28,7 +28,7 @@ export abstract class AbstractLogisticFunctionParams {
         itemDifficulty?: number,
         itemGuessProbability?: number,
         itemFailProbability?: number
-    ) {
+    ): AbstractLogisticFunctionParams {
         return new _LogisticFunctionParams(levelOfKnowledge, itemDifficulty, itemGuessProbability, itemFailProbability);
     }
 
@@ -43,7 +43,3 @@ export abstract class AbstractLogisticFunctionParams {
 }
 
 class _LogisticFunctionParams extends AbstractLogisticFunctionParams {}
-
-export interface ILogisticFunction {
-    apply: (theta: number) => number;
-}
