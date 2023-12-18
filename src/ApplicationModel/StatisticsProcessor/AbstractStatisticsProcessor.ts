@@ -1,4 +1,4 @@
-import { DistributionFunction } from "../../Functions/DistributionFunction.js";
+import { IDistributionFunction } from "../../Functions/IDistributionFunction.js";
 import { IItem } from "../../IRT/Item/IItem.js";
 import { AbstractItemParticipant } from "../Participant/AbstractItemParticipant.js";
 
@@ -28,7 +28,7 @@ export abstract class AbstractStatisticsProcessor {
 
     public abstract getNWorstParticipants(n: number): Promise<AbstractItemParticipant[]>;
 
-    public abstract getGaussianDistrib(): Promise<DistributionFunction>;
+    public abstract getGaussianDistrib(): Promise<IDistributionFunction>;
 
     public abstract createNew(item: IItem): AbstractStatisticsProcessor;
 }

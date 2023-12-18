@@ -1,4 +1,4 @@
-import { DistributionFunction } from "../../Functions/DistributionFunction.js";
+import { IDistributionFunction } from "../../Functions/IDistributionFunction.js";
 import { IItem } from "../../IRT/Item/IItem.js";
 import { AbstractItemParticipant } from "../Participant/AbstractItemParticipant.js";
 import { AbstractStatisticsProcessor } from "./AbstractStatisticsProcessor.js";
@@ -66,7 +66,7 @@ export class JSRuntimeStatisticsProcessor extends AbstractStatisticsProcessor {
         return sortedParticipants.slice(0, Math.min(n, sortedParticipants.length));
     }
 
-    public async getGaussianDistrib(): Promise<DistributionFunction> {
+    public async getGaussianDistrib(): Promise<IDistributionFunction> {
         const sigma = await this.getScoreStdDev();
         const u = await this.getScoreAverage();
 
