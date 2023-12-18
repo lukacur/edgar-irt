@@ -5,7 +5,7 @@ import { AbstractBatch } from "../Batch/AbstractBatch.js";
 export abstract class AbstractIRTDriver<TItem extends IItem> {
     constructor() {}
 
-    abstract createBatch(): Promise<AbstractBatch<TItem>>;
+    public abstract createBatch(): Promise<AbstractBatch<TItem>>;
 
-    abstract postResult(batchProcessingResult: Map<TItem, AbstractLogisticFunctionParams>): Promise<boolean>;
+    public abstract postResult(batchProcessingResult: Map<TItem, AbstractLogisticFunctionParams>): Promise<boolean>;
 }
