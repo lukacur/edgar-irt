@@ -19,7 +19,19 @@ export class AdaptiveGradingRepository {
         return AdaptiveGradingRepository.instance;
     }
 
-    public getCourseTests(courseId: number) {
+    public async getQuestionForTestInstanceQuestion(testInstanceQuestionId: number) {
+        
+    }
+
+    public async getTestInstanceQuestions(testInstanceId: number) {
+        
+    }
+
+    public async getTestInstances(testId: number) {
+        
+    }
+
+    public async getCourseTests(courseId: number) {
         
     }
 }
