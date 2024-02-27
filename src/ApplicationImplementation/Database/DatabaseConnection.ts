@@ -1,0 +1,82 @@
+import { existsSync } from "fs";
+import { readFile } from "fs/promises";
+import { IDatabaseConfig } from "../Models/Config/DatabaseConfig.model.js"
+import pg from 'pg';
+
+const { Pool } = pg;
+
+type QueryReturn<TResult> = {
+    rows: TResult[],
+    count: number,
+}
+
+export class DatabaseConnection {
+    private pool: pg.Pool | null = null;
+
+    private setupPooledConnection() {
+        const pool = new Pool({
+            host: this.config.host,
+            port: this.config.port,
+            database: this.config.database,
+
+            user: this.config.user,
+            password: this.config.password,
+
+            min: this.config.minConnections ?? 10,
+            max: this.config.maxConnections ?? 20,
+        });
+
+        this.pool = pool;
+    }
+
+    private constructor(
+        private readonly config: IDatabaseConfig,
+    ) {
+        this.setupPooledConnection();
+    }
+
+    public static async fromConfigFile(configFileLocation: string): Promise<DatabaseConnection> {
+        if (!existsSync(configFileLocation)) {
+            throw new Error(`File not found: ${configFileLocation}`);
+        }
+
+        const configuration: IDatabaseConfig = JSON.parse(
+            await readFile(configFileLocation, { encoding: "utf-8" })
+        );
+
+        return new DatabaseConnection(configuration);
+    }
+
+    public async doQuery<TResult>(query: string, values?: any[]): Promise<QueryReturn<TResult> | null> {
+        const cli = await this.pool?.connect();
+
+        if (!cli) {
+            throw new Error("Unable to acquire a new connection client");
+        }
+
+        try {
+            const result = await cli?.query(
+                query,
+                values
+            );
+    
+            if (!result) {
+                throw new Error("Database query error");
+            }
+
+            return {
+                rows: result.rows,
+                count: result.rowCount ?? 0,
+            };
+        } catch (err) {
+            console.log(err);
+            return null;
+        } finally {
+            cli.release();
+        }
+    }
+
+    public async close(): Promise<void> {
+        await this.pool?.end();
+    }
+}
