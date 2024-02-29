@@ -12,7 +12,7 @@ export abstract class AbstractBatch<TItem extends IItem> implements IItem {
     
     abstract loadItems(): Promise<TItem[]>;
     abstract addItemToBatch(item: TItem): Promise<AbstractBatch<TItem>>;
-    abstract getLoadedItems(): TItem[];
+    abstract getLoadedItems(): TItem[] | null;
 
     protected participantsCache: AbstractItemParticipant[] | null = null;
 

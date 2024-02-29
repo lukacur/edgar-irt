@@ -8,7 +8,7 @@ export class TestBasedBatch extends AbstractBatch<EdgarItem> {
     addItemToBatch(item: EdgarItem): Promise<AbstractBatch<EdgarItem>> {
         throw new Error("Method not implemented.");
     }
-    getLoadedItems(): EdgarItem[] {
+    getLoadedItems(): EdgarItem[] | null {
         throw new Error("Method not implemented.");
     }
     

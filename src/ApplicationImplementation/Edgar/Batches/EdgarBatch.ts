@@ -16,7 +16,7 @@ export class EdgarItemBatch extends AbstractBatch<EdgarItem> {
     loadItems(): Promise<EdgarItem[]> {
         throw new Error("Method not implemented.");
     }
-    getLoadedItems(): EdgarItem[] {
+    getLoadedItems(): EdgarItem[] | null {
         throw new Error("Method not implemented.");
     }
     
