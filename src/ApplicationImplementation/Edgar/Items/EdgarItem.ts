@@ -3,9 +3,10 @@ import { IItem } from "../../../IRT/Item/IItem.js";
 import { EdgarItemParticipant } from "../Participants/EdgarItemParticipant.js";
 
 export abstract class EdgarItem implements IItem {
+    protected readonly participants: EdgarItemParticipant<number>[] = [];
+
     constructor(
         protected readonly id: number,
-        protected readonly participants: EdgarItemParticipant<number>[],
         protected readonly maxScore: number,
     ) {}
 
