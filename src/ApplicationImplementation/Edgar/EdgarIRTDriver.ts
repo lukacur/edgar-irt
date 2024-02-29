@@ -1,15 +1,17 @@
 import { AbstractBatch } from "../../ApplicationModel/Batch/AbstractBatch.js";
 import { AbstractIRTDriver } from "../../ApplicationModel/Driver/AbstractIRTDriver.js";
 import { AbstractLogisticFunctionParams } from "../../IRT/LogisticFunction/LogisticFunctionTypes.js";
-import { EdgarItem } from "./Items/EdgarItem.js";
+import { CourseBasedBatch } from "./Batches/CourseBasedBatch.js";
+import { TestInstanceBasedBatch } from "./Batches/TestInstanceBasedBatch.js";
+import { QuestionItem } from "./Items/QuestionItem.js";
 
-export class EdgarIRTDriver extends AbstractIRTDriver<EdgarItem> {
-    public createBatch(): Promise<AbstractBatch<EdgarItem>> {
+// TODO: AbstractIRTDriver can be non-parameterised?
+export class EdgarIRTDriver extends AbstractIRTDriver<QuestionItem | CourseBasedBatch | TestInstanceBasedBatch> {
+    public createBatch(): Promise<AbstractBatch<QuestionItem | CourseBasedBatch | TestInstanceBasedBatch>> {
         throw new Error("Method not implemented.");
     }
     
-    public postResult(batchProcessingResult: Map<EdgarItem, AbstractLogisticFunctionParams>): Promise<boolean> {
+    public postResult(batchProcessingResult: Map<QuestionItem, AbstractLogisticFunctionParams>): Promise<boolean> {
         throw new Error("Method not implemented.");
     }
-    
 }
