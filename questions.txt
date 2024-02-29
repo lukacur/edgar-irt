@@ -11,5 +11,6 @@ Primjer zahtjeva za računanje koji se daje daemonu:
     calculateFor: 'course' | 'test' | 'question', (u smislu 'računaj na razini ...' [granulacija])
     entityId: number,
     calculationType: 'forced' | 'standard', (ako je forced znači da će se izračunati u sljedećem ciklusu osvježavanja datoteke sa zahtjevima za kalkulaciju)
-    calculationMethod: Set<'IRT' | 'metoda_1' | 'metoda_2' | ...>, (idejno je set, ali zapravo je [] stringova)
+    calculationMethod: Set<'IRT' | 'metoda_1' | 'metoda_2' | ...>, (idejno je set, ali zapravo je string[])
+    academicYears: number[],
 }
