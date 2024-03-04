@@ -21,4 +21,6 @@ export abstract class EdgarItem implements IItem {
     public async getMaxScore(): Promise<number> {
         return this.maxScore;
     }
+
+    abstract serializeInto(obj: any): Promise<void>;
 }

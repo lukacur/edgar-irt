@@ -2,8 +2,9 @@ import { AbstractBatch } from "../../../ApplicationModel/Batch/AbstractBatch.js"
 import { DatabaseConnection } from "../../Database/DatabaseConnection.js";
 import { TestInstanceQuestion } from "../../Models/Database/TestInstance/TestInstanceQuestion.model.js";
 import { QuestionItem } from "../Items/QuestionItem.js";
+import { EdgarItemBatch } from "./EdgarBatch.js";
 
-export class TestInstanceBasedBatch extends AbstractBatch<QuestionItem> {
+export class TestInstanceBasedBatch extends EdgarItemBatch<QuestionItem> {
     // testId
     // academicYear
     // QuestionItem[]
@@ -15,7 +16,7 @@ export class TestInstanceBasedBatch extends AbstractBatch<QuestionItem> {
     constructor(
         private readonly databaseConnection: DatabaseConnection,
 
-        private readonly id: number,
+        public readonly id: number,
         private readonly idAcademicYear: number,
         private readonly idTest: number,
         private readonly idStudent: number,
@@ -47,6 +48,8 @@ export class TestInstanceBasedBatch extends AbstractBatch<QuestionItem> {
                     new QuestionItem(
                         tiq.id,
 
+                        tiq.id_question,
+
                         this.idStudent,
                         this.id,
 
@@ -71,5 +74,38 @@ export class TestInstanceBasedBatch extends AbstractBatch<QuestionItem> {
 
     getLoadedItems(): QuestionItem[] | null {
         return this.items;
+    }
+
+    async serializeInto(obj: any): Promise<void> {
+        const questionsObj: { [questionItemId: number]: any } = {}
+        const testInstanceInfo = {
+            id: this.id,
+
+            idAcademicYear: this.idAcademicYear,
+            idTest: this.idTest,
+            idStudent: this.idStudent,
+
+            studentScore: this.studentScore,
+            testMaxScore: this.testMaxScore,
+            solutionPercentage: this.solutionPercentage,
+
+            questions: questionsObj,
+        };
+
+        if (this.items === null) {
+            await this.loadItems();
+        }
+
+        if (this.items === null) {
+            throw new Error("Test could not be loaded when serializing a test instance with id ${this.id}");
+        }
+
+        for (const questionItem of this.items) {
+            const questionObj = {};
+            await questionItem.serializeInto(questionObj);
+            questionsObj[questionItem.getId()] = questionObj;
+        }
+
+        obj.testInstance = testInstanceInfo;
     }
 }

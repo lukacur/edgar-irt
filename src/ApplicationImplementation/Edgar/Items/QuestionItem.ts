@@ -11,23 +11,51 @@ export class QuestionItem extends EdgarItem {
     constructor(
         id: number,
 
+        private readonly idQuestion: number,
+
         private readonly idStudent: number,
 
         private readonly idTestInstance: number,
 
-        private readonly is_correct: boolean,
-        private readonly is_incorrect: boolean,
-        private readonly is_unanswered: boolean,
-        private readonly is_partial: boolean,
+        private readonly isCorrect: boolean,
+        private readonly isIncorrect: boolean,
+        private readonly isUnanswered: boolean,
+        private readonly isPartial: boolean,
 
         private readonly score: number,
         maxScore: number,
-        private readonly score_perc: number,
+        private readonly scorePercentage: number,
     ) {
         super(id, maxScore);
 
         this.participants.push(
-            new StudentParticipant(this, idStudent, score, score_perc)
+            new StudentParticipant(this, this.idStudent, this.score, this.scorePercentage)
         );
+    }
+
+    getId(): number {
+        return this.id;
+    }
+
+    async serializeInto(obj: any): Promise<void> {
+        const questionInfo = {
+            id: this.id,
+
+            idQuestion: this.idQuestion,
+
+            idTestInstance: this.idTestInstance,
+            idStudent: this.idStudent,
+
+            isCorrect: this.isCorrect,
+            isIncorrect: this.isIncorrect,
+            isUnanswered: this.isUnanswered,
+            isPartial: this.isPartial,
+
+            score: this.score,
+            maxScore: this.maxScore,
+            scorePercentage: this.scorePercentage,
+        };
+
+        obj.question = questionInfo;
     }
 }

@@ -1,13 +1,14 @@
 import { AbstractBatch } from "../../../ApplicationModel/Batch/AbstractBatch.js";
 import { DatabaseConnection } from "../../Database/DatabaseConnection.js";
 import { TestInstance } from "../../Models/Database/TestInstance/TestInstance.model.js";
+import { EdgarItemBatch } from "./EdgarBatch.js";
 import { TestInstanceBasedBatch } from "./TestInstanceBasedBatch.js";
 
-export class TestBasedBatch extends AbstractBatch<TestInstanceBasedBatch> {
+export class TestBasedBatch extends EdgarItemBatch<TestInstanceBasedBatch> {
     constructor(
         private readonly databaseConnection: DatabaseConnection,
 
-        private readonly id: number,
+        public readonly id: number,
 
         private readonly idTestType: number,
         private readonly idAcademicYear: number,
@@ -22,7 +23,7 @@ export class TestBasedBatch extends AbstractBatch<TestInstanceBasedBatch> {
 
     async loadItems(): Promise<TestInstanceBasedBatch[]> {
         const queryResult =
-            await this.databaseConnection.doQuery<TestInstance & { manual_grade: number | null }>(
+            await this.databaseConnection.doQuery<TestInstance>(
                 `SELECT test_instance.*
                 FROM test_instance
                 WHERE test_instance.id_test = $1`,
@@ -59,4 +60,35 @@ export class TestBasedBatch extends AbstractBatch<TestInstanceBasedBatch> {
         throw new Error("Method not implemented.");
     }
     
+    async serializeInto(obj: any): Promise<void> {
+        const testInstancesObj: { [tstInstId: number]: any } = {}
+        const testInfo = {
+            id: this.id,
+
+            idTestType: this.idTestType,
+            idAcademicYear: this.idAcademicYear,
+
+            maxScore: this.maxScore,
+
+            questionsNo: this.questionsNo,
+
+            testInstances: testInstancesObj,
+        };
+
+        if (this.items === null) {
+            await this.loadItems();
+        }
+
+        if (this.items === null) {
+            throw new Error("Test could not be loaded when serializing a test with id ${this.id}");
+        }
+
+        for (const testInstance of this.items) {
+            const tstInstObj = {};
+            await testInstance.serializeInto(tstInstObj);
+            testInstancesObj[testInstance.id] = tstInstObj;
+        }
+
+        obj.test = testInfo;
+    }
 }

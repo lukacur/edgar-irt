@@ -1,9 +1,10 @@
 import { AbstractBatch } from "../../../ApplicationModel/Batch/AbstractBatch.js";
 import { DatabaseConnection } from "../../Database/DatabaseConnection.js";
-import { TestInstance } from "../../Models/Database/TestInstance/TestInstance.model.js";
-import { TestInstanceBasedBatch } from "./TestInstanceBasedBatch.js";
+import { Test } from "../../Models/Database/Test/Test.model.js";
+import { EdgarItemBatch } from "./EdgarBatch.js";
+import { TestBasedBatch } from "./TestBasedBatch.js";
 
-export class CourseBasedBatch extends AbstractBatch<TestInstanceBasedBatch> {
+export class CourseBasedBatch extends EdgarItemBatch<TestBasedBatch> {
     // TestInstanceBasedBatch[]
 
     constructor(
@@ -18,19 +19,12 @@ export class CourseBasedBatch extends AbstractBatch<TestInstanceBasedBatch> {
         super();
     }
 
-    async loadItems(): Promise<TestInstanceBasedBatch[]> {
-        const queryResult = await this.databaseConnection.doQuery<TestInstance & { academicYear: number }>(
-            `SELECT test_instance.*,
-                    test.academic_year
-            FROM course
-                JOIN test
-                    ON test.id_course = course.id
-                JOIN test_instance
-                    ON test_instance.id_test = test.id
-                JOIN academic_year
-                    ON academic_year.id = test.id_academic_year
+    async loadItems(): Promise<TestBasedBatch[]> {
+        const queryResult = await this.databaseConnection.doQuery<Test>(
+            `SELECT test.*
+            FROM test
             WHERE course.id = $1 AND
-                    academic_year.id = ANY($2)`,
+                    test.id_academic_year.id = ANY($2)`,
             [this.id, this.academicYearIds]
         );
 
@@ -38,17 +32,18 @@ export class CourseBasedBatch extends AbstractBatch<TestInstanceBasedBatch> {
             this.items = [];
         } else {
             this.items = queryResult.rows
-                .map(testInstance =>
-                    new TestInstanceBasedBatch(
+                .map(tst =>
+                    new TestBasedBatch(
                         this.databaseConnection,
-                        testInstance.id,
-                        testInstance.academicYear,
-                        testInstance.id_test,
-                        testInstance.id_student,
 
-                        testInstance.score ?? 0,
-                        (!testInstance.score_perc) ? 0 : ((testInstance.score ?? 0) / testInstance.score_perc),
-                        testInstance.score_perc ?? 0,
+                        tst.id,
+                        tst.id_test_type,
+                        tst.id_academic_year,
+
+                        tst.max_score,
+                        tst.questions_no,
+
+                        tst.title,
                     )
                 );
         }
@@ -56,11 +51,37 @@ export class CourseBasedBatch extends AbstractBatch<TestInstanceBasedBatch> {
         return this.items;
     }
 
-    addItemToBatch(item: TestInstanceBasedBatch): Promise<AbstractBatch<TestInstanceBasedBatch>> {
+    addItemToBatch(item: TestBasedBatch): Promise<AbstractBatch<TestBasedBatch>> {
         throw new Error("Method not allowed.");
     }
 
-    getLoadedItems(): TestInstanceBasedBatch[] | null {
+    getLoadedItems(): TestBasedBatch[] | null {
         return this.items;
+    }
+
+    async serializeInto(obj: any): Promise<void> {
+        const testsObj: { [tstId: number]: any } = {}
+        const courseInfo = {
+            id: this.id,
+            academicYearIds: this.academicYearIds,
+
+            tests: testsObj,
+        };
+
+        if (this.items === null) {
+            await this.loadItems();
+        }
+
+        if (this.items === null) {
+            throw new Error(`Test could not be loaded when serializing a course with id ${this.id}`);
+        }
+
+        for (const test of this.items) {
+            const tstObj = {};
+            await test.serializeInto(tstObj);
+            testsObj[test.id] = tstObj;
+        }
+
+        obj.course = courseInfo;
     }
 }
