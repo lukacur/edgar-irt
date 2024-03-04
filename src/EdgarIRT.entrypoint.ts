@@ -6,8 +6,11 @@ import { StandardLogisticFunction } from "./IRT/LogisticFunction/StandardLogisti
 import { DelayablePromise } from "./Util/DelayablePromise.js";
 import { EdgarRStatisticsProcessor } from "./ApplicationImplementation/Edgar/Statistics/EdgarRStatisticsProcessor.js";
 import { CourseBasedBatch } from "./ApplicationImplementation/Edgar/Batches/CourseBasedBatch.js";
+import { IRTService } from "./IRTService.js";
+import { QueryDriver } from "./Drivers/QueryDriver.js";
+import { TempParamGenerator } from "./ParameterGenerators/TempParamGenerator.js";
 
-type AvailableTests = "db" | "child_process" | "stats_processor" | "delayed_promise" | "daemon";
+type AvailableTests = "db" | "child_process" | "stats_processor" | "delayed_promise" | "daemon" | "service_setup";
 
 export class MainRunner {
     private static async delayableAwaiter<T>(prom: DelayablePromise<T>) {
@@ -166,6 +169,34 @@ export class MainRunner {
         });
     }
 
+    private static async doServiceSetupTest(): Promise<void> {
+        const service = IRTService.configure()
+            .useDriver(new QueryDriver()) // set the driver to be used to generate batches of items for which to calculate IRT parameters (for example an HTTP REST IRT driver, file IRT driver etc.)
+            .useParameterGenerator(new TempParamGenerator()) // the parameter generator to use (the generator that will use values calculated by the stats. processor to generate IRT parameters)
+            .useStatisticsProcessor(new EdgarRStatisticsProcessor(
+                "test_script.r",
+                "B:/testna/r/json_in.json",
+                "irt",
+                null,
+                MainRunner.DEFAULT_TIMEOUT_MS,
+                "B:/testna/r/json_out.json",
+            )) // the prototype statistics processor to use (for example Rlang stats processor, native stats processor, python stats processor etc.)
+            .build()
+                .initialize()
+                    // ... do some initialization (like environment setup etc.)
+                    .apply()
+                .addShutdownHook(
+                    (st) =>
+                        new Promise((resolve, reject) => {
+                            console.log(`Shutdown is in state: ${st}`);
+                            resolve();
+                        })
+                );
+        service.startIRTService();
+
+        setTimeout(async () => await service.shutdownIRTService(), 3000);
+    }
+
     private static readonly CURRENT_TEST: AvailableTests = "stats_processor";
 
     public static async main(args: string[]): Promise<void> {
@@ -195,6 +226,11 @@ export class MainRunner {
 
             case "daemon": {
                 prom = MainRunner.doDaemonTest(args);
+                break;
+            }
+
+            case "service_setup": {
+                prom = MainRunner.doServiceSetupTest();
                 break;
             }
 
