@@ -1,3 +1,5 @@
+**/excluded/**
+
 # Logs
 logs
 *.log
