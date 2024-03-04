@@ -1,5 +1,6 @@
 import { IItem } from "../../IRT/Item/IItem.js";
 
+// TODO: maybe add a 'getItem(): IItem' method?
 export abstract class AbstractItemParticipant {
     constructor(
         protected readonly item: IItem
@@ -13,5 +14,5 @@ export abstract class AbstractItemParticipant {
         return this.getScore() / await this.item.getMaxScore();
     }
 
-    public abstract clone(newScore: number): Promise<AbstractItemParticipant>;
+    public abstract clone(newScore: number): Promise<AbstractItemParticipant>; // TODO: add optional 'item: IItem' argument
 }
