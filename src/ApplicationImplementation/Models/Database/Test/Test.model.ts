@@ -16,6 +16,7 @@ export class Test {
     public id_test_type_navigation: TestType = null!;
 
     public max_score: number = null!;
+    public questions_no: number = null!;
 
     public pass_percentage: number = null!;
 }
