@@ -43,7 +43,7 @@ export class MasterRunner {
                 await this.parameterGenerator!.generateParameters(batchStatsProcessor, batch);
 
             let resultPosted = false;
-            while (!resultPosted) {
+            while (!resultPosted && this.running) {
                 resultPosted = await this.runningDriver!.postResult(batchCalculationResult);
             }
         }
