@@ -38,7 +38,7 @@ extends AbstractStatisticsProcessor {
         private readonly inputJSONInfoAbsPath: string,
         private readonly calculationMethod: AvailableCalculationMethods,
 
-        item: TItem,
+        item: TItem | null,
 
         private readonly executionTimeoutMs: number,
 
