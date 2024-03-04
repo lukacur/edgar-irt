@@ -6,6 +6,9 @@ Y - možda se koristi?
 G - koristi se
 O - možda se ne koristi?
 
+Koji je format za postotke u Edgaru?
+  Za 50.125% npr. može biti 0.50125 ili 50.125
+
 Primjer zahtjeva za računanje koji se daje daemonu:
 {
     calculateFor: 'course' | 'test' | 'question', (u smislu 'računaj na razini ...' [granulacija])
@@ -13,4 +16,106 @@ Primjer zahtjeva za računanje koji se daje daemonu:
     calculationType: 'forced' | 'standard', (ako je forced znači da će se izračunati u sljedećem ciklusu osvježavanja datoteke sa zahtjevima za kalkulaciju)
     calculationMethod: Set<'IRT' | 'metoda_1' | 'metoda_2' | ...>, (idejno je set, ali zapravo je string[])
     academicYears: number[],
+}
+
+
+
+Primjer objekta koji se stvori pozivom metode 'serializeInto' nad CourseBasedBatch:
+{
+    course: {
+        id: 968,
+        academicYearIds: [5, 18, 22],
+        
+        tests: {
+            5: {
+                test: {
+                    id: 5,
+                    
+                    idTestType: 43,
+                    idAcademicYear: 18,
+                    
+                    maxScore: 40.0,
+                    
+                    questionsNo: 20,
+                    
+                    testInstances: {
+                        8: {
+                            testInstance: {
+                                id: 8,
+                                
+                                idAcademicYear: 18,
+                                idTest: 5,
+                                idStudent: 38,
+                                
+                                studentScore: 23.0,
+                                testMaxScore: 40.0,
+                                solutionPercentage: 0.575, // TODO: koji je format?
+                                
+                                questions: {
+                                    13: {
+                                        question: {
+                                            id: 13,
+                                            
+                                            idQuestion: 35,
+                                            
+                                            idTestInstance: 8,
+                                            idStudent: 38,
+                                            
+                                            isCorrect: false,
+                                            isIncorrect: true,
+                                            isUnanswered: false,
+                                            isPartial: false,
+                                            
+                                            score: 0.0,
+                                            maxScore: 3.0,
+                                            scorePercentage: 0.0
+                                        }
+                                    },
+                                    21: {
+                                        question: {
+                                            id: 21,
+                                            
+                                            idQuestion: 25,
+                                            
+                                            idTestInstance: 8,
+                                            idStudent: 38,
+                                            
+                                            isCorrect: true,
+                                            isIncorrect: false,
+                                            isUnanswered: false,
+                                            isPartial: false,
+                                            
+                                            score: 4.0,
+                                            maxScore: 4.0,
+                                            scorePercentage: 1.0
+                                        }
+                                    },
+                                    16: {
+                                        question: {
+                                            id: 16,
+                                            
+                                            idQuestion: 47,
+                                            
+                                            idTestInstance: 8,
+                                            idStudent: 38,
+                                            
+                                            isCorrect: false,
+                                            isIncorrect: false,
+                                            isUnanswered: false,
+                                            isPartial: true,
+                                            
+                                            score: 0.333333,
+                                            maxScore: 1.0,
+                                            scorePercentage: 0.333333
+                                        }
+                                    },
+                                    ...
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
