@@ -1,6 +1,7 @@
 export class DelayablePromise<T> {
-    private resolveRequestResolver: ((value: boolean) => void) | null = null;
-    private rejectRequestResolver: ((value: boolean) => void) | null = null;
+    // TODO: add a 'private resolved: boolean = false' field
+    private resolveRequestResolver: ((value: boolean) => void) | null = null; // TODO: should be a list
+    private rejectRequestResolver: ((value: boolean) => void) | null = null; // TODO: should be a list
 
     private resolveFn: ((value: T | PromiseLike<T>) => void) | null = null;
     private rejectFn: ((reason: any) => void) | null = null;
