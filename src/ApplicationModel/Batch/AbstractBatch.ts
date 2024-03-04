@@ -51,7 +51,7 @@ export abstract class AbstractBatch<TItem extends IItem> implements IItem {
             const cloneable = participants[0];
 
             retVal.push(
-                await cloneable.clone(participants.map(part => part.getScore()).reduce((acc, val) => acc + val, 0.0))
+                await cloneable.clone(participants.map(part => part.getScore()).reduce((acc, val) => acc + val, 0.0)) // TODO: extract into variable and set the batch as parent item of the clone
             );
         }
 
@@ -63,6 +63,6 @@ export abstract class AbstractBatch<TItem extends IItem> implements IItem {
             throw new ItemBatchException("Item batch wasn't initialized: no items loaded");
         }
 
-        return (await Promise.all(this.items.map(item => item.getMaxScore()))).reduce((acc, el) => acc + el, 0.0);
+        return (await Promise.all(this.items.map(item => item.getMaxScore()))).reduce((acc, el) => acc + el, 0.0); // TODO: this can be cached as well
     }
 }

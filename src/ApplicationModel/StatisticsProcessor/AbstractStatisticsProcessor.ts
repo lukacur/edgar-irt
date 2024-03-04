@@ -4,10 +4,14 @@ import { AbstractItemParticipant } from "../Participant/AbstractItemParticipant.
 
 export abstract class AbstractStatisticsProcessor {
     constructor(
-        protected readonly item: IItem
+        protected readonly item: IItem | null
     ) {}
 
     protected async sortParticipantsByScore(): Promise<AbstractItemParticipant[]> {
+        if (this.item === null) {
+            throw new Error("Invalid configuration for the statistics processor: item can't be null");
+        }
+
         return (await this.item.getParticipants())
             .sort((part1, part2) => part1.getScore() - part2.getScore());
     }
@@ -30,5 +34,5 @@ export abstract class AbstractStatisticsProcessor {
 
     public abstract getGaussianDistrib(): Promise<IDistributionFunction>;
 
-    public abstract createNew(item: IItem): AbstractStatisticsProcessor;
+    public abstract createNew(item: IItem): AbstractStatisticsProcessor; // TODO: this is technically 'clone()' and should be called so
 }
