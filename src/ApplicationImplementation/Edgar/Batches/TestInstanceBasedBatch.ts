@@ -37,7 +37,9 @@ export class TestInstanceBasedBatch extends EdgarItemBatch<QuestionItem> {
                     JOIN test_instance_question
                         ON test_instance_question.id_test_instance = test_instance.id
                     LEFT JOIN test_instance_question_manual_grade
-                        ON test_instance_question_manual_grade.id_test_instance_question = test_instance_question.id`
+                        ON test_instance_question_manual_grade.id_test_instance_question = test_instance_question.id
+                WHERE test_instance_question.id_test_instance = $1`,
+                [this.id]
             );
 
         if (queryResult === null || queryResult.count === 0) {
