@@ -3,31 +3,31 @@
 ----------------------------------------------------------------------------------
 DB:
  - zadržane relacije:
-   - academic_year
-   - course
-   - question_type
-   - test_part
-   - question
-   - app_user
-   - test_question
-   - c_question_answer
-   - test_instance_question
-   - c_question_test
-   - test_instance_question_manual_grade
-   - test_instance_question_comp_score
-   - test_correction
-   - test_instance_question_run
-   - question_answer
-   - test_instance
-   - test
-   - test_type
-   - student
+   - + academic_year
+   - + course
+   - + question_type
+   - - test_part
+   - + question
+   - - app_user
+   - - test_question
+   - - c_question_answer
+   - + test_instance_question
+   - - c_question_test
+   - - test_instance_question_manual_grade
+   - - test_instance_question_comp_score
+   - - test_correction
+   - - test_instance_question_run
+   - - question_answer
+   - + test_instance
+   - + test
+   - - test_type
+   - + student
 
  - uklonjene relacije:
    - sve relacije koje vidljivo nemaju veze s bodovanjem studenata
    - ordered_element_correctness_model
-   - node_type
-   - node
+   - + node_type
+   - + node
    - question_review
    - question_node
    - tutorial_step
