@@ -23,8 +23,8 @@ export class CourseBasedBatch extends EdgarItemBatch<TestBasedBatch> {
         const queryResult = await this.databaseConnection.doQuery<Test>(
             `SELECT test.*
             FROM test
-            WHERE course.id = $1 AND
-                    test.id_academic_year.id = ANY($2)`,
+            WHERE test.id_course = $1 AND
+                    test.id_academic_year = ANY($2)`,
             [this.id, this.academicYearIds]
         );
 
