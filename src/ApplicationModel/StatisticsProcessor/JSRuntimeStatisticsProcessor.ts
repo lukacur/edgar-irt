@@ -18,7 +18,7 @@ export class JSRuntimeStatisticsProcessor extends AbstractStatisticsProcessor {
 
     public async getScoreStdDev(): Promise<number> {
         const scoreAvg = await this.getScoreAverage();
-        const stdDevArr = (await this.sortParticipantsByScore());
+        const stdDevArr = (await this.sortParticipantsByScore()); // TODO: beautify - remove pars.
         const sampleSize = stdDevArr.length;
 
         return Math.sqrt(stdDevArr.reduce((acc, p) => acc + Math.pow(p.getScore() - scoreAvg, 2.0), 0.0) / sampleSize);
@@ -75,7 +75,7 @@ export class JSRuntimeStatisticsProcessor extends AbstractStatisticsProcessor {
                 return (
                     (1 / sigma * Math.sqrt(2 * Math.PI))) *
                         Math.pow(Math.E, -0.5 * (Math.pow(value - u, 2.0) / Math.pow(sigma, 2.0))
-                )
+                );
             }
         };
     }

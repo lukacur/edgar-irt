@@ -6,7 +6,7 @@ export interface ILogisticFunction {
 
 export class StandardLogisticFunction implements ILogisticFunction {
     constructor(
-        private readonly defaultOffsetParameter: number,
+        private readonly defaultOffsetParameter: number, // the D constant
         private readonly params: AbstractLogisticFunctionParams
     ) {}
 
