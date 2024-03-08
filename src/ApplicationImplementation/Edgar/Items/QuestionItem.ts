@@ -38,24 +38,17 @@ export class QuestionItem extends EdgarItem {
     }
 
     async serializeInto(obj: any): Promise<void> {
-        const questionInfo = {
-            id: this.id,
-
-            idQuestion: this.idQuestion,
-
-            idTestInstance: this.idTestInstance,
-            idStudent: this.idStudent,
-
-            isCorrect: this.isCorrect,
-            isIncorrect: this.isIncorrect,
-            isUnanswered: this.isUnanswered,
-            isPartial: this.isPartial,
-
-            score: this.score,
-            maxScore: this.maxScore,
-            scorePercentage: this.scorePercentage,
-        };
-
-        obj.question = questionInfo;
+        obj.id = this.id;
+        obj.type = "test_instance_question";
+        obj.idQuestion = this.idQuestion;
+        obj.idTestInstance = this.idTestInstance;
+        obj.idStudent = this.idStudent;
+        obj.isCorrect = this.isCorrect;
+        obj.isIncorrect = this.isIncorrect;
+        obj.isUnanswered = this.isUnanswered;
+        obj.isPartial = this.isPartial;
+        obj.score = this.score;
+        obj.maxScore = this.maxScore;
+        obj.scorePercentage = this.scorePercentage;
     }
 }

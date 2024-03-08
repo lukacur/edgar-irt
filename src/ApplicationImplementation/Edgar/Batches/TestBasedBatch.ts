@@ -44,9 +44,9 @@ export class TestBasedBatch extends EdgarItemBatch<TestInstanceBasedBatch> {
                         this.id,
                         ti.id_student,
 
-                        ti.score ?? 0,
+                        (typeof(ti.score) === "string") ? parseFloat(ti.score) : (ti.score ?? 0),
                         this.maxScore,
-                        ti.score_perc ?? 0,
+                        (typeof(ti.score_perc) === "string") ? parseFloat(ti.score_perc) : (ti.score_perc ?? 0),
                     )
                 );
         }
@@ -61,19 +61,15 @@ export class TestBasedBatch extends EdgarItemBatch<TestInstanceBasedBatch> {
     }
     
     async serializeInto(obj: any): Promise<void> {
-        const testInstancesObj: { [tstInstId: number]: any } = {}
-        const testInfo = {
-            id: this.id,
+        obj.id = this.id;
+        obj.type = "test";
+        obj.idTestType = this.idTestType;
+        obj.idAcademicYear = this.idAcademicYear;
+        obj.maxScore = this.maxScore;
+        obj.questionsNo = this.questionsNo;
 
-            idTestType: this.idTestType,
-            idAcademicYear: this.idAcademicYear,
-
-            maxScore: this.maxScore,
-
-            questionsNo: this.questionsNo,
-
-            testInstances: testInstancesObj,
-        };
+        const testInstancesArr: any[] = [];
+        obj.testInstances = testInstancesArr;
 
         if (this.items === null) {
             await this.loadItems();
@@ -86,9 +82,7 @@ export class TestBasedBatch extends EdgarItemBatch<TestInstanceBasedBatch> {
         for (const testInstance of this.items) {
             const tstInstObj = {};
             await testInstance.serializeInto(tstInstObj);
-            testInstancesObj[testInstance.id] = tstInstObj;
+            testInstancesArr.push(tstInstObj);
         }
-
-        obj.test = testInfo;
     }
 }

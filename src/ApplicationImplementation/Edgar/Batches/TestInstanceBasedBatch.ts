@@ -46,8 +46,16 @@ export class TestInstanceBasedBatch extends EdgarItemBatch<QuestionItem> {
             this.items = [];
         } else {
             this.items = queryResult.rows
-                .map(tiq =>
-                    new QuestionItem(
+                .map(tiq => {
+                    const manGrade = tiq.manual_grade;
+                    const score = (typeof(tiq.score) === "string") ? parseFloat(tiq.score) : (tiq.score ?? 0);
+                    const scorePerc = (!tiq.score_perc) ?
+                        0 :
+                        (
+                            (typeof(tiq.score_perc) === "string") ? parseFloat(tiq.score_perc) : (tiq.score_perc ?? 0)
+                        );
+
+                    const qi = new QuestionItem(
                         tiq.id,
 
                         tiq.id_question,
@@ -60,11 +68,22 @@ export class TestInstanceBasedBatch extends EdgarItemBatch<QuestionItem> {
                         tiq.is_unanswered ?? false,
                         tiq.is_partial ?? false,
 
-                        tiq.manual_grade ?? tiq.score ?? 0,
-                        (!tiq.score_perc) ? 0 : ((tiq.score ?? 0) / tiq.score_perc),
-                        tiq.score_perc ?? 0,
-                    )
-                );
+                        (manGrade !== null) ?
+                            (
+                                (typeof(manGrade) === "string") ?
+                                    parseFloat(manGrade) : manGrade
+                            ) :
+                            score,
+
+                        (scorePerc) ?
+                            0 :
+                            (score / scorePerc),
+
+                        scorePerc,
+                    );
+
+                    return qi;
+                });
         }
 
         return this.items;
@@ -79,20 +98,17 @@ export class TestInstanceBasedBatch extends EdgarItemBatch<QuestionItem> {
     }
 
     async serializeInto(obj: any): Promise<void> {
-        const questionsObj: { [questionItemId: number]: any } = {}
-        const testInstanceInfo = {
-            id: this.id,
+        obj.id = this.id;
+        obj.type = "test_instance";
+        obj.idAcademicYear = this.idAcademicYear;
+        obj.idTest = this.idTest;
+        obj.idStudent = this.idStudent;
+        obj.studentScore = this.studentScore;
+        obj.testMaxScore = this.testMaxScore;
+        obj.solutionPercentage = this.solutionPercentage;
 
-            idAcademicYear: this.idAcademicYear,
-            idTest: this.idTest,
-            idStudent: this.idStudent,
-
-            studentScore: this.studentScore,
-            testMaxScore: this.testMaxScore,
-            solutionPercentage: this.solutionPercentage,
-
-            questions: questionsObj,
-        };
+        const questionsArr: any[] = [];
+        obj.testInstanceQuestions = questionsArr;
 
         if (this.items === null) {
             await this.loadItems();
@@ -105,9 +121,7 @@ export class TestInstanceBasedBatch extends EdgarItemBatch<QuestionItem> {
         for (const questionItem of this.items) {
             const questionObj = {};
             await questionItem.serializeInto(questionObj);
-            questionsObj[questionItem.getId()] = questionObj;
+            questionsArr.push(questionObj);
         }
-
-        obj.testInstance = testInstanceInfo;
     }
 }

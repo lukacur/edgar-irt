@@ -11,7 +11,8 @@ export class CourseBasedBatch extends EdgarItemBatch<TestBasedBatch> {
         private readonly databaseConnection: DatabaseConnection,
 
         private readonly id: number,
-        private readonly academicYearIds: number[],
+        private readonly idStartAcademicYear: number,
+        private readonly numberOfIncludedPreviousYears: 0 | -1 | number,
 
         private readonly courseName?: string,
         private readonly courseAcronym?: string,
@@ -24,8 +25,12 @@ export class CourseBasedBatch extends EdgarItemBatch<TestBasedBatch> {
             `SELECT test.*
             FROM test
             WHERE test.id_course = $1 AND
-                    test.id_academic_year = ANY($2)`,
-            [this.id, this.academicYearIds]
+                    ($3 = -1 OR test.id_academic_year BETWEEN ($2 - $3) AND $2)`,
+            [
+                /* $1 */ this.id,
+                /* $2 */ this.idStartAcademicYear,
+                /* $3 */ this.numberOfIncludedPreviousYears
+            ]
         );
 
         if (queryResult === null || queryResult.count === 0) {
@@ -40,7 +45,7 @@ export class CourseBasedBatch extends EdgarItemBatch<TestBasedBatch> {
                         tst.id_test_type,
                         tst.id_academic_year,
 
-                        tst.max_score,
+                        (typeof(tst.max_score) === "string") ? parseFloat(tst.max_score) : tst.max_score,
                         tst.questions_no,
 
                         tst.title,
@@ -60,13 +65,12 @@ export class CourseBasedBatch extends EdgarItemBatch<TestBasedBatch> {
     }
 
     async serializeInto(obj: any): Promise<void> {
-        const testsObj: { [tstId: number]: any } = {}
-        const courseInfo = {
-            id: this.id,
-            academicYearIds: this.academicYearIds,
-
-            tests: testsObj,
-        };
+        obj.id = this.id;
+        obj.type = "course";
+        obj.startAcademicYear = this.idStartAcademicYear;
+        obj.numberOfIncludedPreviousYears = this.numberOfIncludedPreviousYears;
+        const testsArr: any[] = [];
+        obj.tests = testsArr;
 
         if (this.items === null) {
             await this.loadItems();
@@ -79,9 +83,7 @@ export class CourseBasedBatch extends EdgarItemBatch<TestBasedBatch> {
         for (const test of this.items) {
             const tstObj = {};
             await test.serializeInto(tstObj);
-            testsObj[test.id] = tstObj;
+            testsArr.push(tstObj);
         }
-
-        obj.course = courseInfo;
     }
 }

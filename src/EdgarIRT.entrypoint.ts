@@ -9,8 +9,11 @@ import { CourseBasedBatch } from "./ApplicationImplementation/Edgar/Batches/Cour
 import { IRTService } from "./IRTService.js";
 import { QueryDriver } from "./Drivers/QueryDriver.js";
 import { TempParamGenerator } from "./ParameterGenerators/TempParamGenerator.js";
+import { mkdir, writeFile } from 'fs/promises'
+import { existsSync } from "fs";
 
-type AvailableTests = "db" | "child_process" | "stats_processor" | "delayed_promise" | "daemon" | "service_setup";
+type AvailableTests =
+    "db" | "child_process" | "stats_processor" | "delayed_promise" | "daemon" | "service_setup" | "serialization";
 
 export class MainRunner {
     private static async delayableAwaiter<T>(prom: DelayablePromise<T>) {
@@ -63,7 +66,8 @@ export class MainRunner {
             new CourseBasedBatch(
                 dbConn,
                 2,
-                [1]
+                1,
+                0
             ),
             MainRunner.DEFAULT_TIMEOUT_MS,
             "B:/testna/r/json_out.json",
@@ -90,6 +94,29 @@ export class MainRunner {
         console.log("Closing pooled connection...");
         await dbConn.close();
         console.log("Connection closed successfully");
+    }
+
+    private static async doSerializationTest(dbConn: DatabaseConnection): Promise<void> {
+        const courseBasedBatchInfo = new CourseBasedBatch(
+            dbConn,
+            2006,
+            2022,
+            0
+        );
+
+        const courseObj = {};
+
+        await courseBasedBatchInfo.serializeInto(courseObj);
+
+        if (!existsSync("./tests_dir")) {
+            await mkdir("./tests_dir");
+        }
+
+        await writeFile(
+            "./tests_dir/test_serialization.json",
+            JSON.stringify(courseObj),
+            { encoding: "utf-8" }
+        );
     }
 
     private static async doDaemonTest(args: string[]): Promise<void> {
@@ -197,7 +224,7 @@ export class MainRunner {
         setTimeout(async () => await service.shutdownIRTService(), 3000);
     }
 
-    private static readonly CURRENT_TEST: AvailableTests = "stats_processor";
+    private static readonly CURRENT_TEST: AvailableTests = "serialization";
 
     public static async main(args: string[]): Promise<void> {
         const conn = await DatabaseConnection.fromConfigFile("./database-config.json");
@@ -224,6 +251,11 @@ export class MainRunner {
                 break;
             }
 
+            case "serialization": {
+                prom = MainRunner.doSerializationTest(conn);
+                break;
+            }
+
             case "daemon": {
                 prom = MainRunner.doDaemonTest(args);
                 break;
@@ -238,5 +270,7 @@ export class MainRunner {
         }
 
         await prom;
+
+        await conn.close();
     }
 }
