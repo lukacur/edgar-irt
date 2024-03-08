@@ -67,7 +67,7 @@ export class CourseBasedBatch extends EdgarItemBatch<TestBasedBatch> {
     async serializeInto(obj: any): Promise<void> {
         obj.id = this.id;
         obj.type = "course";
-        obj.startAcademicYear = this.idStartAcademicYear;
+        obj.idStartAcademicYear = this.idStartAcademicYear;
         obj.numberOfIncludedPreviousYears = this.numberOfIncludedPreviousYears;
         const testsArr: any[] = [];
         obj.tests = testsArr;
