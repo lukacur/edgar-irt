@@ -3,7 +3,6 @@ library(purrr)
 
 fun_calculateTestBasedQuestionStats <- function(param_course) {
   var_testFrames <- param_course$tests
-  var_testBasedCalculationDfList <- list()
   
   testFrame <- var_testFrames[[1]]
   
@@ -66,10 +65,13 @@ fun_calculateTestBasedQuestionStats <- function(param_course) {
     }
   )
   
-  var_testBasedCalculationDfList <- append(
-    var_testBasedCalculationDfList,
-    list(var_courseByTestStatistics)
-  )
+  var_testBasedCalculationDfList <- list()
+  for (dataPoint in var_courseByTestStatistics) {
+    var_testBasedCalculationDfList <- append(
+      var_testBasedCalculationDfList,
+      list(dataPoint)
+    )
+  }
   
   return(var_testBasedCalculationDfList)
 }
