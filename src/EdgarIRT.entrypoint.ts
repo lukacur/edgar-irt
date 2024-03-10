@@ -114,7 +114,7 @@ export class MainRunner {
 
         await writeFile(
             "./tests_dir/test_serialization.json",
-            JSON.stringify(courseObj),
+            JSON.stringify([courseObj], undefined, 4),
             { encoding: "utf-8" }
         );
     }
