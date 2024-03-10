@@ -4,6 +4,13 @@ import { TestInstanceQuestion } from "../../Models/Database/TestInstance/TestIns
 import { QuestionItem } from "../Items/QuestionItem.js";
 import { EdgarItemBatch } from "./EdgarBatch.js";
 
+type ExtendedTestInstanceQuestion =
+    TestInstanceQuestion &
+    {
+        manual_grade: number | null,
+        score_delta: number | null
+    }
+
 export class TestInstanceBasedBatch extends EdgarItemBatch<QuestionItem> {
     // testId
     // academicYear
@@ -30,17 +37,21 @@ export class TestInstanceBasedBatch extends EdgarItemBatch<QuestionItem> {
 
     async loadItems(): Promise<QuestionItem[]> {
         const queryResult =
-            await this.databaseConnection.doQuery<TestInstanceQuestion & { manual_grade: number | null }>(
-                `SELECT test_instance_question.*,
-                        test_instance_question_manual_grade.score AS manual_grade
-                FROM test_instance
-                    JOIN test_instance_question
-                        ON test_instance_question.id_test_instance = test_instance.id
-                    LEFT JOIN test_instance_question_manual_grade
-                        ON test_instance_question_manual_grade.id_test_instance_question = test_instance_question.id
-                WHERE test_instance_question.id_test_instance = $1`,
-                [this.id]
-            );
+            await this.databaseConnection
+                .doQuery<ExtendedTestInstanceQuestion>(
+                    `SELECT test_instance_question.*,
+                            test_instance_question_manual_grade.score AS manual_grade,
+                            test_correction.score_delta
+                    FROM test_instance
+                        JOIN test_instance_question
+                            ON test_instance_question.id_test_instance = test_instance.id
+                        LEFT JOIN test_correction
+                            ON test_correction.id_test_instance_question = test_instance_question.id
+                        LEFT JOIN test_instance_question_manual_grade
+                            ON test_instance_question_manual_grade.id_test_instance_question = test_instance_question.id
+                    WHERE test_instance_question.id_test_instance = $1`,
+                    [this.id]
+                );
 
         if (queryResult === null || queryResult.count === 0) {
             this.items = [];
@@ -68,12 +79,13 @@ export class TestInstanceBasedBatch extends EdgarItemBatch<QuestionItem> {
                         tiq.is_unanswered ?? false,
                         tiq.is_partial ?? false,
 
-                        (manGrade !== null) ?
+                        ((manGrade !== null) ?
                             (
                                 (typeof(manGrade) === "string") ?
                                     parseFloat(manGrade) : manGrade
                             ) :
-                            score,
+                            score
+                        ) + (tiq.score_delta ?? 0),
 
                         (scorePerc) ?
                             0 :
