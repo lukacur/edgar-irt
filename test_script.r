@@ -8,10 +8,12 @@ pipe_it <- NULL
   return(eval(substitute(rhs)))
 }
 
-fun_groupByQuestionId <- function(paramEntries) {
+fun_calculateCourseBasedQuestionStats <- function(param_course) {
+  var_testFrame <- param_course$tests[[1]]
+  
   var_tiFrames <- Map(
     function(e) { return(e$testInstanceQuestions) },
-    paramEntries$tests[[1]]$testInstances
+    var_testFrame$testInstances
   )
   
   var_flattenedTiFrames <- purrr::flatten(var_tiFrames)
@@ -154,7 +156,7 @@ if (declared_arguments["outFile"] %in% comm_args) {
 var_fileConnIn <- file(var_in_file, open = "r")
 var_dataIn <- fromJSON(readLines(var_fileConnIn, encoding = "utf-8"))
 
-var_computedData <- fun_groupByQuestionId(var_dataIn)
+var_computedData <- fun_calculateCourseBasedQuestionStats(var_dataIn)
 
 close(var_fileConnIn)
 
