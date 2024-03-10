@@ -8,6 +8,81 @@ pipe_it <- NULL
   return(eval(substitute(rhs)))
 }
 
+fun_calculateTestBasedQuestionStats <- function(param_course) {
+  var_testFrames <- param_course$tests
+  
+  testFrame <- var_testFrames[[1]]
+  
+  var_tfTis <- testFrame$testInstances
+  var_nesto <- aggregate(
+    studentScore ~ idTest,
+    var_tfTis[[1]],
+    sum
+  )[[2]]
+  
+  var_courseByTestStatistics <- by(
+    testFrame,
+    seq_len(nrow(testFrame)),
+    function(testRow) {
+      var_testInstances <- testRow$testInstances[[1]]
+      
+      var_sumOfTestInstanceScores <- aggregate(
+        studentScore ~ idTest,
+        var_testInstances,
+        sum
+      )[[2]]
+      
+      var_tiqs <- var_testInstances$testInstanceQuestions
+      var_tiqsUnioned <- var_tiqs[[1]]
+      
+      for (i in 2:length(var_tiqs)) {
+        var_tiqsUnioned <- rbind(var_tiqsUnioned, var_tiqs[[i]])
+      }
+      
+      var_stats <- aggregate(
+        score ~ idQuestion,
+        var_tiqsUnioned,
+        function(x) c(
+          mean(x),
+          sd(x),
+          length(x),
+          median(x),
+          sum(x),
+          sum(x) / var_sumOfTestInstanceScores
+        )
+      )
+      
+      var_stats <- setNames(
+        do.call(
+          data.frame,
+          var_stats
+        ),
+        c(
+          "idQuestion",
+          "mean",
+          "stdDev",
+          "count",
+          "median",
+          "sum",
+          "partOfTotalSum"
+        )
+      )
+      
+      return(list(idTest = testRow$id, testData = var_stats))
+    }
+  )
+  
+  var_testBasedCalculationDfList <- list()
+  for (dataPoint in var_courseByTestStatistics) {
+    var_testBasedCalculationDfList <- append(
+      var_testBasedCalculationDfList,
+      list(dataPoint)
+    )
+  }
+  
+  return(var_testBasedCalculationDfList)
+}
+
 fun_calculateCourseBasedQuestionStats <- function(param_course) {
   var_testFrame <- param_course$tests[[1]]
   
@@ -156,14 +231,29 @@ if (declared_arguments["outFile"] %in% comm_args) {
 var_fileConnIn <- file(var_in_file, open = "r")
 var_dataIn <- fromJSON(readLines(var_fileConnIn, encoding = "utf-8"))
 
-var_computedData <- fun_calculateCourseBasedQuestionStats(var_dataIn)
+print("Computing course based...")
+var_computedByCourse <- fun_calculateCourseBasedQuestionStats(var_dataIn)
+print("Computing test based...")
+var_computedByTestStats <- fun_calculateTestBasedQuestionStats(var_dataIn)
 
 close(var_fileConnIn)
 
+var_outputObj <- list(
+  courseId = var_dataIn$id,
+  academicYearIds = purrr::flatten(
+    list(unique(var_dataIn$tests[[1]]$idAcademicYear))
+  ),
+  courseBased = var_computedByCourse,
+  testBased = var_computedByTestStats
+)
+
 if (is.null(var_out_file)) {
-  write(toJSON(var_computedData, auto_unbox = TRUE, pretty = TRUE), stdout())
+  write(toJSON(var_outputObj, auto_unbox = TRUE, pretty = TRUE), stdout())
 } else {
   fileConnOut <- file(var_out_file)
-  writeLines(toJSON(var_computedData, auto_unbox = TRUE, pretty = TRUE), fileConnOut)
+  
+  print("Writing to output file...")
+  writeLines(toJSON(var_outputObj, auto_unbox = TRUE, pretty = TRUE), fileConnOut)
+  
   close(fileConnOut)
 }
