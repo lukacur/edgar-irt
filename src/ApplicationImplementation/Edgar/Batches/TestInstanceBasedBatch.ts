@@ -60,6 +60,9 @@ export class TestInstanceBasedBatch extends EdgarItemBatch<QuestionItem> {
                 .map(tiq => {
                     const manGrade = tiq.manual_grade;
                     const score = (typeof(tiq.score) === "string") ? parseFloat(tiq.score) : (tiq.score ?? 0);
+                    const scoreDelta =
+                        (typeof(tiq.score_delta) === "string") ? parseFloat(tiq.score_delta) : (tiq.score_delta ?? 0);
+
                     const scorePerc = (!tiq.score_perc) ?
                         0 :
                         (
@@ -85,11 +88,11 @@ export class TestInstanceBasedBatch extends EdgarItemBatch<QuestionItem> {
                                     parseFloat(manGrade) : manGrade
                             ) :
                             score
-                        ) + (tiq.score_delta ?? 0),
+                        ) + scoreDelta,
 
-                        (scorePerc) ?
+                        (!scorePerc) ?
                             0 :
-                            (score / scorePerc),
+                            ((score + scoreDelta) / scorePerc),
 
                         scorePerc,
                     );
