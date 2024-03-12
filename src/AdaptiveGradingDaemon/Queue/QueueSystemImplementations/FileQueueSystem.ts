@@ -1,6 +1,6 @@
 import { readFile, writeFile } from "fs/promises";
 import { IQueueSystemBase } from "../IQueueSystemBase.js";
-import { existsSync } from "fs";
+import { existsSync, lstatSync } from "fs";
 import { DelayablePromise } from "../../../Util/DelayablePromise.js";
 import { AsyncMutex } from "../../Mutex/AsyncMutex.js";
 
@@ -10,7 +10,11 @@ export class FileQueueSystem<TQueueData> implements IQueueSystemBase<TQueueData>
 
     constructor(
         private readonly location: string,
-    ) {}
+    ) {
+        if (!lstatSync(location).isFile()) {
+            throw new Error("Given location is not a file");
+        }
+    }
 
     private async readFileQueue(): Promise<TQueueData[]> {
         if (!existsSync(this.location)) {
