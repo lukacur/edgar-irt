@@ -6,5 +6,7 @@ export abstract class AbstractIRTDriver<TItem extends IItem, TProcessingResult> 
 
     public abstract createBatch(): Promise<AbstractBatch<TItem>>;
 
+    public abstract failPost(item: TItem): Promise<void>;
+
     public abstract postResult(batchProcessingResult: TProcessingResult): Promise<boolean>;
 }

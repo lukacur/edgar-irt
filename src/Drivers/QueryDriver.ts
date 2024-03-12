@@ -22,6 +22,9 @@ export class QueryDriver<TItem extends IItem> extends AbstractIRTDriver<TItem, a
             setTimeout(() => resolve(new FooBatch()), 1350);
         });
     }
+
+    public async failPost(item: TItem): Promise<void> {}
+
     public async postResult(batchProcessingResult: Map<TItem, AbstractLogisticFunctionParams>): Promise<boolean> {
         return true;
     }

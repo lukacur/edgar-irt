@@ -146,6 +146,24 @@ export class EdgarIRTDriver
 
         return (count !== null && count !== 0);
     }
+
+    public async failPost(batch: CourseBasedBatch): Promise<void> {
+        let retryAmount = 3;
+        let success = false;
+
+        while (retryAmount > 0 && !success) {
+            success = await this.calculationQueue.enqueue(
+                {
+                    forceCalculation: true,
+                    idCourse: batch.id,
+                    idStartAcademicYear: batch.idStartAcademicYear,
+                    numberOfIncludedPreviousYears: batch.numberOfIncludedPreviousYears,
+                }
+            );
+
+            --retryAmount;
+        }
+    }
     
     public async postResult(batchProcessingResult: IRCalculationResult): Promise<boolean> {
         if (!this.databaseStructureValid()) {
