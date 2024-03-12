@@ -74,7 +74,7 @@ extends AbstractStatisticsProcessor<IRCalculationResult> {
 
         await writeFile(
             childProcJSONInput,
-            JSON.stringify(serObj),
+            JSON.stringify([serObj]),
             { encoding: "utf-8" }
         );
 
