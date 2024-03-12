@@ -2,10 +2,11 @@ import { existsSync } from "fs";
 import { readFile } from "fs/promises";
 import { IDatabaseConfig } from "../Models/Config/DatabaseConfig.model.js"
 import pg from 'pg';
+import { TransactionContext } from "./TransactionContext.js";
 
 const { Pool } = pg;
 
-type QueryReturn<TResult> = {
+export type QueryReturn<TResult> = {
     rows: TResult[],
     count: number,
 }
@@ -45,6 +46,20 @@ export class DatabaseConnection {
         );
 
         return new DatabaseConnection(configuration);
+    }
+
+    public async beginTransaction(): Promise<TransactionContext> {
+        const cli = await this.pool?.connect();
+
+        if (!cli) {
+            throw new Error("Unable to acquire a new connection client");
+        }
+
+        const transaction = new TransactionContext(this, cli);
+
+        await transaction.waitForReady();
+
+        return transaction;
     }
 
     public async doQuery<TResult>(query: string, values?: any[]): Promise<QueryReturn<TResult> | null> {
