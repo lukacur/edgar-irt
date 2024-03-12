@@ -16,14 +16,14 @@ export class MasterRunner {
     private runningPromise: Promise<void> | null = null;
 
     private runningDriver: AbstractIRTDriver<IItem> | null = null;
-    private statisticsProcessor: AbstractStatisticsProcessor | null = null;
+    private statisticsProcessor: AbstractStatisticsProcessor<any> | null = null;
     private parameterGenerator: IParameterGenerator | null = null;
 
     public registerDriver<TItem extends IItem>(irtDriver: AbstractIRTDriver<TItem>): void {
         this.runningDriver = irtDriver;
     }
 
-    public registerStatisticsProcessor(statProc: AbstractStatisticsProcessor): void {
+    public registerStatisticsProcessor(statProc: AbstractStatisticsProcessor<any>): void {
         this.statisticsProcessor = statProc;
     }
 
@@ -38,7 +38,7 @@ export class MasterRunner {
     private async begin(): Promise<void> {
         while (this.running && this.configurationValid()) {
             const batch = await this.runningDriver!.createBatch();
-            const batchStatsProcessor = this.statisticsProcessor!.createNew(batch);
+            const batchStatsProcessor = this.statisticsProcessor!.clone(batch);
             const batchCalculationResult =
                 await this.parameterGenerator!.generateParameters(batchStatsProcessor, batch);
 

@@ -3,7 +3,7 @@ import { IItem } from "../../IRT/Item/IItem.js";
 import { AbstractItemParticipant } from "../Participant/AbstractItemParticipant.js";
 import { AbstractStatisticsProcessor } from "./AbstractStatisticsProcessor.js";
 
-export class JSRuntimeStatisticsProcessor extends AbstractStatisticsProcessor {
+export class JSRuntimeStatisticsProcessor extends AbstractStatisticsProcessor<any> {
     public async getMaxScore(): Promise<number> {
         return (await this.sortParticipantsByScore())
             .reverse()[0].getScore();
@@ -80,7 +80,11 @@ export class JSRuntimeStatisticsProcessor extends AbstractStatisticsProcessor {
         };
     }
 
-    public createNew(item: IItem): AbstractStatisticsProcessor {
+    public process(): Promise<any> {
+        throw new Error("Not implemented");
+    }
+
+    public clone(item: IItem): AbstractStatisticsProcessor<any> {
         return new JSRuntimeStatisticsProcessor(item);
     }
 }

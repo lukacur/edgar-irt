@@ -7,16 +7,40 @@ import { DelayablePromise } from "../../../Util/DelayablePromise.js";
 import { readFile, unlink, writeFile } from "fs/promises";
 import { existsSync } from "fs";
 
+type CourseBasedCalculation = {
+    idQuestion: number;
+    scoreMean: number;
+    scoreStdDev: number;
+    scoreMedian: number;
+    totalAchieved: number;
+    totalAchievable: number;
+    answersCount: number;
+    correct: number;
+    incorrect: number;
+    unanswered: number;
+    partial: number;
+};
+
+type TestBasedQuestionEntry = {
+    idQuestion: number;
+    mean: number;
+    stdDev: number;
+    count: number;
+    median: number;
+    sum: number;
+    partOfTotalSum: number;
+};
+
+type TestBasedCalculation = {
+    idTest: number;
+    testData: TestBasedQuestionEntry[];
+};
+
 type RCalculationResult = {
-    maxScore: number,
-    scoreAverage: number,
-    scoreStdDev: number,
-    scoreNtiles: number[] | null,
-    scoreQuartiles: [number, number, number, number],
-    scoreMedian: number,
-    nBestParticipants: AbstractItemParticipant[],
-    nWorstParticipants: AbstractItemParticipant[],
-    gaussianDistrib: IDistributionFunction,
+    courseId: number;
+    academicYearIds: number[];
+    courseBased: CourseBasedCalculation[];
+    testBased: TestBasedCalculation[];
 };
 
 type CalculationParams = {
@@ -30,7 +54,7 @@ type AvailableCalculationMethods = "irt";
 export class EdgarRStatisticsProcessor<
     TItem extends (IItem & { serializeInto: (obj: any) => Promise<void> })
 >
-extends AbstractStatisticsProcessor {
+extends AbstractStatisticsProcessor<RCalculationResult> {
     private calcResultCache: RCalculationResult | null = null;
 
     constructor(
@@ -163,127 +187,13 @@ extends AbstractStatisticsProcessor {
         }
     }
 
-    public async getMaxScore(): Promise<number> {
+    public async process(): Promise<RCalculationResult | null> {
         await this.calculateIfCacheEmpty();
 
-        const res = this.calcResultCache?.maxScore;
-        if (res === undefined || res === null) {
-            throw new Error("Unable to calculate requested info using specified R script");
-        }
-
-        return res;
-    }
-    
-    public async getScoreAverage(): Promise<number> {
-        await this.calculateIfCacheEmpty();
-
-        const res = this.calcResultCache?.scoreAverage;
-        if (res === undefined || res === null) {
-            throw new Error("Unable to calculate requested info using specified R script");
-        }
-
-        return res;
+        return this.calcResultCache;
     }
 
-    public async getScoreStdDev(): Promise<number> {
-        await this.calculateIfCacheEmpty();
-
-        const res = this.calcResultCache?.scoreStdDev;
-        if (res === undefined || res === null) {
-            throw new Error("Unable to calculate requested info using specified R script");
-        }
-
-        return res;
-    }
-
-    public async getScoreNtiles(ntile: number): Promise<number[] | null> {
-        await this.calculateIfCacheEmpty(
-            true,
-            {
-                scoreNtiles: ntile,
-                nBestParts: null,
-                nWorstParts: null,
-            }
-        );
-
-        const res = this.calcResultCache?.scoreNtiles;
-        if (res === undefined || res === null) {
-            throw new Error("Unable to calculate requested info using specified R script");
-        }
-
-        return res;
-    }
-
-    public async getScoreQuartiles(): Promise<[number, number, number, number]> {
-        await this.calculateIfCacheEmpty();
-
-        const res = this.calcResultCache?.scoreQuartiles;
-        if (res === undefined || res === null) {
-            throw new Error("Unable to calculate requested info using specified R script");
-        }
-
-        return res;
-    }
-
-    public async getScoreMedian(): Promise<number> {
-        await this.calculateIfCacheEmpty();
-
-        const res = this.calcResultCache?.scoreMedian;
-        if (res === undefined || res === null) {
-            throw new Error("Unable to calculate requested info using specified R script");
-        }
-
-        return res;
-    }
-
-    public async getNBestParticipants(n: number): Promise<AbstractItemParticipant[]> {
-        await this.calculateIfCacheEmpty(
-            true,
-            {
-                scoreNtiles: null,
-                nBestParts: n,
-                nWorstParts: null,
-            }
-        );
-
-        const res = this.calcResultCache?.nBestParticipants;
-        if (res === undefined || res === null) {
-            throw new Error("Unable to calculate requested info using specified R script");
-        }
-
-        return res;
-    }
-
-    public async getNWorstParticipants(n: number): Promise<AbstractItemParticipant[]> {
-        await this.calculateIfCacheEmpty(
-            true,
-            {
-                scoreNtiles: null,
-                nBestParts: null,
-                nWorstParts: n,
-            }
-        );
-
-        const res = this.calcResultCache?.nWorstParticipants;
-        if (res === undefined || res === null) {
-            throw new Error("Unable to calculate requested info using specified R script");
-        }
-
-        return res;
-    }
-
-    public async getGaussianDistrib(): Promise<IDistributionFunction> {
-        await this.calculateIfCacheEmpty();
-
-        const res = this.calcResultCache?.gaussianDistrib;
-        if (res === undefined || res === null) {
-            throw new Error("Unable to calculate requested info using specified R script");
-        }
-
-        return res;
-    }
-
-    public createNew(item: TItem): AbstractStatisticsProcessor {
+    public clone(item: TItem): AbstractStatisticsProcessor<RCalculationResult> {
         return new EdgarRStatisticsProcessor(
             this.calculationScriptAbsPath,
             this.inputJSONInfoAbsPath,

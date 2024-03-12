@@ -23,7 +23,7 @@ class ConfiguredIRTService<TItem extends IItem> {
 
     constructor(
         private readonly driver: AbstractIRTDriver<TItem>,
-        private readonly statProcessor: AbstractStatisticsProcessor,
+        private readonly statProcessor: AbstractStatisticsProcessor<any>,
         private readonly parameterGenerator: IParameterGenerator,
     ) {}
 
@@ -91,7 +91,7 @@ class ConfiguredIRTService<TItem extends IItem> {
 
 class IRTServiceConfigurer<TItem extends IItem> {
     private driver?: AbstractIRTDriver<TItem>;
-    private statisticsProcessor?: AbstractStatisticsProcessor;
+    private statisticsProcessor?: AbstractStatisticsProcessor<any>;
     private parameterGenerator?: IParameterGenerator;
 
     public useDriver(driver: AbstractIRTDriver<TItem>): IRTServiceConfigurer<TItem> {
@@ -99,7 +99,7 @@ class IRTServiceConfigurer<TItem extends IItem> {
         return this;
     }
 
-    public useStatisticsProcessor(statProcessor: AbstractStatisticsProcessor): IRTServiceConfigurer<TItem> {
+    public useStatisticsProcessor(statProcessor: AbstractStatisticsProcessor<any>): IRTServiceConfigurer<TItem> {
         this.statisticsProcessor = statProcessor;
         return this;
     }

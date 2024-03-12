@@ -84,8 +84,8 @@ export class MainRunner {
             "B:/testna/r/json_out.json",
         );
 
-        const gaussDistrib = await statsProc.getGaussianDistrib();
-        console.log(gaussDistrib);
+        const processingResult = await statsProc.process();
+        console.log(processingResult);
     }
 
     private static async doDbTest(dbConn: DatabaseConnection): Promise<void> {

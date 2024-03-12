@@ -3,6 +3,6 @@ import { AbstractLogisticFunctionParams } from "../../IRT/LogisticFunction/Logis
 import { AbstractStatisticsProcessor } from "../StatisticsProcessor/AbstractStatisticsProcessor.js";
 
 export interface IParameterGenerator {
-    generateParameters(statisticsProcessor: AbstractStatisticsProcessor, item: IItem):
+    generateParameters(statisticsProcessor: AbstractStatisticsProcessor<any>, item: IItem):
         Promise<Map<IItem, AbstractLogisticFunctionParams>>;
 }
