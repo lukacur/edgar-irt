@@ -1,0 +1,77 @@
+BEGIN TRANSACTION
+	ISOLATION LEVEL SERIALIZABLE;
+
+CREATE SCHEMA IF NOT EXISTS statistics_schema;
+
+SET search_path TO statistics_schema;
+
+CREATE TABLE IF NOT EXISTS question_param_calculation (
+	id SERIAL PRIMARY KEY,
+	id_based_on_course INT,
+	id_based_on_test INT,
+	
+	id_question INT NOT NULL,
+	
+	created_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	
+	CONSTRAINT fk_qpc_course
+		FOREIGN KEY (id_based_on_course)
+		REFERENCES public.course(id),
+
+	CONSTRAINT fk_qpc_test
+		FOREIGN KEY (id_based_on_test)
+		REFERENCES public.test(id)
+);
+
+CREATE TABLE IF NOT EXISTS question_param_calculation_academic_year (
+	id SERIAL PRIMARY KEY,
+	id_question_param_calculation INT NOT NULL,
+	id_academic_year INT NOT NULL,
+	
+	CONSTRAINT uq_calc_acyear UNIQUE(id_question_param_calculation, id_academic_year),
+
+	CONSTRAINT fk_qpcay_qparam_calc
+		FOREIGN KEY (id_question_param_calculation)
+		REFERENCES question_param_calculation(id),
+
+	CONSTRAINT fk_qpcay_acyear
+		FOREIGN KEY (id_academic_year)
+		REFERENCES public.academic_year(id)
+);
+
+CREATE TABLE IF NOT EXISTS question_param_course_level_calculation (
+	id_question_param_calculation INT PRIMARY KEY,
+	
+	score_mean DOUBLE PRECISION,
+	score_std_dev DOUBLE PRECISION,
+	score_median DOUBLE PRECISION,
+	total_achieved DOUBLE PRECISION,
+	total_achievable DOUBLE PRECISION,
+	answers_count INT,
+	correct INT,
+	incorrect INT,
+	unanswered INT,
+	partial INT,
+	
+	CONSTRAINT fk_qpclc_qparam_calc
+		FOREIGN KEY (id_question_param_calculation)
+		REFERENCES question_param_calculation(id)
+);
+
+CREATE TABLE IF NOT EXISTS question_param_test_level_calculation (
+	id_question_param_calculation INT PRIMARY KEY,
+	
+	mean DOUBLE PRECISION,
+	std_dev DOUBLE PRECISION,
+	count INT,
+	median DOUBLE PRECISION,
+	sum DOUBLE PRECISION,
+	part_of_total_sum DOUBLE PRECISION,
+	
+	CONSTRAINT fk_qptlc_qparam_calc
+		FOREIGN KEY (id_question_param_calculation)
+		REFERENCES question_param_calculation(id)
+);
+
+COMMIT;
+END;
