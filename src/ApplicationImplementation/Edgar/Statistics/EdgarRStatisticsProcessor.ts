@@ -1,47 +1,10 @@
 import { execFile } from "child_process";
-import { AbstractItemParticipant } from "../../../ApplicationModel/Participant/AbstractItemParticipant.js";
 import { AbstractStatisticsProcessor } from "../../../ApplicationModel/StatisticsProcessor/AbstractStatisticsProcessor.js";
-import { IDistributionFunction } from "../../../Functions/IDistributionFunction.js";
 import { IItem } from "../../../IRT/Item/IItem.js";
 import { DelayablePromise } from "../../../Util/DelayablePromise.js";
 import { readFile, unlink, writeFile } from "fs/promises";
 import { existsSync } from "fs";
-
-type CourseBasedCalculation = {
-    idQuestion: number;
-    scoreMean: number;
-    scoreStdDev: number;
-    scoreMedian: number;
-    totalAchieved: number;
-    totalAchievable: number;
-    answersCount: number;
-    correct: number;
-    incorrect: number;
-    unanswered: number;
-    partial: number;
-};
-
-type TestBasedQuestionEntry = {
-    idQuestion: number;
-    mean: number;
-    stdDev: number;
-    count: number;
-    median: number;
-    sum: number;
-    partOfTotalSum: number;
-};
-
-type TestBasedCalculation = {
-    idTest: number;
-    testData: TestBasedQuestionEntry[];
-};
-
-type RCalculationResult = {
-    courseId: number;
-    academicYearIds: number[];
-    courseBased: CourseBasedCalculation[];
-    testBased: TestBasedCalculation[];
-};
+import { IRCalculationResult } from "./IRCalculationResult.js";
 
 type CalculationParams = {
     nBestParts: number | null,
@@ -54,8 +17,8 @@ type AvailableCalculationMethods = "irt";
 export class EdgarRStatisticsProcessor<
     TItem extends (IItem & { serializeInto: (obj: any) => Promise<void> })
 >
-extends AbstractStatisticsProcessor<RCalculationResult> {
-    private calcResultCache: RCalculationResult | null = null;
+extends AbstractStatisticsProcessor<IRCalculationResult> {
+    private calcResultCache: IRCalculationResult | null = null;
 
     constructor(
         private readonly calculationScriptAbsPath: string,
@@ -74,8 +37,8 @@ extends AbstractStatisticsProcessor<RCalculationResult> {
     private async calculate(
         cacheResult: boolean,
         params: CalculationParams | null = null,
-    ): Promise<RCalculationResult | null> {
-        const delProm = new DelayablePromise<RCalculationResult>();
+    ): Promise<IRCalculationResult | null> {
+        const delProm = new DelayablePromise<IRCalculationResult>();
         const childProcArgs: string[] = [];
         
         if (params !== null) {
@@ -187,13 +150,13 @@ extends AbstractStatisticsProcessor<RCalculationResult> {
         }
     }
 
-    public async process(): Promise<RCalculationResult | null> {
+    public async process(): Promise<IRCalculationResult | null> {
         await this.calculateIfCacheEmpty();
 
         return this.calcResultCache;
     }
 
-    public clone(item: TItem): AbstractStatisticsProcessor<RCalculationResult> {
+    public clone(item: TItem): AbstractStatisticsProcessor<IRCalculationResult> {
         return new EdgarRStatisticsProcessor(
             this.calculationScriptAbsPath,
             this.inputJSONInfoAbsPath,
