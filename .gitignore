@@ -1,4 +1,6 @@
 **/excluded/**
+**/queues/**
+**/tests_dir/**
 
 # Logs
 logs
