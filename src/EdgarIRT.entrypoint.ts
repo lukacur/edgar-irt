@@ -11,9 +11,20 @@ import { QueryDriver } from "./Drivers/QueryDriver.js";
 import { TempParamGenerator } from "./ParameterGenerators/TempParamGenerator.js";
 import { mkdir, writeFile } from 'fs/promises'
 import { existsSync } from "fs";
+import { IQueueSystemBase } from "./AdaptiveGradingDaemon/Queue/IQueueSystemBase.js";
+import { FileQueueSystem } from "./AdaptiveGradingDaemon/Queue/QueueSystemImplementations/FileQueueSystem.js";
+import { DirQueueSystem } from "./AdaptiveGradingDaemon/Queue/QueueSystemImplementations/DirQueueSystem.js";
+import { PgBossQueueSystem } from "./AdaptiveGradingDaemon/Queue/QueueSystemImplementations/PgBossQueueSystem.js";
 
 type AvailableTests =
-    "db" | "child_process" | "stats_processor" | "delayed_promise" | "daemon" | "service_setup" | "serialization";
+    "db" |
+    "child_process" |
+    "stats_processor" |
+    "delayed_promise" |
+    "daemon" |
+    "service_setup" |
+    "serialization" |
+    "queue";
 
 export class MainRunner {
     private static async delayableAwaiter<T>(prom: DelayablePromise<T>) {
@@ -224,7 +235,74 @@ export class MainRunner {
         setTimeout(async () => await service.shutdownIRTService(), 3000);
     }
 
-    private static readonly CURRENT_TEST: AvailableTests = "serialization";
+    private static async doQueueTests() {
+        type TestDataType = { id: number, content: string };
+
+        const queueData: TestDataType = { id: 232, content: "This is a test!" };
+
+        const queues: IQueueSystemBase<TestDataType>[] = [];
+
+        queues.push(
+            new FileQueueSystem("./queues/file/json-file-queue.queue.json")
+        );
+
+        let queuingSuffix = 0;
+        queues.push(
+            new DirQueueSystem(
+                "./queues/directory-queue",
+                { prefix: "test_", name: "queueing", suffixProvider: () => (++queuingSuffix).toString() }
+            )
+        );
+
+        queues.push(
+            new PgBossQueueSystem(
+                "postgres://postgres:bazepodataka@127.0.0.1:5433/boss_test",
+                "test-queue"
+            )
+        );
+
+        for (const queue of queues) {
+            console.log("Enqueing...");
+            await queue.enqueue(queueData);
+        }
+
+        for (const queue of queues) {
+            console.log("Dequeing...");
+            const elem = await queue.dequeue();
+
+            if (elem.id !== queueData.id || elem.content !== queueData.content) {
+                console.log(queue);
+                throw new Error("Queue not working properly");
+            }
+        }
+
+        for (const queue of queues) {
+            console.log("Emptying...");
+            const emptied = await queue.empty();
+
+            if (!emptied) {
+                console.log(queue);
+                throw new Error("Queue not working properly");
+            }
+        }
+
+        for (const queue of queues) {
+            console.log("Peeking...");
+            if (await queue.peek() !== null) {
+                console.log(queue);
+                throw new Error("Queue not working properly");
+            }
+        }
+
+        for (const queue of queues) {
+            console.log("Closing...");
+            await queue.close();
+        }
+
+        console.log("Done!");
+    }
+
+    private static readonly CURRENT_TEST: AvailableTests = "queue";
 
     public static async main(args: string[]): Promise<void> {
         const conn = await DatabaseConnection.fromConfigFile("./database-config.json");
@@ -263,6 +341,11 @@ export class MainRunner {
 
             case "service_setup": {
                 prom = MainRunner.doServiceSetupTest();
+                break;
+            }
+
+            case "queue": {
+                prom = MainRunner.doQueueTests();
                 break;
             }
 
