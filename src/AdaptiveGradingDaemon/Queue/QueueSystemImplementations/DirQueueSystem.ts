@@ -1,0 +1,135 @@
+import { Dirent, existsSync, lstatSync } from "fs";
+import { DelayablePromise } from "../../../Util/DelayablePromise.js";
+import { AsyncMutex } from "../../Mutex/AsyncMutex.js";
+import { IQueueSystemBase } from "../IQueueSystemBase.js";
+import path from "path";
+import { readFile, readdir, unlink, writeFile } from "fs/promises";
+
+export class DirQueueSystem<TQueueData> implements IQueueSystemBase<TQueueData> {
+    private readonly dequeueRequests: DelayablePromise<TQueueData>[] = [];
+    private readonly operationMutex = new AsyncMutex();
+
+    private fileNameConflictResolve: number = 1;
+
+    constructor(
+        private readonly location: string,
+        private readonly fileNamingScheme: { prefix: string, name: string, suffixProvider: () => string },
+    ) {
+        if (!lstatSync(location).isDirectory()) {
+            throw new Error("Given location is not a directory");
+        }
+    }
+
+    private getFileName(): string {
+        return this.fileNamingScheme.prefix + this.fileNamingScheme.name + this.fileNamingScheme.suffixProvider();
+    }
+
+    private async getDirFiles(): Promise<Dirent[]> {
+        return (await readdir(
+            this.location,
+            { encoding: "utf-8", recursive: false, withFileTypes: true }
+        ))
+        .filter(f => f.isFile())
+        .sort((f1, f2) => lstatSync(f1.path).birthtimeMs - lstatSync(f2.path).birthtimeMs);
+    }
+
+    public async enqueue(data: TQueueData): Promise<boolean> {
+        const monitorKey = await this.operationMutex.lock();
+
+        try {
+            let newFileName = path.join(this.location, this.getFileName());
+            while (existsSync(newFileName + ".json")) {
+                this.fileNameConflictResolve = (++this.fileNameConflictResolve) % 100 + 1;
+
+                newFileName = newFileName.replace(/(_\d)*$/, `_${this.fileNameConflictResolve}`)
+            }
+
+            await writeFile(
+                newFileName + ".json",
+                JSON.stringify(data),
+                { encoding: "utf-8", flag: "w" }
+            );
+
+            return true;
+        } catch (err) {
+            console.log(err);
+        } finally {
+            await this.operationMutex.unlock(monitorKey);
+        }
+
+        return false;
+    }
+
+    public async dequeue(): Promise<TQueueData> {
+        const monitorKey = await this.operationMutex.lock();
+
+        try {
+            if ((await this.peek()) === null) {
+                const prm = new DelayablePromise<TQueueData>();
+                this.dequeueRequests.push(prm);
+    
+                return prm.getWrappedPromise();
+            }
+
+            const dirContents = await this.getDirFiles();
+
+            const data: TQueueData = JSON.parse(
+                await readFile(
+                    dirContents[0].path,
+                    { encoding: "utf-8", flag: "r" }
+                )
+            );
+
+            await unlink(dirContents[0].path);
+
+            return data;
+        } finally {
+            await this.operationMutex.unlock(monitorKey);
+        }
+    }
+
+    public async peek(): Promise<TQueueData | null> {
+        try {
+            const dirContents = await this.getDirFiles();
+            if (dirContents.length === 0) {
+                return null;
+            }
+
+            return JSON.parse(
+                await readFile(
+                    dirContents[0].path,
+                    { encoding: "utf-8", flag: "r" }
+                )
+            );
+        } catch (err) {
+            console.log(err);
+        }
+
+        return null;
+    }
+
+
+    public async empty(): Promise<boolean> {
+        const monitorKey = await this.operationMutex.lock();
+
+        try {
+            await Promise.all(
+                (await this.getDirFiles())
+                    .map(df => unlink(df.path))
+            );
+
+            return true;
+        } catch (err) {
+            console.log(err);
+        } finally {
+            await this.operationMutex.unlock(monitorKey);
+        }
+
+        return false;
+    }
+    
+
+    public async close(): Promise<void> {
+        throw new Error("Method not implemented.");
+    }
+}
