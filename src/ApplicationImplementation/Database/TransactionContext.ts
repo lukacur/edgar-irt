@@ -10,12 +10,15 @@ export class TransactionContext {
     constructor(
         private readonly dbConn: DatabaseConnection,
         private readonly client: pg.PoolClient,
+        private readonly workingSchema: string = "public",
     ) {
         const delProm = new DelayablePromise<boolean>();
         this.readyProm = delProm.getWrappedPromise();
 
-        this.client.query("BEGIN")
-            .then((_) => delProm.delayedResolve(true));
+        this.client.query(
+            `BEGIN TRANSACTION;
+            SET search_path TO ${this.client.escapeIdentifier(this.workingSchema)};`
+        ).then((_) => delProm.delayedResolve(true));
     }
 
     public async waitForReady(): Promise<void> {

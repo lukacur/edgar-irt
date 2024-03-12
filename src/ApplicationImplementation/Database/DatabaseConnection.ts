@@ -48,14 +48,14 @@ export class DatabaseConnection {
         return new DatabaseConnection(configuration);
     }
 
-    public async beginTransaction(): Promise<TransactionContext> {
+    public async beginTransaction(workingSchema: string = "public"): Promise<TransactionContext> {
         const cli = await this.pool?.connect();
 
         if (!cli) {
             throw new Error("Unable to acquire a new connection client");
         }
 
-        const transaction = new TransactionContext(this, cli);
+        const transaction = new TransactionContext(this, cli, workingSchema);
 
         await transaction.waitForReady();
 
