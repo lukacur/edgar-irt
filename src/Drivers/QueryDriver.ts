@@ -16,7 +16,7 @@ class FooBatch<TItem extends IItem> extends AbstractBatch<TItem> {
     
 }
 
-export class QueryDriver<TItem extends IItem> extends AbstractIRTDriver<TItem> {
+export class QueryDriver<TItem extends IItem> extends AbstractIRTDriver<TItem, any> {
     public createBatch(): Promise<AbstractBatch<TItem>> {
         return new Promise((resolve, reject) => {
             setTimeout(() => resolve(new FooBatch()), 1350);

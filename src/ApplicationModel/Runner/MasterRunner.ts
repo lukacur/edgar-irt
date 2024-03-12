@@ -15,11 +15,11 @@ export class MasterRunner {
     private running: boolean = false;
     private runningPromise: Promise<void> | null = null;
 
-    private runningDriver: AbstractIRTDriver<IItem> | null = null;
+    private runningDriver: AbstractIRTDriver<IItem, any> | null = null;
     private statisticsProcessor: AbstractStatisticsProcessor<any> | null = null;
     private parameterGenerator: IParameterGenerator | null = null;
 
-    public registerDriver<TItem extends IItem>(irtDriver: AbstractIRTDriver<TItem>): void {
+    public registerDriver<TItem extends IItem>(irtDriver: AbstractIRTDriver<TItem, any>): void {
         this.runningDriver = irtDriver;
     }
 

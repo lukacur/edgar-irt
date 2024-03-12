@@ -22,7 +22,7 @@ class ConfiguredIRTService<TItem extends IItem> {
     private readonly shutdownHooks: ShutdownHook[] = [];
 
     constructor(
-        private readonly driver: AbstractIRTDriver<TItem>,
+        private readonly driver: AbstractIRTDriver<TItem, any>,
         private readonly statProcessor: AbstractStatisticsProcessor<any>,
         private readonly parameterGenerator: IParameterGenerator,
     ) {}
@@ -90,11 +90,11 @@ class ConfiguredIRTService<TItem extends IItem> {
 }
 
 class IRTServiceConfigurer<TItem extends IItem> {
-    private driver?: AbstractIRTDriver<TItem>;
+    private driver?: AbstractIRTDriver<TItem, any>;
     private statisticsProcessor?: AbstractStatisticsProcessor<any>;
     private parameterGenerator?: IParameterGenerator;
 
-    public useDriver(driver: AbstractIRTDriver<TItem>): IRTServiceConfigurer<TItem> {
+    public useDriver(driver: AbstractIRTDriver<TItem, any>): IRTServiceConfigurer<TItem> {
         this.driver = driver;
         return this;
     }
