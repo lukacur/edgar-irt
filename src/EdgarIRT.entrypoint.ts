@@ -262,8 +262,19 @@ export class MainRunner {
         );
 
         for (const queue of queues) {
+            await queue.empty();
+
             console.log("Enqueing...");
             await queue.enqueue(queueData);
+        }
+
+        for (const queue of queues) {
+            const elem = await queue.peek();
+
+            if (elem === null || elem.id !== queueData.id || elem.content !== queueData.content) {
+                console.log(queue);
+                throw new Error("Queue not working properly");
+            }
         }
 
         for (const queue of queues) {
@@ -274,6 +285,19 @@ export class MainRunner {
                 console.log(queue);
                 throw new Error("Queue not working properly");
             }
+        }
+
+        for (const queue of queues) {
+            console.log("Peeking...");
+            if (await queue.peek() !== null) {
+                console.log(queue);
+                throw new Error("Queue not working properly");
+            }
+        }
+
+        for (const queue of queues) {
+            console.log("Enqueing...");
+            await queue.enqueue(queueData);
         }
 
         for (const queue of queues) {
@@ -292,6 +316,29 @@ export class MainRunner {
                 console.log(queue);
                 throw new Error("Queue not working properly");
             }
+        }
+
+        let cnt = 0;
+        for (const queue of queues) {
+            setTimeout(
+                () => queue.enqueue(queueData),
+                2500 * (++cnt)
+            );
+        }
+
+        for (const queue of queues) {
+            console.log("Dequeing empty...");
+            const elem = await queue.dequeue();
+
+            if (elem.id !== queueData.id || elem.content !== queueData.content) {
+                console.log(queue);
+                throw new Error("Queue not working properly");
+            }
+        }
+
+        for (const queue of queues) {
+            console.log("Enqueing...");
+            await queue.enqueue(queueData);
         }
 
         for (const queue of queues) {
