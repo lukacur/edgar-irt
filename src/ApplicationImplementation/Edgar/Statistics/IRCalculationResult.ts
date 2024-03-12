@@ -1,4 +1,4 @@
-type CourseBasedCalculation = {
+export type CourseBasedCalculation = {
     idQuestion: number;
     scoreMean: number;
     scoreStdDev: number;
@@ -12,7 +12,7 @@ type CourseBasedCalculation = {
     partial: number;
 };
 
-type TestBasedQuestionEntry = {
+export type TestBasedCalculation = {
     idQuestion: number;
     mean: number;
     stdDev: number;
@@ -22,14 +22,14 @@ type TestBasedQuestionEntry = {
     partOfTotalSum: number;
 };
 
-type TestBasedCalculation = {
+type TestCalculationInfo = {
     idTest: number;
-    testData: TestBasedQuestionEntry[];
+    testData: TestBasedCalculation[];
 };
 
 export interface IRCalculationResult {
     courseId: number;
     academicYearIds: number[];
     courseBased: CourseBasedCalculation[];
-    testBased: TestBasedCalculation[];
+    testBased: TestCalculationInfo[];
 };
