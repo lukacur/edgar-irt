@@ -11,7 +11,8 @@
   "author": "Luka Curic",
   "license": "ISC",
   "dependencies": {
-    "pg": "^8.11.3"
+    "pg": "^8.11.3",
+    "pg-boss": "^9.0.3"
   },
   "devDependencies": {
     "@types/node": "^20.11.20",
