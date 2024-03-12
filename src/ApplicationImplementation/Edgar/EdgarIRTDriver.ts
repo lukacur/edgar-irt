@@ -53,7 +53,7 @@ export class EdgarIRTDriver
         idTest?: number,
     ): Promise<number | null> {
         const qResult = (await transactionCtx.doQuery<{ id: number }>(
-            `INSERT INTO question_param_calculation(id_based_on_course, id_question, id_test)
+            `INSERT INTO question_param_calculation(id_based_on_course, id_question, id_based_on_test)
                 VALUES ($1, $2, $3) RETURNING id`,
             [courseId, idQuestion, (idTest === undefined) ? null : idTest]
         ));
@@ -125,7 +125,7 @@ export class EdgarIRTDriver
         testBasedInfo: TestBasedCalculation,
     ): Promise<boolean> {
         const count = (await transactionCtx.doQuery<{ id: number }>(
-            `INSERT INTO question_param_course_level_calculation(
+            `INSERT INTO question_param_test_level_calculation(
                 id_question_param_calculation,
                 mean,
                 std_dev,
@@ -133,14 +133,15 @@ export class EdgarIRTDriver
                 median,
                 sum,
                 part_of_total_sum
-            ) VALUES ($1, $2, $3, $4, $5, $6)`,
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
             [
                 /* $1 */ idQparamCalc,
                 /* $2 */ testBasedInfo.mean,
                 /* $3 */ testBasedInfo.stdDev,
-                /* $4 */ testBasedInfo.median,
-                /* $5 */ testBasedInfo.sum,
-                /* $6 */ testBasedInfo.partOfTotalSum,
+                /* $4 */ testBasedInfo.count,
+                /* $5 */ testBasedInfo.median,
+                /* $6 */ testBasedInfo.sum,
+                /* $7 */ testBasedInfo.partOfTotalSum,
             ]
         ))?.count ?? null;
 
@@ -170,7 +171,7 @@ export class EdgarIRTDriver
             return false;
         }
 
-        const transaction = await this.dbConn.beginTransaction();
+        const transaction = await this.dbConn.beginTransaction(requiredStructrue.workingSchema);
 
         try {
             const courseId = batchProcessingResult.courseId;
