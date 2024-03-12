@@ -15,6 +15,8 @@ import { IQueueSystemBase } from "./AdaptiveGradingDaemon/Queue/IQueueSystemBase
 import { FileQueueSystem } from "./AdaptiveGradingDaemon/Queue/QueueSystemImplementations/FileQueueSystem.js";
 import { DirQueueSystem } from "./AdaptiveGradingDaemon/Queue/QueueSystemImplementations/DirQueueSystem.js";
 import { PgBossQueueSystem } from "./AdaptiveGradingDaemon/Queue/QueueSystemImplementations/PgBossQueueSystem.js";
+import { EdgarIRTDriver } from "./ApplicationImplementation/Edgar/EdgarIRTDriver.js";
+import { CourseStatisticsCalculationQueue } from "./AdaptiveGradingDaemon/Queue/StatisticsCalculationQueues/CourseStatisticsCalculationQueue.js";
 
 type AvailableTests =
     "db" |
@@ -24,7 +26,8 @@ type AvailableTests =
     "daemon" |
     "service_setup" |
     "serialization" |
-    "queue";
+    "queue" |
+    "driver";
 
 export class MainRunner {
     private static async delayableAwaiter<T>(prom: DelayablePromise<T>) {
@@ -349,7 +352,58 @@ export class MainRunner {
         console.log("Done!");
     }
 
-    private static readonly CURRENT_TEST: AvailableTests = "queue";
+    private static async doDriverTest(dbConn: DatabaseConnection): Promise<void> {
+        const calcQueue = new CourseStatisticsCalculationQueue(
+            new FileQueueSystem("./queues/file/json-file-queue.queue.json"),
+        );
+
+        const edgarIRTDriver = new EdgarIRTDriver(
+            dbConn,
+            calcQueue
+        );
+
+        await calcQueue.enqueue(
+            { idCourse: 2006, idStartAcademicYear: 2022, numberOfIncludedPreviousYears: 0, forceCalculation: false }
+        );
+
+        const batch = await edgarIRTDriver.createBatch();
+        if (batch instanceof CourseBasedBatch) {
+            const statsProc = new EdgarRStatisticsProcessor(
+                "./test_script.r",
+                "./tests_dir/test_serialization.json",
+                "irt",
+                batch,
+                200000,
+                "./tests_dir/output/serialization_output.json"
+            );
+
+            const result = await statsProc.process();
+
+            if (result === null) {
+                throw new Error("Unable to calculate: script call failed");
+            }
+
+            let retry = 3;
+            let success = false;
+
+            while (retry > 0 && !success) {
+                success = await edgarIRTDriver.postResult(result);
+                --retry;
+            }
+
+            if (!success) {
+                throw new Error("Calculation unsuccessful");
+            }
+
+            console.log("Calculation successful!");
+
+            return;
+        }
+
+        throw new Error("Invalid batch type");
+    }
+
+    private static readonly CURRENT_TEST: AvailableTests = "driver";
 
     public static async main(args: string[]): Promise<void> {
         const conn = await DatabaseConnection.fromConfigFile("./database-config.json");
@@ -393,6 +447,11 @@ export class MainRunner {
 
             case "queue": {
                 prom = MainRunner.doQueueTests();
+                break;
+            }
+
+            case "driver": {
+                prom = MainRunner.doDriverTest(conn);
                 break;
             }
 
