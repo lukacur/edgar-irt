@@ -34,6 +34,7 @@ export class PgBossQueueSystem<TQueueData extends object> implements IQueueSyste
 
         await this.bossCon.work<TQueueData>(
             this.queueName,
+            { newJobCheckInterval: 100 },
             async (job) => {
                 await delProm.delayedResolve(job.data);
             }
@@ -43,7 +44,24 @@ export class PgBossQueueSystem<TQueueData extends object> implements IQueueSyste
     }
 
     public async peek(): Promise<TQueueData | null> {
-        return null;
+        if ((await this.bossCon.getQueueSize(this.queueName)) === 0) {
+            return null;
+        }
+
+        const delProm = new DelayablePromise<TQueueData>();
+        
+        await this.bossCon.work<TQueueData>(
+            this.queueName,
+            async (job) => {
+                await delProm.delayedResolve(job.data);
+            }
+        );
+
+        const peeked = await delProm.getWrappedPromise();
+
+        await this.bossCon.send(this.queueName, peeked, { priority: 99999999 });
+
+        return peeked;
     }
 
 
