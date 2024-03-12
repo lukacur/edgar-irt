@@ -41,6 +41,11 @@ export class DirQueueSystem<TQueueData> implements IQueueSystemBase<TQueueData> 
         const monitorKey = await this.operationMutex.lock();
 
         try {
+            if (this.dequeueRequests.length !== 0) {
+                this.dequeueRequests.shift()?.delayedResolve(data);
+                return true;
+            }
+            
             let newFileName = path.join(this.location, this.getFileName());
             while (existsSync(newFileName + ".json")) {
                 this.fileNameConflictResolve = (++this.fileNameConflictResolve) % 100 + 1;
