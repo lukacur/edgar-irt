@@ -30,7 +30,11 @@ export class DirQueueSystem<TQueueData> implements IQueueSystemBase<TQueueData> 
             { encoding: "utf-8", recursive: false, withFileTypes: true }
         ))
         .filter(f => f.isFile())
-        .sort((f1, f2) => lstatSync(f1.path).birthtimeMs - lstatSync(f2.path).birthtimeMs);
+        .sort(
+            (f1, f2) =>
+                lstatSync(path.join(this.location, f1.name)).birthtimeMs -
+                    lstatSync(path.join(this.location, f2.name)).birthtimeMs
+        );
     }
 
     public async enqueue(data: TQueueData): Promise<boolean> {
@@ -75,12 +79,12 @@ export class DirQueueSystem<TQueueData> implements IQueueSystemBase<TQueueData> 
 
             const data: TQueueData = JSON.parse(
                 await readFile(
-                    dirContents[0].path,
+                    path.join(this.location, dirContents[0].name),
                     { encoding: "utf-8", flag: "r" }
                 )
             );
 
-            await unlink(dirContents[0].path);
+            await unlink(path.join(this.location, dirContents[0].name));
 
             return data;
         } finally {
@@ -97,7 +101,7 @@ export class DirQueueSystem<TQueueData> implements IQueueSystemBase<TQueueData> 
 
             return JSON.parse(
                 await readFile(
-                    dirContents[0].path,
+                    path.join(this.location, dirContents[0].name),
                     { encoding: "utf-8", flag: "r" }
                 )
             );
@@ -115,7 +119,7 @@ export class DirQueueSystem<TQueueData> implements IQueueSystemBase<TQueueData> 
         try {
             await Promise.all(
                 (await this.getDirFiles())
-                    .map(df => unlink(df.path))
+                    .map(df => unlink(path.join(this.location, df.name)))
             );
 
             return true;
@@ -129,7 +133,5 @@ export class DirQueueSystem<TQueueData> implements IQueueSystemBase<TQueueData> 
     }
     
 
-    public async close(): Promise<void> {
-        throw new Error("Method not implemented.");
-    }
+    public async close(): Promise<void> {}
 }
