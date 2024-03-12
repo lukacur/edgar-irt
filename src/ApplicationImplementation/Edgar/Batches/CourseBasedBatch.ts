@@ -10,9 +10,9 @@ export class CourseBasedBatch extends EdgarItemBatch<TestBasedBatch> {
     constructor(
         private readonly databaseConnection: DatabaseConnection,
 
-        private readonly id: number,
-        private readonly idStartAcademicYear: number,
-        private readonly numberOfIncludedPreviousYears: 0 | -1 | number,
+        public readonly id: number,
+        public readonly idStartAcademicYear: number,
+        public readonly numberOfIncludedPreviousYears: 0 | -1 | number,
 
         private readonly courseName?: string,
         private readonly courseAcronym?: string,
