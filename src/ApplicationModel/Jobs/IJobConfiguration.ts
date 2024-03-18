@@ -9,6 +9,7 @@ export type BlockingConfig = {
 export interface IJobConfiguration {
     readonly jobId: string;
     readonly jobName: string;
+    readonly idUserStarted: number | null;
     readonly jobTimeoutMs: number;
 
     readonly blockingConfig: BlockingConfig;

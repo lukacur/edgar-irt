@@ -15,9 +15,9 @@ abstract class DatabaseJobInfoStoringJobProvider<TJobConfiguration extends IJobC
         const job = await this.provideJobWithId(jobId);
 
         await this.dbConn.doQuery(
-            `INSERT INTO job_tracking_schema.jobs(id, name, started_on, job_status)
-                VALUES ($1, $2, CURRENT_TIMESTAMP, 'RUNNING')`,
-            [jobId, job.jobName]
+            `INSERT INTO job_tracking_schema.jobs(id, name, id_user_started, started_on, job_status)
+                VALUES ($1, $2, $3, CURRENT_TIMESTAMP, 'RUNNING')`,
+            [jobId, job.jobName, job.idUserStarted]
         );
 
         return job;

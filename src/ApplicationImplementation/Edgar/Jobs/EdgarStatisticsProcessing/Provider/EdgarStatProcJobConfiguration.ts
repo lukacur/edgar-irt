@@ -8,6 +8,7 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
     constructor(
         public readonly jobId: string,
         public readonly jobName: string,
+        public readonly idUserStarted: number | null,
         public readonly jobTimeoutMs: number,
 
         public readonly courseBasedBatch: CourseBasedBatch,

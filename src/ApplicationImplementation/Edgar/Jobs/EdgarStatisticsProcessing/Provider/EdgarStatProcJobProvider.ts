@@ -62,6 +62,7 @@ export class EdgarStatProcJobProvider extends AbstractGenericJobProvider<EdgarSt
             jobId,
             `Statistics processing job - created @ ${(new Date()).toISOString()}; ` +
                 `(For course id ${queueEntry.idCourse} with start academic year id ${queueEntry.idStartAcademicYear})`,
+            null,
             this.expectedJobTimeout,
 
             new CourseBasedBatch(
