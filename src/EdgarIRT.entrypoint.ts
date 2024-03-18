@@ -21,6 +21,7 @@ import { EdgarStatProcWorker } from "./ApplicationImplementation/Edgar/Jobs/Edga
 import { EdgarStatProcWorkResultPersistor } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/WorkResultPersistor/EdgarStatProcWorkResultPersistor.js";
 import { EdgarStatProcJobStep } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Provider/EdgarStatProcJobStep.js";
 import { EdgarStatProcStepConfiguration } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Provider/EdgarStatProcStepConfiguration.js";
+import { JobService } from "./JobService.js";
 
 type AvailableTests =
     "db" |
@@ -32,7 +33,8 @@ type AvailableTests =
     "serialization" |
     "queue" |
     "driver" |
-    "job";
+    "job" |
+    "total_job";
 
 export class MainRunner {
     private static async delayableAwaiter<T>(prom: DelayablePromise<T>) {
@@ -417,6 +419,16 @@ export class MainRunner {
             dbConn,
             calcQueue,
             200000,
+
+            [new EdgarStatProcJobStep(
+                200000,
+                new EdgarStatProcStepConfiguration(
+                    "calc-with-script",
+                    "./test_script.r",
+                    "./tests_dir/test_serialization.json",
+                    "./tests_dir/output/serialization_output.json",
+                )
+            )]
         );
         const inputFormatter = new EdgarStatProcInputFormatter();
         const jobWorker = new EdgarStatProcWorker();
@@ -427,22 +439,7 @@ export class MainRunner {
         );
 
         const jobConfig = await jobProvider.provideJob();
-        let success = await jobConfig.addJobStep(
-            new EdgarStatProcJobStep(
-                200000,
-                new EdgarStatProcStepConfiguration(
-                    "calc-with-script",
-                    "./test_script.r",
-                    "./tests_dir/test_serialization.json",
-                    "./tests_dir/output/serialization_output.json",
-                )
-            )
-        );
-
-        if (!success) {
-            await jobProvider.failJob(jobConfig.jobId);
-            throw new Error("Unable to add job step to job");
-        }
+        let success;
 
         const data = await inputFormatter.formatJobInput(jobConfig);
         success = await jobWorker.startExecution(jobConfig, data);
@@ -486,7 +483,46 @@ export class MainRunner {
         return;
     }
 
-    private static readonly CURRENT_TEST: AvailableTests = "job";
+    public static async doTotalJobTest(dbConn: DatabaseConnection): Promise<void> {
+        const calcQueue = new CourseStatisticsCalculationQueue(
+            new FileQueueSystem("./queues/file/json-file-queue.queue.json"),
+        );
+        await calcQueue.enqueue(
+            { idCourse: 2006, idStartAcademicYear: 2022, numberOfIncludedPreviousYears: 0, forceCalculation: false }
+        );
+
+        const jobProvider = new EdgarStatProcJobProvider(
+            dbConn,
+            calcQueue,
+            200000,
+
+            [new EdgarStatProcJobStep(
+                200000,
+                new EdgarStatProcStepConfiguration(
+                    "calc-with-script",
+                    "./test_script.r",
+                    "./tests_dir/test_serialization.json",
+                    "./tests_dir/output/serialization_output.json",
+                )
+            )]
+        );
+        const inputFormatter = new EdgarStatProcInputFormatter();
+        const jobWorker = new EdgarStatProcWorker();
+        const resultPersistor = new EdgarStatProcWorkResultPersistor(dbConn);
+
+        const jobService = JobService.configureNew()
+            .useProvider(jobProvider)
+            .useInputFormatter(inputFormatter)
+            .useWorker(jobWorker)
+            .useWorkResultPersistor(resultPersistor)
+            .build();
+        
+        jobService.startJobService();
+
+        return jobService.shutdownJobService();
+    }
+
+    private static readonly CURRENT_TEST: AvailableTests = "total_job";
 
     public static async main(args: string[]): Promise<void> {
         const conn = await DatabaseConnection.fromConfigFile("./database-config.json");
@@ -540,6 +576,11 @@ export class MainRunner {
 
             case "job": {
                 prom = MainRunner.doJobsTest(conn);
+                break;
+            }
+
+            case "total_job": {
+                prom = MainRunner.doTotalJobTest(conn);
                 break;
             }
 
