@@ -1,9 +1,12 @@
 import { IJobStep } from "./IJobStep.js";
 
 export interface IJobConfiguration {
-    jobId: string;
-    jobName: string;
-    jobTimeoutMs: number;
+    readonly jobId: string;
+    readonly jobName: string;
+    readonly jobTimeoutMs: number;
 
-    jobSteps: IJobStep[];
+    addJobStep(step: IJobStep): Promise<boolean>;
+    removeJobStep(step: IJobStep): Promise<boolean>;
+    
+    getJobSteps(): Promise<IJobStep[]>;
 }
