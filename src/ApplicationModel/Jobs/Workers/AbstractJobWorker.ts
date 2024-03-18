@@ -7,12 +7,9 @@ export abstract class AbstractJobWorker {
 
     protected readonly jobSteps: IJobStep[] = [];
 
-    protected abstract executeJobStep(): Promise<object | null>;
-
-
     public async startExecution(jobConfiguration: IJobConfiguration, initialInput: object | null): Promise<boolean> {
         this.jobSteps.splice(0, this.jobSteps.length);
-        this.jobSteps.push(...jobConfiguration.jobSteps);
+        this.jobSteps.push(...(await jobConfiguration.getJobSteps()));
 
         this.currentStepIdx = 0;
         this.currentStepInput = initialInput;
