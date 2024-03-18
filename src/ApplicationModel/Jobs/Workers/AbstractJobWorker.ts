@@ -73,4 +73,14 @@ export abstract class AbstractJobWorker<
 
         return false;
     }
+
+    protected abstract getExecutionResultTyped(): Promise<TJobOutput | null>;
+
+    public async getExecutionResult(): Promise<object | null> {
+        if (this.hasNextStep()) {
+            return null;
+        }
+
+        return await this.getExecutionResultTyped();
+    }
 }
