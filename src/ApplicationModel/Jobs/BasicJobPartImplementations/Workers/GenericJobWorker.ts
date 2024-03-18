@@ -1,6 +1,6 @@
-import { IJobConfiguration } from "../IJobConfiguration.js";
-import { IJobStep } from "../IJobStep.js";
-import { AbstractJobWorker } from "./AbstractJobWorker.js";
+import { IJobConfiguration } from "../../IJobConfiguration.js";
+import { IJobStep } from "../../IJobStep.js";
+import { AbstractJobWorker } from "../../Workers/AbstractJobWorker.js";
 
 export class GenericJobWorker extends AbstractJobWorker<object, object> {
     private executionResult: object | null = null;
