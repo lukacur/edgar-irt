@@ -17,13 +17,13 @@ export class EdgarStatProcJobProvider extends AbstractGenericJobProvider<EdgarSt
     private readonly jobQueueInfo: { [jobId: string]: JobQueueInfoEntry } = {};
 
     constructor(
-        private readonly dbConn: DatabaseConnection,
+        dbConn: DatabaseConnection,
         private readonly calculationQueue: CourseStatisticsCalculationQueue,
         private readonly expectedJobTimeout: number,
 
         private readonly calculationSteps: IJobStep[],
     ) {
-        super();
+        super(dbConn);
     }
 
     private jobActive(jobId: string): boolean {
@@ -54,9 +54,9 @@ export class EdgarStatProcJobProvider extends AbstractGenericJobProvider<EdgarSt
         return false;
     }
 
-    protected async provideJobTyped(): Promise<EdgarStatProcJobConfiguration> {
+    protected async provideJobTyped(presetJobId?: string): Promise<EdgarStatProcJobConfiguration> {
         const queueEntry = await this.calculationQueue.dequeue();
-        const jobId = randomUUID();
+        const jobId = presetJobId ?? randomUUID();
 
         const jobConfig = new EdgarStatProcJobConfiguration(
             jobId,
@@ -114,7 +114,7 @@ export class EdgarStatProcJobProvider extends AbstractGenericJobProvider<EdgarSt
         return "fail";
     }
 
-    public async finishJob(jobId: string): Promise<boolean> {
+    protected override async doFinishJob(jobId: string): Promise<boolean> {
         if (!this.jobActive(jobId)) {
             return false;
         }
@@ -131,7 +131,7 @@ export class EdgarStatProcJobProvider extends AbstractGenericJobProvider<EdgarSt
         return false;
     }
 
-    public async failJob(jobId: string): Promise<boolean> {
+    protected override async doFailJob(jobId: string): Promise<boolean> {
         return await this.resetJob(jobId);
     }
 }
