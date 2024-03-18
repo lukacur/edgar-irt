@@ -17,6 +17,12 @@ import { DirQueueSystem } from "./AdaptiveGradingDaemon/Queue/QueueSystemImpleme
 import { PgBossQueueSystem } from "./AdaptiveGradingDaemon/Queue/QueueSystemImplementations/PgBossQueueSystem.js";
 import { EdgarIRTDriver } from "./ApplicationImplementation/Edgar/EdgarIRTDriver.js";
 import { CourseStatisticsCalculationQueue } from "./AdaptiveGradingDaemon/Queue/StatisticsCalculationQueues/CourseStatisticsCalculationQueue.js";
+import { EdgarStatProcJobProvider } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Provider/EdgarStatProcJobProvider.js";
+import { EdgarStatProcInputFormatter } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/InputFormatter/EdgarStatProcInputFormatter.js";
+import { EdgarStatProcWorker } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Worker/EdgarStatProcWorker.js";
+import { EdgarStatProcWorkResultPersistor } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/WorkResultPersistor/EdgarStatProcWorkResultPersistor.js";
+import { EdgarStatProcJobStep } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Provider/EdgarStatProcJobStep.js";
+import { EdgarStatProcStepConfiguration } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Provider/EdgarStatProcStepConfiguration.js";
 
 type AvailableTests =
     "db" |
@@ -27,7 +33,8 @@ type AvailableTests =
     "service_setup" |
     "serialization" |
     "queue" |
-    "driver";
+    "driver" |
+    "job";
 
 export class MainRunner {
     private static async delayableAwaiter<T>(prom: DelayablePromise<T>) {
@@ -403,7 +410,85 @@ export class MainRunner {
         throw new Error("Invalid batch type");
     }
 
-    private static readonly CURRENT_TEST: AvailableTests = "driver";
+    public static async doJobsTest(dbConn: DatabaseConnection): Promise<void> {
+        const calcQueue = new CourseStatisticsCalculationQueue(
+            new FileQueueSystem("./queues/file/json-file-queue.queue.json"),
+        );
+
+        const jobProvider = new EdgarStatProcJobProvider(
+            dbConn,
+            calcQueue,
+            200000,
+        );
+        const inputFormatter = new EdgarStatProcInputFormatter();
+        const jobWorker = new EdgarStatProcWorker();
+        const resultPersistor = new EdgarStatProcWorkResultPersistor(dbConn);
+
+        await calcQueue.enqueue(
+            { idCourse: 2006, idStartAcademicYear: 2022, numberOfIncludedPreviousYears: 0, forceCalculation: false }
+        );
+
+        const jobConfig = await jobProvider.provideJob();
+        let success = await jobConfig.addJobStep(
+            new EdgarStatProcJobStep(
+                200000,
+                new EdgarStatProcStepConfiguration(
+                    "calc-with-script",
+                    "./test_script.r",
+                    "./tests_dir/test_serialization.json",
+                    "./tests_dir/output/serialization_output.json",
+                )
+            )
+        );
+
+        if (!success) {
+            await jobProvider.failJob(jobConfig.jobId);
+            throw new Error("Unable to add job step to job");
+        }
+
+        const data = await inputFormatter.formatJobInput(jobConfig);
+        success = await jobWorker.startExecution(jobConfig, data);
+
+        if (!success) {
+            await jobProvider.failJob(jobConfig.jobId);
+            throw new Error("Processing error occurred");
+        }
+
+        while (jobWorker.hasNextStep()) {
+            if (!(await jobWorker.executeNextStep())) {
+                await jobProvider.failJob(jobConfig.jobId);
+                throw new Error("Step-by-step execution error occurred");
+            }
+        }
+
+        const result = await jobWorker.getExecutionResult();
+
+        if (result === null) {
+            await jobProvider.failJob(jobConfig.jobId);
+            throw new Error("Unable to calculate: script call failed");
+        }
+
+        let retry = 3;
+        success = false;
+
+        while (retry > 0 && !success) {
+            success = await resultPersistor.perisistResult(result, jobConfig);
+            --retry;
+        }
+
+        if (!success) {
+            await jobProvider.failJob(jobConfig.jobId);
+            throw new Error("Calculation unsuccessful");
+        }
+
+        await jobProvider.finishJob(jobConfig.jobId);
+
+        console.log("Calculation successful!");
+
+        return;
+    }
+
+    private static readonly CURRENT_TEST: AvailableTests = "job";
 
     public static async main(args: string[]): Promise<void> {
         const conn = await DatabaseConnection.fromConfigFile("./database-config.json");
@@ -452,6 +537,11 @@ export class MainRunner {
 
             case "driver": {
                 prom = MainRunner.doDriverTest(conn);
+                break;
+            }
+
+            case "job": {
+                prom = MainRunner.doJobsTest(conn);
                 break;
             }
 
