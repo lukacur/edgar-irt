@@ -4,6 +4,7 @@ import { AbstractGenericJobProvider } from "../../../../../ApplicationModel/Jobs
 import { DatabaseConnection } from "../../../../Database/DatabaseConnection.js";
 import { EdgarStatProcJobConfiguration } from "./EdgarStatProcJobConfiguration.js";
 import { CourseBasedBatch } from "../../../Batches/CourseBasedBatch.js";
+import { IJobStep } from "../../../../../ApplicationModel/Jobs/IJobStep.js";
 
 type JobQueueInfoEntry = {
     timeoutId: NodeJS.Timeout,
@@ -19,6 +20,8 @@ export class EdgarStatProcJobProvider extends AbstractGenericJobProvider<EdgarSt
         private readonly dbConn: DatabaseConnection,
         private readonly calculationQueue: CourseStatisticsCalculationQueue,
         private readonly expectedJobTimeout: number,
+
+        private readonly calculationSteps: IJobStep[],
     ) {
         super();
     }
@@ -55,7 +58,7 @@ export class EdgarStatProcJobProvider extends AbstractGenericJobProvider<EdgarSt
         const queueEntry = await this.calculationQueue.dequeue();
         const jobId = randomUUID();
 
-        this.jobMap[jobId] = new EdgarStatProcJobConfiguration(
+        const jobConfig = new EdgarStatProcJobConfiguration(
             jobId,
             `Statistics processing job - created @ ${(new Date()).toISOString()}; ` +
                 `(For course id ${queueEntry.idCourse} with start academic year id ${queueEntry.idStartAcademicYear})`,
@@ -67,7 +70,21 @@ export class EdgarStatProcJobProvider extends AbstractGenericJobProvider<EdgarSt
                 queueEntry.idStartAcademicYear,
                 queueEntry.numberOfIncludedPreviousYears,
             ),
+
+            { awaitInputFormatting: true, persistResultInBackground: false, workInBackground: false }
         );
+
+        let configurationSuccessful = true;
+
+        for (const step of this.calculationSteps) {
+            configurationSuccessful = await jobConfig.addJobStep(step);
+        }
+
+        if (!configurationSuccessful) {
+            throw new Error("Failed on job step configuration");
+        }
+
+        this.jobMap[jobId] = jobConfig;
 
         this.jobQueueInfo[jobId] = {
             associatedQueueEntry: queueEntry,
@@ -77,7 +94,7 @@ export class EdgarStatProcJobProvider extends AbstractGenericJobProvider<EdgarSt
             )
         };
 
-        return this.jobMap[jobId];
+        return jobConfig;
     }
 
     public async extendJob(jobId: string, extendForMs: number): Promise<"success" | "fail" | "job-inactive"> {
