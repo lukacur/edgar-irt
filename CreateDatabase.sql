@@ -1,6 +1,10 @@
 BEGIN TRANSACTION
 	ISOLATION LEVEL SERIALIZABLE;
 
+DROP SCHEMA IF EXISTS statistics_schema CASCADE;
+DROP SCHEMA IF EXISTS job_tracking_schema CASCADE;
+
+-- Statistics calculation related entries --
 CREATE SCHEMA IF NOT EXISTS statistics_schema;
 
 SET search_path TO statistics_schema;
@@ -71,6 +75,27 @@ CREATE TABLE IF NOT EXISTS question_param_test_level_calculation (
 	CONSTRAINT fk_qptlc_qparam_calc
 		FOREIGN KEY (id_question_param_calculation)
 		REFERENCES question_param_calculation(id)
+);
+
+
+-- Job tracking related entries --
+CREATE SCHEMA IF NOT EXISTS job_tracking_schema;
+
+SET search_path TO job_tracking_schema;
+
+CREATE TYPE job_status_type AS ENUM('RUNNING', 'FINISHED', 'FAILED');
+
+CREATE TABLE IF NOT EXISTS jobs (
+	id VARCHAR(512) PRIMARY KEY,
+	name VARCHAR(2048) NOT NULL,
+	id_user_started INT,
+	started_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	job_status job_status_type,
+	job_update_time TIMESTAMP,
+
+	CONSTRAINT fk_jobs_app_user
+		FOREIGN KEY (id_user_started)
+		REFERENCES public.app_user(id)
 );
 
 COMMIT;
