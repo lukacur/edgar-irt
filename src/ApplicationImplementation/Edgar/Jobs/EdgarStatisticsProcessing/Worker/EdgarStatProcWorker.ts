@@ -14,7 +14,6 @@ type CalculationParams = {
 };
 
 export class EdgarStatProcWorker extends AbstractJobWorker<
-    EdgarStatProcJobStep,
     object,
     IRCalculationResult
 > {
@@ -27,7 +26,7 @@ export class EdgarStatProcWorker extends AbstractJobWorker<
         cacheResult: boolean,
         params: CalculationParams | null = null,
     ): Promise<IRCalculationResult | null> {
-        const delProm = new DelayablePromise<IRCalculationResult>();
+        /*const delProm = new DelayablePromise<IRCalculationResult>();
         const childProcArgs: string[] = [];
 
         const stepConfig = jobStep.stepConfiguration;
@@ -104,27 +103,35 @@ export class EdgarStatProcWorker extends AbstractJobWorker<
                 delProm.delayedReject("Calculation timed out");
             },
             jobStep.stepTimeoutMs
-        );
+        );*/
 
         try {
-            const calcResult = await delProm.getWrappedPromise();
+            /*const calcResult = await delProm.getWrappedPromise();
             clearTimeout(execTimeout);
     
             if (cacheResult) {
                 this.calcResultCache = calcResult;
             }
     
-            return calcResult;
+            return calcResult;*/
+
+            const calcResult = await jobStep.runTyped(preparedScriptInput);
+
+            if (cacheResult) {
+                this.calcResultCache = calcResult
+            }
+
+            return calcResult
         } catch (err) {
-            clearTimeout(execTimeout);
+            // clearTimeout(execTimeout);
             console.log(err);
             return null;
-        } finally {
+        }/* finally {
             await unlink(childProcJSONInput);
             if (childProcJSONOutput !== null && existsSync(childProcJSONOutput)) {
                 await unlink(childProcJSONOutput);
             }
-        }
+        }*/
     }
 
     private async calculateIfCacheEmpty(
@@ -145,7 +152,7 @@ export class EdgarStatProcWorker extends AbstractJobWorker<
         }
     }
 
-    protected async executeStepTyped(
+    protected override async executeStep(
         jobStep: EdgarStatProcJobStep,
         stepInput: object | null
     ): Promise<IRCalculationResult | null> {
@@ -161,7 +168,7 @@ export class EdgarStatProcWorker extends AbstractJobWorker<
         return this.calcResultCache;
     }
 
-    protected async getExecutionResultTyped(): Promise<IRCalculationResult | null> {
+    protected override async getExecutionResultTyped(): Promise<IRCalculationResult | null> {
         return this.calcResultCache;
     }
 }

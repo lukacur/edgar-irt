@@ -3,7 +3,6 @@ import { IJobStep } from "../IJobStep.js";
 import { IJobWorker } from "./IJobWorker.js";
 
 export abstract class AbstractJobWorker<
-    TJobStep extends IJobStep,
     TJobStepInput extends object,
     TJobOutput extends object
 > implements IJobWorker {
@@ -12,16 +11,9 @@ export abstract class AbstractJobWorker<
 
     protected readonly jobSteps: IJobStep[] = [];
 
-    protected abstract executeStepTyped(jobStep: TJobStep, stepInput: TJobStepInput | null): Promise<TJobOutput | null>;
-    
-    public async executeStep(jobStep: IJobStep, stepInput: object | null): Promise<object | null> {
-        return await this.executeStepTyped(
-            jobStep as TJobStep,
-            stepInput as (TJobStepInput | null),
-        );
-    }
+    protected abstract executeStep(jobStep: IJobStep, stepInput: object | null): Promise<TJobOutput | null>;
 
-    public async startExecution(jobConfiguration: IJobConfiguration, initialInput: object | null): Promise<boolean> {
+    public async startExecution(jobConfiguration: IJobConfiguration, initialInput: TJobStepInput | null): Promise<boolean> {
         this.jobSteps.splice(0, this.jobSteps.length);
         this.jobSteps.push(...(await jobConfiguration.getJobSteps()));
 
