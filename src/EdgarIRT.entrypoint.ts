@@ -4,16 +4,13 @@ import { DatabaseConnection } from "./ApplicationImplementation/Database/Databas
 import { AbstractLogisticFunctionParams } from "./IRT/LogisticFunction/LogisticFunctionTypes.js";
 import { StandardLogisticFunction } from "./IRT/LogisticFunction/StandardLogisticFunction.js";
 import { DelayablePromise } from "./Util/DelayablePromise.js";
-import { EdgarRStatisticsProcessor } from "./ApplicationImplementation/Edgar/Statistics/EdgarRStatisticsProcessor.js";
 import { CourseBasedBatch } from "./ApplicationImplementation/Edgar/Batches/CourseBasedBatch.js";
-import { IRTService } from "./IRTService.js";
 import { mkdir, writeFile } from 'fs/promises'
 import { existsSync } from "fs";
 import { IQueueSystemBase } from "./AdaptiveGradingDaemon/Queue/IQueueSystemBase.js";
 import { FileQueueSystem } from "./AdaptiveGradingDaemon/Queue/QueueSystemImplementations/FileQueueSystem.js";
 import { DirQueueSystem } from "./AdaptiveGradingDaemon/Queue/QueueSystemImplementations/DirQueueSystem.js";
 import { PgBossQueueSystem } from "./AdaptiveGradingDaemon/Queue/QueueSystemImplementations/PgBossQueueSystem.js";
-import { EdgarIRTDriver } from "./ApplicationImplementation/Edgar/EdgarIRTDriver.js";
 import { CourseStatisticsCalculationQueue } from "./AdaptiveGradingDaemon/Queue/StatisticsCalculationQueues/CourseStatisticsCalculationQueue.js";
 import { EdgarStatProcJobProvider } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Provider/EdgarStatProcJobProvider.js";
 import { EdgarStatProcInputFormatter } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/InputFormatter/EdgarStatProcInputFormatter.js";
@@ -32,7 +29,6 @@ type AvailableTests =
     "service_setup" |
     "serialization" |
     "queue" |
-    "driver" |
     "job" |
     "total_job";
 
@@ -80,7 +76,7 @@ export class MainRunner {
     }
 
     private static async doStatsProcTest(dbConn: DatabaseConnection): Promise<void> {
-        const statsProc = new EdgarRStatisticsProcessor(
+        /*const statsProc = new EdgarRStatisticsProcessor(
             "test_script.r",
             "B:/testna/r/json_in.json",
             "irt",
@@ -95,7 +91,7 @@ export class MainRunner {
         );
 
         const processingResult = await statsProc.process();
-        console.log(processingResult);
+        console.log(processingResult);*/
     }
 
     private static async doDbTest(dbConn: DatabaseConnection): Promise<void> {
@@ -359,57 +355,6 @@ export class MainRunner {
         console.log("Done!");
     }
 
-    private static async doDriverTest(dbConn: DatabaseConnection): Promise<void> {
-        const calcQueue = new CourseStatisticsCalculationQueue(
-            new FileQueueSystem("./queues/file/json-file-queue.queue.json"),
-        );
-
-        const edgarIRTDriver = new EdgarIRTDriver(
-            dbConn,
-            calcQueue
-        );
-
-        await calcQueue.enqueue(
-            { idCourse: 2006, idStartAcademicYear: 2022, numberOfIncludedPreviousYears: 0, forceCalculation: false }
-        );
-
-        const batch = await edgarIRTDriver.createBatch();
-        if (batch instanceof CourseBasedBatch) {
-            const statsProc = new EdgarRStatisticsProcessor(
-                "./test_script.r",
-                "./tests_dir/test_serialization.json",
-                "irt",
-                batch,
-                200000,
-                "./tests_dir/output/serialization_output.json"
-            );
-
-            const result = await statsProc.process();
-
-            if (result === null) {
-                throw new Error("Unable to calculate: script call failed");
-            }
-
-            let retry = 3;
-            let success = false;
-
-            while (retry > 0 && !success) {
-                success = await edgarIRTDriver.postResult(result);
-                --retry;
-            }
-
-            if (!success) {
-                throw new Error("Calculation unsuccessful");
-            }
-
-            console.log("Calculation successful!");
-
-            return;
-        }
-
-        throw new Error("Invalid batch type");
-    }
-
     public static async doJobsTest(dbConn: DatabaseConnection): Promise<void> {
         const calcQueue = new CourseStatisticsCalculationQueue(
             new FileQueueSystem("./queues/file/json-file-queue.queue.json"),
@@ -566,11 +511,6 @@ export class MainRunner {
 
             case "queue": {
                 prom = MainRunner.doQueueTests();
-                break;
-            }
-
-            case "driver": {
-                prom = MainRunner.doDriverTest(conn);
                 break;
             }
 

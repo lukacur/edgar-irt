@@ -2,9 +2,7 @@ import { IJobInputFormatter } from "./ApplicationModel/Jobs/InputFormatters/IJob
 import { IJobProvider } from "./ApplicationModel/Jobs/Providers/IJobProvider.js";
 import { IWorkResultPersistor } from "./ApplicationModel/Jobs/WorkResultPersistors/IWorkResultPersistor.js";
 import { IJobWorker } from "./ApplicationModel/Jobs/Workers/IJobWorker.js";
-import { MasterRunner } from "./ApplicationModel/Runner/MasterRunner.js";
-import { IRTServiceConfigurationException } from "./Exceptions/IRTServiceConfigurationException.js";
-import { IItem } from "./IRT/Item/IItem.js";
+import { JobServiceConfigurationException } from "./Exceptions/JobServiceConfigurationException.js";
 import { JobRunner } from "./JobRunner.js";
 
 class JobServiceInitializer {
@@ -32,7 +30,7 @@ class ConfiguredJobService {
 
     public initialize(): JobServiceInitializer {
         if (this.wasShutdown) {
-            throw new IRTServiceConfigurationException(
+            throw new JobServiceConfigurationException(
                 "Instance of this service was shutdown. Create a new instance using the IRTService.configure method"
             );
         }
@@ -42,7 +40,7 @@ class ConfiguredJobService {
 
     public addShutdownHook(hook: ShutdownHook): ConfiguredJobService {
         if (this.wasShutdown) {
-            throw new IRTServiceConfigurationException(
+            throw new JobServiceConfigurationException(
                 "Instance of this service was shutdown. Create a new instance using the IRTService.configure method"
             );
         }
@@ -60,12 +58,10 @@ class ConfiguredJobService {
 
     public startJobService(): ConfiguredJobService {
         if (this.wasShutdown) {
-            throw new IRTServiceConfigurationException(
+            throw new JobServiceConfigurationException(
                 "Instance of this service was shutdown. Create a new instance using the IRTService.configure method"
             );
         }
-
-        const masterRunner = MasterRunner.instance;
 
         this.jobRunner = new JobRunner(
             this.jobProvider,
@@ -94,7 +90,6 @@ class ConfiguredJobService {
         
         await this.jobRunner?.stop(true);
         const prom = Promise.all(this.shutdownHooks.map(sh => sh("SHUTDOWN")));
-        await MasterRunner.instance.stop(ConfiguredJobService.CONTROL_TOKEN);
         await prom;
 
         await Promise.all(this.shutdownHooks.map(sh => sh("POST_SHUTDOWN")));
@@ -138,7 +133,7 @@ class JobServiceConfigurer {
 
     public build(): ConfiguredJobService {
         if (!this.preBuildCheckPassed()) {
-            throw new IRTServiceConfigurationException("Service not properly configured.");
+            throw new JobServiceConfigurationException("Service not properly configured.");
         }
 
         return new ConfiguredJobService(
