@@ -1,6 +1,6 @@
 import { IQueueSystemBase } from "../IQueueSystemBase.js";
 
-type CourseStatisticsProcessingRequest = {
+export type CourseStatisticsProcessingRequest = {
     idCourse: number;
     idStartAcademicYear: number;
     numberOfIncludedPreviousYears: number;
