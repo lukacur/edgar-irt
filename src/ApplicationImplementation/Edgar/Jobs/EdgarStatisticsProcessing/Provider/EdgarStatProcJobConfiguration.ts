@@ -1,4 +1,4 @@
-import { IJobConfiguration } from "../../../../../ApplicationModel/Jobs/IJobConfiguration.js";
+import { BlockingConfig, IJobConfiguration } from "../../../../../ApplicationModel/Jobs/IJobConfiguration.js";
 import { IJobStep } from "../../../../../ApplicationModel/Jobs/IJobStep.js";
 import { CourseBasedBatch } from "../../../Batches/CourseBasedBatch.js";
 
@@ -11,6 +11,8 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
         public readonly jobTimeoutMs: number,
 
         public readonly courseBasedBatch: CourseBasedBatch,
+
+        public readonly blockingConfig: BlockingConfig,
     ) {}
 
     public async addJobStep(step: IJobStep): Promise<boolean> {
