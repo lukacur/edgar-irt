@@ -1,4 +1,3 @@
-import { IDistributionFunction } from "../../Functions/IDistributionFunction.js";
 import { IItem } from "../../IRT/Item/IItem.js";
 import { AbstractItemParticipant } from "../Participant/AbstractItemParticipant.js";
 

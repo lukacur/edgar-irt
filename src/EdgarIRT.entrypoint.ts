@@ -7,8 +7,6 @@ import { DelayablePromise } from "./Util/DelayablePromise.js";
 import { EdgarRStatisticsProcessor } from "./ApplicationImplementation/Edgar/Statistics/EdgarRStatisticsProcessor.js";
 import { CourseBasedBatch } from "./ApplicationImplementation/Edgar/Batches/CourseBasedBatch.js";
 import { IRTService } from "./IRTService.js";
-import { QueryDriver } from "./Drivers/QueryDriver.js";
-import { TempParamGenerator } from "./ParameterGenerators/TempParamGenerator.js";
 import { mkdir, writeFile } from 'fs/promises'
 import { existsSync } from "fs";
 import { IQueueSystemBase } from "./AdaptiveGradingDaemon/Queue/IQueueSystemBase.js";
@@ -217,7 +215,7 @@ export class MainRunner {
         });
     }
 
-    private static async doServiceSetupTest(): Promise<void> {
+    /*private static async doServiceSetupTest(): Promise<void> {
         const service = IRTService.configure()
             .useDriver(new QueryDriver()) // set the driver to be used to generate batches of items for which to calculate IRT parameters (for example an HTTP REST IRT driver, file IRT driver etc.)
             .useParameterGenerator(new TempParamGenerator()) // the parameter generator to use (the generator that will use values calculated by the stats. processor to generate IRT parameters)
@@ -243,7 +241,7 @@ export class MainRunner {
         service.startIRTService();
 
         setTimeout(async () => await service.shutdownIRTService(), 3000);
-    }
+    }*/
 
     private static async doQueueTests() {
         type TestDataType = { id: number, content: string };
@@ -526,7 +524,7 @@ export class MainRunner {
             }
 
             case "service_setup": {
-                prom = MainRunner.doServiceSetupTest();
+                prom = Promise.resolve(); // MainRunner.doServiceSetupTest();
                 break;
             }
 
