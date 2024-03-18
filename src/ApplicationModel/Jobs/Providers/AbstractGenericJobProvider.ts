@@ -12,4 +12,5 @@ export abstract class AbstractGenericJobProvider<
 
     public abstract extendJob(jobId: string, extendForMs: number): Promise<"success" | "fail" | "job-inactive">;
     public abstract finishJob(jobId: string): Promise<boolean>;
+    public abstract failJob(jobId: string): Promise<boolean>;
 }

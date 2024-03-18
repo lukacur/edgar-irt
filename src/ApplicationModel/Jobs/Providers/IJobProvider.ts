@@ -6,4 +6,5 @@ export interface IJobProvider {
     extendJob(jobId: string, extendForMs: number): Promise<"success" | "fail" | "job-inactive">;
 
     finishJob(jobId: string): Promise<boolean>;
+    failJob(jobId: string): Promise<boolean>;
 }
