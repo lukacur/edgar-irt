@@ -1,4 +1,4 @@
-import { IJobStep } from "./IJobStep.js";
+import { IJobStep, StepResult } from "./IJobStep.js";
 
 export abstract class AbstractGenericJobStep<
     TStepConfiguration extends object,
@@ -10,9 +10,9 @@ export abstract class AbstractGenericJobStep<
         public readonly stepConfiguration: TStepConfiguration,
     ) {}
 
-    protected abstract runTyped(stepInput: TStepInput | null): Promise<TRunResult | null>;
+    protected abstract runTyped(stepInput: TStepInput | null): Promise<StepResult<TRunResult>>;
 
-    public async run(stepInput: object | null): Promise<object | null> {
+    public async run(stepInput: object | null): Promise<StepResult<object>> {
         return await this.runTyped(stepInput as TStepInput);
     }
 }

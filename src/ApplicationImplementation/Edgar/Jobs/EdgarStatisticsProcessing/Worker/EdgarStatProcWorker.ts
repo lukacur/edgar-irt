@@ -116,12 +116,15 @@ export class EdgarStatProcWorker extends AbstractJobWorker<
             return calcResult;*/
 
             const calcResult = await jobStep.runTyped(preparedScriptInput);
-
-            if (cacheResult) {
-                this.calcResultCache = calcResult
+            if (calcResult.status === "failure") {
+                return null;
             }
 
-            return calcResult
+            if (cacheResult) {
+                this.calcResultCache = calcResult.result
+            }
+
+            return this.calcResultCache;
         } catch (err) {
             // clearTimeout(execTimeout);
             console.log(err);

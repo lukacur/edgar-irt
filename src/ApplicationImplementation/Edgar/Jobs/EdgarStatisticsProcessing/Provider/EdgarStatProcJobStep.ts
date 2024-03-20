@@ -5,6 +5,7 @@ import { EdgarStatProcStepConfiguration } from "./EdgarStatProcStepConfiguration
 import { readFile, unlink, writeFile } from "fs/promises";
 import { execFile } from "child_process";
 import { DelayablePromise } from "../../../../../Util/DelayablePromise.js";
+import { StepResult } from "../../../../../ApplicationModel/Jobs/IJobStep.js";
 
 export class EdgarStatProcJobStep
     extends AbstractGenericJobStep<EdgarStatProcStepConfiguration, IRCalculationResult, object> {
@@ -15,7 +16,7 @@ export class EdgarStatProcJobStep
         super(stepTimeoutMs, stepConfiguration);
     }
 
-    public override async runTyped(stepInput: object | null): Promise<IRCalculationResult | null> {
+    public override async runTyped(stepInput: object | null): Promise<StepResult<IRCalculationResult>> {
         const delProm = new DelayablePromise<IRCalculationResult>();
         const childProcArgs: string[] = [];
         
@@ -97,11 +98,19 @@ export class EdgarStatProcJobStep
             const calcResult = await delProm.getWrappedPromise();
             clearTimeout(execTimeout);
     
-            return calcResult;
-        } catch (err) {
+            return {
+                status: "success",
+                result: calcResult,
+            };
+        } catch (err: any) {
             clearTimeout(execTimeout);
             console.log(err);
-            return null;
+            return {
+                status: "failure",
+                result: null,
+                reason: (typeof(err) === "string") ? err : ('toString' in err) ? err.toString() : "Unknown",
+                canRetry: true,
+            };
         } finally {
             await unlink(childProcJSONInput);
             if (childProcJSONOutput !== null && existsSync(childProcJSONOutput)) {
