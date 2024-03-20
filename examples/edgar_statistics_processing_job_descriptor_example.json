@@ -1,0 +1,33 @@
+{
+    "jobId": "aa7cd-1584bbf-2283-ccbcdffa55301",
+    "jobName": "Process question statistics for course 'Objektno orijentirano programiranje' in academic years 2018-2024",
+    "idUserStarted": 1,
+    "jobQueue": "edgar-question-statistics-processing",
+    "jobTimeoutMs": 250000,
+    "blockingConfig": {
+        "awaitInputFormatting": true,
+        "workInBackground": false,
+        "persistResultInBackground": false
+    },
+
+    "courseBasedBatch": {
+        "idCourse": 2006,
+        "idStartAcademicYear": 2022,
+        "numberOfIncludedPreviousYears": 6
+    },
+
+    "steps": [
+        {
+            "stepTimeoutMs": 200000,
+            "stepConfiguration": {
+                "type": "calc-with-script",
+
+                "calculationScriptAbsPath": "./test_script.r",
+                "inputJSONInfoAbsPath": "./tests_dir/test_serialization.json",
+
+                "outputFile": "./tests_dir/output/serialization_output.json"
+            },
+            "constructWithJobInfo": false
+        }
+    ]
+}

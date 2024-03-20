@@ -1,0 +1,42 @@
+{
+    "jobId": "aa7cd-1584bbf-2283-ccbcdffa55301",
+    "jobName": "Foo job",
+    "jobQueue": "generic | edgar-question-statistics-processing | ...",
+    "jobTimeoutMs": 25000,
+    "blockingConfig": {
+        "awaitInputFormatting": true,
+        "workInBackground": false,
+        "persistResultInBackground": false
+    },
+    "steps": [
+        {
+            "type": "dynamic",
+            "timeoutMs": 3000,
+            "importInfo": {
+                "url": "./my-library/SomethingImplementingIJobStep.js",
+                "typeFetchKey": "foo"
+            }, // this should export an object { foo: MyType }
+            "stepConfig": {
+                "prop1": "val1",
+                "prop2": "val2",
+                "prop3": "val3",
+                "prop4": "val4"
+            }, // where MyType has ctor MyType(timeoutMs, stepConfig)
+            "constructWithJobInfo": true
+        },
+        {
+            "type": "URLRequestJobStep", // this is a known type (implemented in the src/ApplicationModel/Jobs/BasicJobPartImplementations/*)
+            "timeoutMs": 20000,
+            "stepConfig": {
+                "httpMethod": "POST",
+                "url": "https://my-test-endpoint.com/edgar-job-interface",
+                "body": "{ \"param1\": 434, \"param2\": \"hello world!\" }", // can also be anything else (like form data, Base64 encoded binary, ...)
+                "headers": [
+                    ["Content-Type", "application/json"],
+                    ["User-Agent", "Mozilla/5.0..."]
+                ]
+            },
+            "constructWithJobInfo": true
+        }
+    ]
+}
