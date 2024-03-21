@@ -1,9 +1,15 @@
 import { Worker } from "worker_threads";
 import { DelayablePromise } from "../Util/DelayablePromise.js";
-import { DaemonConfig, DaemonOptions } from "./DaemonConfig.model.js";
+import { DaemonConfig, DaemonOptions, QueueDescriptor, ScanInterval } from "./DaemonConfig.model.js";
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
+import { readFile } from "fs/promises";
+import { IQueueSystemBase } from "./Queue/IQueueSystemBase.js";
+import { DirQueueSystem } from "./Queue/QueueSystemImplementations/DirQueueSystem.js";
+import { FileQueueSystem } from "./Queue/QueueSystemImplementations/FileQueueSystem.js";
+import { PgBossQueueSystem } from "./Queue/QueueSystemImplementations/PgBossQueueSystem.js";
+import { QueueRegistry } from "./Queue/QueueRegistry.js";
 
 type ForceShutdownHandler<TSource> = (source: TSource, reason?: string) => void;
 
@@ -15,25 +21,89 @@ export class AdaptiveGradingDaemon {
         actionProgress: { reportActionProgress: false, noReports: 0 },
     };
 
-    private configuration: DaemonConfig | null = null;
+    private scanInterval: ScanInterval | null = null;
 
-    private async setupConfiguration(configFilePath: string): Promise<void> {
+    private static setupQueue(queueDescriptor: QueueDescriptor): IQueueSystemBase<any> | null {
+        let theQueue: IQueueSystemBase<any> | null;
+
+        switch (queueDescriptor.type) {
+            case "dir": {
+                const fnSuffix = queueDescriptor.suffix;
+                theQueue = new DirQueueSystem(
+                    queueDescriptor.queueName,
+                    queueDescriptor.location,
+                    {
+                        prefix: queueDescriptor.prefix,
+                        name: queueDescriptor.name,
+                        suffixProvider: (() => {
+                            let index = 0;
+                            return () => `${fnSuffix}_${index++}`;
+                        })()
+                    }
+                );
+
+                break;
+            }
+
+            case "file": {
+                theQueue = new FileQueueSystem(
+                    queueDescriptor.queueName,
+                    queueDescriptor.location
+                );
+
+                break;
+            }
+
+            case "pg_boss": {
+                if (!queueDescriptor.connectionString && !queueDescriptor.configuration) {
+                    throw new Error(
+                        "Invalid pg_boss queue system configuration: missing connection string or configuration entry"
+                    );
+                }
+                theQueue = new PgBossQueueSystem(
+                    queueDescriptor.queueName,
+                    queueDescriptor.connectionString ?? queueDescriptor.configuration!,
+                )
+                break;
+            }
+
+            default: {
+                theQueue = null;
+            }
+        }
+
+        return theQueue;
+    }
+
+    private async readConfiguration(configFilePath: string): Promise<void> {
         if (!fs.existsSync(configFilePath)) {
             throw new Error(`File not found: ${configFilePath}`);
         }
 
-        const prm = new DelayablePromise<string>();
+        let configuration: DaemonConfig | null = null;
+        try {
+            configuration = JSON.parse(
+                await readFile(
+                    configFilePath,
+                    { encoding: "utf-8", flag: "r" }
+                )
+            );
+        } catch (_) {}
 
-        fs.readFile(
-            configFilePath,
-            {
-                encoding: "utf-8",
-            },
-            (err, data) => (err) ? prm.delayedReject(err) : prm.delayedResolve(data)
-        );
+        if (configuration === null) {
+            throw new Error(`Unable to parse given configuration file at: ${configFilePath}`);
+        } 
 
-        this.configuration = JSON.parse(await prm.getWrappedPromise());
-        if (this.configuration === null || !("scanInterval" in this.configuration)) {
+        this.scanInterval = configuration.scanInterval;
+
+        const queues = configuration.declaredQueues;
+
+        queues
+            .map(AdaptiveGradingDaemon.setupQueue)
+            .filter(q => q !== null)
+            .forEach(q => QueueRegistry.instance.registerQueue(q!.queueName, q!));
+
+        if (this.scanInterval === null) {
             throw new Error(`Unable to parse given configuration file at: ${configFilePath}`);
         }
     }
@@ -49,17 +119,15 @@ export class AdaptiveGradingDaemon {
     private intervalClearedProm: Promise<void> | null = null;
 
     private getIntervalMillis(): number {
-        if (!this.configuration) {
+        if (this.scanInterval === null) {
             throw new Error("Daemon not correctly configured");
         }
 
-        const scanInter = this.configuration.scanInterval;
-
         return (
-            (scanInter.days ?? 0) * (24 * 3600 * 1000) +
-            (scanInter.hours ?? 0) * (3600 * 1000) +
-            (scanInter.minutes ?? 0) * (60 * 1000) +
-            (scanInter.seconds ?? 0) * (1000)
+            (this.scanInterval.days ?? 0) * (24 * 3600 * 1000) +
+            (this.scanInterval.hours ?? 0) * (3600 * 1000) +
+            (this.scanInterval.minutes ?? 0) * (60 * 1000) +
+            (this.scanInterval.seconds ?? 0) * (1000)
         );
     }
 
@@ -153,7 +221,7 @@ export class AdaptiveGradingDaemon {
         }
 
         // TODO: Eventually throw a typed UnableToStartDaemonException or something similar...
-        await this.setupConfiguration(this.configFilePath);
+        await this.readConfiguration(this.configFilePath);
 
         this.stopSignalProm = new DelayablePromise();
 
