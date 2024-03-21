@@ -249,12 +249,16 @@ export class MainRunner {
         const queues: IQueueSystemBase<TestDataType>[] = [];
 
         queues.push(
-            new FileQueueSystem("./queues/file/json-file-queue.queue.json")
+            new FileQueueSystem(
+                "test-file-queue",
+                "./queues/file/json-file-queue.queue.json"
+            )
         );
 
         let queuingSuffix = 0;
         queues.push(
             new DirQueueSystem(
+                "test-dir-queue",
                 "./queues/directory-queue",
                 { prefix: "test_", name: "queueing", suffixProvider: () => (++queuingSuffix).toString() }
             )
@@ -357,7 +361,11 @@ export class MainRunner {
 
     public static async doJobsTest(dbConn: DatabaseConnection): Promise<void> {
         const calcQueue = new CourseStatisticsCalculationQueue(
-            new FileQueueSystem("./queues/file/json-file-queue.queue.json"),
+            "",
+            new FileQueueSystem(
+                "test-file-queue",
+                "./queues/file/json-file-queue.queue.json"
+            ),
         );
 
         const jobProvider = new EdgarStatProcJobProvider(
@@ -430,7 +438,11 @@ export class MainRunner {
 
     public static async doTotalJobTest(dbConn: DatabaseConnection): Promise<void> {
         const calcQueue = new CourseStatisticsCalculationQueue(
-            new FileQueueSystem("./queues/file/json-file-queue.queue.json"),
+            "",
+            new FileQueueSystem(
+                "test-file-queue",
+                "./queues/file/json-file-queue.queue.json"
+            ),
         );
         await calcQueue.enqueue(
             { idCourse: 2006, idStartAcademicYear: 2022, numberOfIncludedPreviousYears: 0, forceCalculation: false }
