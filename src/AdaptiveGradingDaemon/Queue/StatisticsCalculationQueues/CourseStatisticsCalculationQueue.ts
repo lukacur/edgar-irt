@@ -10,6 +10,7 @@ export type CourseStatisticsProcessingRequest = {
 
 export class CourseStatisticsCalculationQueue implements IQueueSystemBase<CourseStatisticsProcessingRequest> {
     constructor(
+        public readonly queueName: string,
         private readonly usedQueue: IQueueSystemBase<CourseStatisticsProcessingRequest>
     ) {}
 

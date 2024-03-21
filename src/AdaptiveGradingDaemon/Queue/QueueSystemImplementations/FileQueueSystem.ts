@@ -9,6 +9,7 @@ export class FileQueueSystem<TQueueData> implements IQueueSystemBase<TQueueData>
     private readonly operationMutex = new AsyncMutex();
 
     constructor(
+        public readonly queueName: string,
         private readonly location: string,
     ) {
         if (!lstatSync(location).isFile()) {

@@ -8,8 +8,8 @@ export class PgBossQueueSystem<TQueueData extends object> implements IQueueSyste
     private startProm: Promise<PgBoss> | null = null;
 
     constructor(
+        public readonly queueName: string,
         private readonly pgBossConnString: string,
-        private readonly queueName: string,
     ) {
         this.bossCon = new PgBoss(this.pgBossConnString);
         this.startProm = this.bossCon.start().then(b => { this.startProm = null; return b; });

@@ -12,6 +12,7 @@ export class DirQueueSystem<TQueueData> implements IQueueSystemBase<TQueueData> 
     private fileNameConflictResolve: number = 1;
 
     constructor(
+        public readonly queueName: string,
         private readonly location: string,
         private readonly fileNamingScheme: { prefix: string, name: string, suffixProvider: () => string },
     ) {
