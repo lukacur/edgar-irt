@@ -15,22 +15,35 @@
             "importInfo": {
                 "url": "./my-library/SomethingImplementingIJobStep.js",
                 "typeFetchKey": "foo"
-            }, // this should export an object { foo: MyType }
+            },
+            "comment": {
+                "content": "The script referenced by the URL above should export an object { foo: MyType }"
+            },
             "stepConfig": {
                 "prop1": "val1",
                 "prop2": "val2",
                 "prop3": "val3",
                 "prop4": "val4"
-            }, // where MyType has ctor MyType(timeoutMs, stepConfig)
+            },
+            "comment2": {
+                "content":
+                    "The exported type should have a ctor MyType(timeoutMs, stepConfig) where step config will be passed as the config configured above"
+            },
             "constructWithJobInfo": true
         },
         {
-            "type": "URLRequestJobStep", // this is a known type (implemented in the src/ApplicationModel/Jobs/BasicJobPartImplementations/*)
+            "type": "URLRequestJobStep",
+            "comment": {
+                "content": "This is a known type (implemented in the src/ApplicationModel/Jobs/BasicJobPartImplementations/*)"
+            },
             "timeoutMs": 20000,
             "stepConfig": {
                 "httpMethod": "POST",
                 "url": "https://my-test-endpoint.com/edgar-job-interface",
-                "body": "{ \"param1\": 434, \"param2\": \"hello world!\" }", // can also be anything else (like form data, Base64 encoded binary, ...)
+                "body": "{ \"param1\": 434, \"param2\": \"hello world!\" }",
+                "comment": {
+                    "content": "Can also be anything else that goes into an HTTP request body (like form data, Base64 encoded binary, ...)"
+                },
                 "headers": [
                     ["Content-Type", "application/json"],
                     ["User-Agent", "Mozilla/5.0..."]
