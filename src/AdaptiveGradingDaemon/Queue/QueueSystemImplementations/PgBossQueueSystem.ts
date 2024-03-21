@@ -1,7 +1,9 @@
 import PgBoss from "pg-boss";
 import { IQueueSystemBase } from "../IQueueSystemBase.js";
 import { DelayablePromise } from "../../../Util/DelayablePromise.js";
+import { IDatabaseConfig } from "../../../ApplicationImplementation/Models/Config/DatabaseConfig.model.js";
 
+// In the database that this class uses command 'CREATE EXTENSION pgcrypto;' must be ran before using PgBoss
 export class PgBossQueueSystem<TQueueData extends object> implements IQueueSystemBase<TQueueData> {
     private readonly bossCon: PgBoss;
 
@@ -9,9 +11,22 @@ export class PgBossQueueSystem<TQueueData extends object> implements IQueueSyste
 
     constructor(
         public readonly queueName: string,
-        private readonly pgBossConnString: string,
+        private readonly pgBossConnStringOrConfig: string | IDatabaseConfig,
     ) {
-        this.bossCon = new PgBoss(this.pgBossConnString);
+        if (typeof(this.pgBossConnStringOrConfig) === "string") {
+            this.bossCon = new PgBoss(this.pgBossConnStringOrConfig);
+        } else {
+            this.bossCon = new PgBoss({
+                host: this.pgBossConnStringOrConfig.host,
+                port: this.pgBossConnStringOrConfig.port,
+                database: this.pgBossConnStringOrConfig.database,
+
+                user: this.pgBossConnStringOrConfig.user,
+                password: this.pgBossConnStringOrConfig.password,
+                schema: this.pgBossConnStringOrConfig.schema,
+                //max: this.pgBossConnStringOrConfig.maxConnections,
+            });
+        }
         this.startProm = this.bossCon.start().then(b => { this.startProm = null; return b; });
     }
 

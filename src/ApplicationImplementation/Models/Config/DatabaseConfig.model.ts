@@ -2,7 +2,7 @@ export interface IDatabaseConfig {
     host: string;
     port: number;
     database: string;
-    schema: string;
+    schema?: string;
     user: string;
     password: string;
 
