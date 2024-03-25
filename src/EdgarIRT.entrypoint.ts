@@ -19,6 +19,8 @@ import { EdgarStatProcWorkResultPersistor } from "./ApplicationImplementation/Ed
 import { EdgarStatProcJobStep } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Steps/StatisticsProcessing/EdgarStatProcJobStep.js";
 import { EdgarStatProcStepConfiguration } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Steps/StatisticsProcessing/EdgarStatProcStepConfiguration.js";
 import { JobService } from "./JobService.js";
+import { CheckIfCalculationNeededStep } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Steps/CheckIfCalculationNeeded/CheckIfCalculationNeededStep.js";
+import { CheckIfCalculationNeededStepConfiguration } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Steps/CheckIfCalculationNeeded/CheckIfCalculationNeededStepConfiguration.js";
 
 type AvailableTests =
     "db" |
@@ -453,15 +455,25 @@ export class MainRunner {
             calcQueue,
             200000,
 
-            [new EdgarStatProcJobStep(
-                200000,
-                new EdgarStatProcStepConfiguration(
-                    "calc-with-script",
-                    "./test_script.r",
-                    "./tests_dir/test_serialization.json",
-                    "./tests_dir/output/serialization_output.json",
+            [
+                new CheckIfCalculationNeededStep(
+                    5000,
+                    new CheckIfCalculationNeededStepConfiguration(
+                        { days: 30 },
+                        false,
+                    ),
+                    dbConn,
+                ),
+                new EdgarStatProcJobStep(
+                    200000,
+                    new EdgarStatProcStepConfiguration(
+                        "calc-with-script",
+                        "./test_script.r",
+                        "./tests_dir/test_serialization.json",
+                        "./tests_dir/output/serialization_output.json",
+                    )
                 )
-            )]
+            ]
         );
         const inputFormatter = new EdgarStatProcInputFormatter();
         const jobWorker = new EdgarStatProcWorker();
