@@ -16,8 +16,8 @@ import { EdgarStatProcJobProvider } from "./ApplicationImplementation/Edgar/Jobs
 import { EdgarStatProcInputFormatter } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/InputFormatter/EdgarStatProcInputFormatter.js";
 import { EdgarStatProcWorker } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Worker/EdgarStatProcWorker.js";
 import { EdgarStatProcWorkResultPersistor } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/WorkResultPersistor/EdgarStatProcWorkResultPersistor.js";
-import { EdgarStatProcJobStep } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Provider/EdgarStatProcJobStep.js";
-import { EdgarStatProcStepConfiguration } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Provider/EdgarStatProcStepConfiguration.js";
+import { EdgarStatProcJobStep } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Steps/StatisticsProcessing/EdgarStatProcJobStep.js";
+import { EdgarStatProcStepConfiguration } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Steps/StatisticsProcessing/EdgarStatProcStepConfiguration.js";
 import { JobService } from "./JobService.js";
 
 type AvailableTests =

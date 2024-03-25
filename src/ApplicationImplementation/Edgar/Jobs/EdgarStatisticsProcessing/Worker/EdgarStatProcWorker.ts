@@ -2,8 +2,8 @@ import { existsSync } from "fs";
 import { AbstractJobWorker } from "../../../../../ApplicationModel/Jobs/Workers/AbstractJobWorker.js";
 import { DelayablePromise } from "../../../../../Util/DelayablePromise.js";
 import { IRCalculationResult } from "../../../Statistics/IRCalculationResult.js";
-import { EdgarStatProcJobStep } from "../Provider/EdgarStatProcJobStep.js";
-import { EdgarStatProcStepConfiguration } from "../Provider/EdgarStatProcStepConfiguration.js";
+import { EdgarStatProcJobStep } from "../Steps/StatisticsProcessing/EdgarStatProcJobStep.js";
+import { EdgarStatProcStepConfiguration } from "../Steps/StatisticsProcessing/EdgarStatProcStepConfiguration.js";
 import { readFile, unlink, writeFile } from "fs/promises";
 import { execFile } from "child_process";
 
