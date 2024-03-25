@@ -10,6 +10,12 @@
         "persistResultInBackground": false
     },
 
+    "endpointToFetch": {
+        "url": "https://nesto.org:5477",
+        "parsingMethod": "XML",
+        "other": "..."
+    },
+
     "courseBasedBatch": {
         "idCourse": 2006,
         "idStartAcademicYear": 2022,

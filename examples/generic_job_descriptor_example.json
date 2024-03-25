@@ -3,12 +3,36 @@
     "jobName": "Foo job",
     "jobQueue": "generic | edgar-question-statistics-processing | ...",
     "jobTimeoutMs": 25000,
+    "formatterInfo": {
+        "type": "SQL_NAMED_QUERIES",
+        "queryName": 117,
+        "queryParams": "@idCourse",
+        "input": {
+            "idCourse": 2006
+        }
+    },
     "blockingConfig": {
         "awaitInputFormatting": true,
         "workInBackground": false,
         "persistResultInBackground": false
     },
     "steps": [
+        {
+            "type": "Formatter1",
+            "outputFallthrough": 5 // 5 step fallthrough
+        },
+        {
+            "type": "Formatter2",
+            "outputFallthrough": 4 // 5 step fallthrough
+        },
+        {
+            "type": "Formatter3",
+            "outputFallthrough": 3 // 5 step fallthrough
+        },
+        {
+            "type": "Formatter4",
+            "outputFallthrough": 2 // 5 step fallthrough
+        }, // TODO: propagacija bi trebala (barem za gornju situaciju) biti kompozit
         {
             "type": "dynamic",
             "timeoutMs": 3000,
@@ -47,6 +71,9 @@
                 "headers": [
                     ["Content-Type", "application/json"],
                     ["User-Agent", "Mozilla/5.0..."]
+                ],
+                "queryParams": [ // TODO: DODATI
+                    ["foo", "bar"]
                 ]
             },
             "constructWithJobInfo": true
