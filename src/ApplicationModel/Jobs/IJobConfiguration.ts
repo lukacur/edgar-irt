@@ -1,7 +1,7 @@
 import { IJobStep } from "./IJobStep.js";
 
 export type BlockingConfig = {
-    awaitInputFormatting: boolean;
+    awaitDataExtraction: boolean;
     workInBackground: boolean;
     persistResultInBackground: boolean;
 };

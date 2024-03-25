@@ -72,7 +72,7 @@ export class EdgarStatProcJobProvider extends AbstractGenericJobProvider<EdgarSt
                 queueEntry.numberOfIncludedPreviousYears,
             ),
 
-            { awaitInputFormatting: true, persistResultInBackground: false, workInBackground: false }
+            { awaitDataExtraction: true, persistResultInBackground: false, workInBackground: false }
         );
 
         let configurationSuccessful = true;

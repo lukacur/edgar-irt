@@ -1,9 +1,9 @@
-import { AbstractGenericJobInputFormatter } from "../../../../../ApplicationModel/Jobs/InputFormatters/AbstractGenericJobInputFormatter.js";
+import { AbstractGenericInputDataExtractor } from "../../../../../ApplicationModel/Jobs/DataExtractors/AbstractGenericInputDataExtractor.js";
 import { CourseBasedBatch } from "../../../Batches/CourseBasedBatch.js";
 import { EdgarStatProcJobConfiguration } from "../Provider/EdgarStatProcJobConfiguration.js";
 
-export class EdgarStatProcInputFormatter
-    extends AbstractGenericJobInputFormatter<EdgarStatProcJobConfiguration, CourseBasedBatch, object> {
+export class EdgarStatProcDataExtractor
+    extends AbstractGenericInputDataExtractor<EdgarStatProcJobConfiguration, CourseBasedBatch, object> {
 
     protected override async formatJobInputTyped(jobConfiguration: EdgarStatProcJobConfiguration): Promise<object> {
         const serObj = {};

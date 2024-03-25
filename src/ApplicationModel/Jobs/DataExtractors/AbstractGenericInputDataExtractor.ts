@@ -1,11 +1,11 @@
 import { IJobConfiguration } from "../IJobConfiguration.js";
-import { IJobInputFormatter } from "./IJobInputFormatter.js";
+import { IInputDataExtractor } from "./IInputDataExtractor.js";
 
-export abstract class AbstractGenericJobInputFormatter<
+export abstract class AbstractGenericInputDataExtractor<
     TJobConfiguration extends IJobConfiguration,
     TFormattingInput extends object,
     TJobInput extends object,
-> implements IJobInputFormatter {
+> implements IInputDataExtractor {
     protected abstract formatJobInputTyped(jobConfiguration: TJobConfiguration): Promise<TJobInput>;
 
     public async formatJobInput(jobConfiguration: IJobConfiguration): Promise<object> {

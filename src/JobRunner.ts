@@ -1,4 +1,4 @@
-import { IJobInputFormatter } from "./ApplicationModel/Jobs/InputFormatters/IJobInputFormatter.js";
+import { IInputDataExtractor } from "./ApplicationModel/Jobs/DataExtractors/IInputDataExtractor.js";
 import { IJobProvider } from "./ApplicationModel/Jobs/Providers/IJobProvider.js";
 import { IWorkResultPersistor } from "./ApplicationModel/Jobs/WorkResultPersistors/IWorkResultPersistor.js";
 import { IJobWorker } from "./ApplicationModel/Jobs/Workers/IJobWorker.js";
@@ -6,7 +6,7 @@ import { IJobWorker } from "./ApplicationModel/Jobs/Workers/IJobWorker.js";
 export class JobRunner {
     constructor(
         private readonly jobProvider: IJobProvider,
-        private readonly jobInputFormatter: IJobInputFormatter,
+        private readonly dataExtractor: IInputDataExtractor,
         private readonly jobWorker: IJobWorker,
         private readonly jobWorkResultPersistor: IWorkResultPersistor,
     ) {}
@@ -19,7 +19,7 @@ export class JobRunner {
             const jobConfig = await this.jobProvider.provideJob();
 
             try {
-                const jobInput = await this.jobInputFormatter.formatJobInput(jobConfig);
+                const jobInput = await this.dataExtractor.formatJobInput(jobConfig);
 
                 let currWorker = this.jobWorker.clone();
             

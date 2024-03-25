@@ -13,7 +13,7 @@ import { DirQueueSystem } from "./AdaptiveGradingDaemon/Queue/QueueSystemImpleme
 import { PgBossQueueSystem } from "./AdaptiveGradingDaemon/Queue/QueueSystemImplementations/PgBossQueueSystem.js";
 import { CourseStatisticsCalculationQueue } from "./AdaptiveGradingDaemon/Queue/StatisticsCalculationQueues/CourseStatisticsCalculationQueue.js";
 import { EdgarStatProcJobProvider } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Provider/EdgarStatProcJobProvider.js";
-import { EdgarStatProcInputFormatter } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/InputFormatter/EdgarStatProcInputFormatter.js";
+import { EdgarStatProcDataExtractor } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/DataExtractor/EdgarStatProcDataExtractor.js";
 import { EdgarStatProcWorker } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Worker/EdgarStatProcWorker.js";
 import { EdgarStatProcWorkResultPersistor } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/WorkResultPersistor/EdgarStatProcWorkResultPersistor.js";
 import { EdgarStatProcJobStep } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Steps/StatisticsProcessing/EdgarStatProcJobStep.js";
@@ -385,7 +385,7 @@ export class MainRunner {
                 )
             )]
         );
-        const inputFormatter = new EdgarStatProcInputFormatter();
+        const dataExtractor = new EdgarStatProcDataExtractor();
         const jobWorker = new EdgarStatProcWorker();
         const resultPersistor = new EdgarStatProcWorkResultPersistor(dbConn);
 
@@ -396,7 +396,7 @@ export class MainRunner {
         const jobConfig = await jobProvider.provideJob();
         let success;
 
-        const data = await inputFormatter.formatJobInput(jobConfig);
+        const data = await dataExtractor.formatJobInput(jobConfig);
         success = await jobWorker.startExecution(jobConfig, data);
 
         if (!success) {
@@ -475,13 +475,13 @@ export class MainRunner {
                 )
             ]
         );
-        const inputFormatter = new EdgarStatProcInputFormatter();
+        const dataExtractor = new EdgarStatProcDataExtractor();
         const jobWorker = new EdgarStatProcWorker();
         const resultPersistor = new EdgarStatProcWorkResultPersistor(dbConn);
 
         const jobService = JobService.configureNew()
             .useProvider(jobProvider)
-            .useInputFormatter(inputFormatter)
+            .useDataExtractor(dataExtractor)
             .useWorker(jobWorker)
             .useWorkResultPersistor(resultPersistor)
             .build();

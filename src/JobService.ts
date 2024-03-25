@@ -1,4 +1,4 @@
-import { IJobInputFormatter } from "./ApplicationModel/Jobs/InputFormatters/IJobInputFormatter.js";
+import { IInputDataExtractor } from "./ApplicationModel/Jobs/DataExtractors/IInputDataExtractor.js";
 import { IJobProvider } from "./ApplicationModel/Jobs/Providers/IJobProvider.js";
 import { IWorkResultPersistor } from "./ApplicationModel/Jobs/WorkResultPersistors/IWorkResultPersistor.js";
 import { IJobWorker } from "./ApplicationModel/Jobs/Workers/IJobWorker.js";
@@ -23,7 +23,7 @@ class ConfiguredJobService {
 
     constructor(
         private readonly jobProvider: IJobProvider,
-        private readonly jobInputFormatter: IJobInputFormatter,
+        private readonly dataExtractor: IInputDataExtractor,
         private readonly jobWorker: IJobWorker,
         private readonly jobWorkResultPersistor: IWorkResultPersistor,
     ) {}
@@ -65,7 +65,7 @@ class ConfiguredJobService {
 
         this.jobRunner = new JobRunner(
             this.jobProvider,
-            this.jobInputFormatter,
+            this.dataExtractor,
             this.jobWorker,
             this.jobWorkResultPersistor,
         );
@@ -100,7 +100,7 @@ class ConfiguredJobService {
 
 class JobServiceConfigurer {
     private jobProvider?: IJobProvider;
-    private jobInputFormatter?: IJobInputFormatter;
+    private dataExtractor?: IInputDataExtractor;
     private jobWorker?: IJobWorker;
     private jobWorkResultPersistor?: IWorkResultPersistor;
 
@@ -109,8 +109,8 @@ class JobServiceConfigurer {
         return this;
     }
 
-    public useInputFormatter(jobInputFormatter: IJobInputFormatter): JobServiceConfigurer {
-        this.jobInputFormatter = jobInputFormatter;
+    public useDataExtractor(dataExtractor: IInputDataExtractor): JobServiceConfigurer {
+        this.dataExtractor = dataExtractor;
         return this;
     }
 
@@ -126,7 +126,7 @@ class JobServiceConfigurer {
 
     private preBuildCheckPassed(): boolean {
         return this.jobProvider !== undefined &&
-            this.jobInputFormatter !== undefined &&
+            this.dataExtractor !== undefined &&
             this.jobWorker !== undefined &&
             this.jobWorkResultPersistor !== undefined;
     }
@@ -138,7 +138,7 @@ class JobServiceConfigurer {
 
         return new ConfiguredJobService(
             this.jobProvider!,
-            this.jobInputFormatter!,
+            this.dataExtractor!,
             this.jobWorker!,
             this.jobWorkResultPersistor!
         );
