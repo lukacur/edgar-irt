@@ -1,5 +1,5 @@
 import { IJobConfiguration } from "../IJobConfiguration.js";
-import { IJobStep } from "../IJobStep.js";
+import { IJobStep, StepResult } from "../IJobStep.js";
 import { IJobWorker } from "./IJobWorker.js";
 
 export abstract class AbstractJobWorker<
@@ -11,7 +11,9 @@ export abstract class AbstractJobWorker<
 
     protected readonly jobSteps: IJobStep[] = [];
 
-    protected abstract executeStep(jobStep: IJobStep, stepInput: object | null): Promise<TJobOutput | null>;
+    private lastStepResult?: StepResult<TJobOutput> | null = undefined;
+
+    protected abstract executeStep(jobStep: IJobStep, stepInput: object | null): Promise<StepResult<TJobOutput> | null>;
 
     public async startExecution(jobConfiguration: IJobConfiguration, initialInput: TJobStepInput | null): Promise<boolean> {
         this.jobSteps.splice(0, this.jobSteps.length);
@@ -31,7 +33,9 @@ export abstract class AbstractJobWorker<
     }
 
     public hasNextStep(): boolean {
-        return this.currentStepIdx < this.jobSteps.length;
+        return (
+            this.lastStepResult === undefined || !!this.lastStepResult && this.lastStepResult.status === "success"
+        ) && this.currentStepIdx < this.jobSteps.length;
     }
 
     public getNextStepInfo(): IJobStep | null {
@@ -52,10 +56,14 @@ export abstract class AbstractJobWorker<
         try {
             this.currentStepIdx++;
 
-            this.currentStepInput = await this.executeStep(
+            const stepResult = await this.executeStep(
                 jobStep,
                 this.currentStepInput
             );
+
+            this.lastStepResult = stepResult;
+
+            this.currentStepInput = stepResult?.result ?? null;
 
             return true;
         } catch (err) {
@@ -66,13 +74,15 @@ export abstract class AbstractJobWorker<
         return false;
     }
 
-    protected abstract getExecutionResultTyped(): Promise<TJobOutput | null>;
+    protected abstract getExecutionResultTyped(): Promise<StepResult<TJobOutput> | null>;
 
-    public async getExecutionResult(): Promise<object | null> {
-        if (this.hasNextStep()) {
+    public async getExecutionResult(): Promise<StepResult<object> | null> {
+        if (this.hasNextStep() || this.lastStepResult?.status !== "success") {
             return null;
         }
 
         return await this.getExecutionResultTyped();
     }
+
+    public abstract clone(): IJobWorker;
 }

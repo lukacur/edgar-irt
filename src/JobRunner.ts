@@ -20,15 +20,17 @@ export class JobRunner {
 
             try {
                 const jobInput = await this.jobInputFormatter.formatJobInput(jobConfig);
+
+                let currWorker = this.jobWorker.clone();
             
-                let success = await this.jobWorker.startExecution(jobConfig, jobInput);
+                let success = await currWorker.startExecution(jobConfig, jobInput);
                 if (!success) {
                     await this.jobProvider.failJob(jobConfig.jobId);
                     continue;
                 }
 
-                while (this.jobWorker.hasNextStep()) {
-                    if (!(await this.jobWorker.executeNextStep())) {
+                while (currWorker.hasNextStep()) {
+                    if (!(await currWorker.executeNextStep())) {
                         success = false;
                         break;
                     }
@@ -39,9 +41,14 @@ export class JobRunner {
                     continue;
                 }
 
-                const result = await this.jobWorker.getExecutionResult();
+                const result = await currWorker.getExecutionResult();
+                if (result?.status !== "success") {
+                    console.log(`Job execution failed. Reason: ${result?.reason ?? "unknown reason"}`);
+                    await this.jobProvider.failJob(jobConfig.jobId);
+                    continue;
+                }
 
-                if (!(await this.jobWorkResultPersistor.perisistResult(result, jobConfig))) {
+                if (!(await this.jobWorkResultPersistor.perisistResult(result.result, jobConfig))) {
                     await this.jobProvider.failJob(jobConfig.jobId);
                     continue;
                 }

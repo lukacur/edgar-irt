@@ -7,6 +7,10 @@ export type StepResult<TResult> =
             status: "success";
         } |
         {
+            status: "cancelChain";
+            reason: string;
+        } |
+        {
             status: "failure";
             reason: string;
             canRetry?: boolean;

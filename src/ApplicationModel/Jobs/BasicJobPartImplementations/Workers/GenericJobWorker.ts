@@ -1,6 +1,7 @@
 import { IJobConfiguration } from "../../IJobConfiguration.js";
-import { IJobStep } from "../../IJobStep.js";
+import { IJobStep, StepResult } from "../../IJobStep.js";
 import { AbstractJobWorker } from "../../Workers/AbstractJobWorker.js";
+import { IJobWorker } from "../../Workers/IJobWorker.js";
 
 export class GenericJobWorker extends AbstractJobWorker<object, object> {
     private executionResult: object | null = null;
@@ -10,11 +11,27 @@ export class GenericJobWorker extends AbstractJobWorker<object, object> {
         super();
     }
 
-    protected override async executeStep(jobStep: IJobStep, stepInput: object | null): Promise<object | null> {
+    protected override async executeStep(
+        jobStep: IJobStep,
+        stepInput: object | null
+    ): Promise<StepResult<object> | null> {
         return (this.executionResult = await jobStep.run(stepInput));
     }
 
-    protected override async getExecutionResultTyped(): Promise<object | null> {
-        return this.executionResult;
+    protected override async getExecutionResultTyped(): Promise<StepResult<object> | null> {
+        return this.executionResult === null ?
+        {
+            status: "failure",
+            reason: "No result present",
+            result: null,
+        } :
+        {
+            status: "success",
+            result: this.executionResult,
+        };
+    }
+
+    public override clone(): IJobWorker {
+        return new GenericJobWorker(this.jobConfig);
     }
 }

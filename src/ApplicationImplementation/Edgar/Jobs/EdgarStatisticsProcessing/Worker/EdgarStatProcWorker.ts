@@ -6,6 +6,8 @@ import { EdgarStatProcJobStep } from "../Steps/StatisticsProcessing/EdgarStatPro
 import { EdgarStatProcStepConfiguration } from "../Steps/StatisticsProcessing/EdgarStatProcStepConfiguration.js";
 import { readFile, unlink, writeFile } from "fs/promises";
 import { execFile } from "child_process";
+import { StepResult } from "../../../../../ApplicationModel/Jobs/IJobStep.js";
+import { IJobWorker } from "../../../../../ApplicationModel/Jobs/Workers/IJobWorker.js";
 
 type CalculationParams = {
     nBestParts: number | null,
@@ -25,7 +27,7 @@ export class EdgarStatProcWorker extends AbstractJobWorker<
 
         cacheResult: boolean,
         params: CalculationParams | null = null,
-    ): Promise<IRCalculationResult | null> {
+    ): Promise<StepResult<IRCalculationResult> | null> {
         /*const delProm = new DelayablePromise<IRCalculationResult>();
         const childProcArgs: string[] = [];
 
@@ -116,15 +118,12 @@ export class EdgarStatProcWorker extends AbstractJobWorker<
             return calcResult;*/
 
             const calcResult = await jobStep.runTyped(preparedScriptInput);
-            if (calcResult.status === "failure") {
-                return null;
-            }
 
             if (cacheResult) {
                 this.calcResultCache = calcResult.result
             }
 
-            return this.calcResultCache;
+            return calcResult;
         } catch (err) {
             // clearTimeout(execTimeout);
             console.log(err);
@@ -143,35 +142,53 @@ export class EdgarStatProcWorker extends AbstractJobWorker<
 
         forceRecalculate: boolean = false,
         params?: CalculationParams,
-    ): Promise<void> {
+    ): Promise<StepResult<IRCalculationResult> | null> {
         if (this.calcResultCache === null || forceRecalculate) {
-            await this.calculate(
+            return await this.calculate(
                 jobStep,
                 preparedScriptInput,
                 
                 true,
                 params
             );
+        } else {
+            return {
+                status: "success",
+                result: this.calcResultCache,
+            };
         }
     }
 
     protected override async executeStep(
         jobStep: EdgarStatProcJobStep,
         stepInput: object | null
-    ): Promise<IRCalculationResult | null> {
+    ): Promise<StepResult<IRCalculationResult> | null> {
         if (stepInput === null) {
             throw new Error("Step input must be specified");
         }
 
-        await this.calculateIfCacheEmpty(
+        return await this.calculateIfCacheEmpty(
             jobStep,
             stepInput,
+            true,
+            undefined,
         );
-
-        return this.calcResultCache;
     }
 
-    protected override async getExecutionResultTyped(): Promise<IRCalculationResult | null> {
-        return this.calcResultCache;
+    protected override async getExecutionResultTyped(): Promise<StepResult<IRCalculationResult> | null> {
+        return this.calcResultCache === null ?
+        {
+            status: "failure",
+            reason: "No result",
+            result: null,
+        } :
+        {
+            status: "success",
+            result: this.calcResultCache,
+        };
+    }
+    
+    public override clone(): IJobWorker {
+        return new EdgarStatProcWorker();
     }
 }
