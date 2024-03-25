@@ -132,7 +132,18 @@ export class EdgarStatProcJobProvider extends AbstractGenericJobProvider<EdgarSt
         return false;
     }
 
+    private jobFailureMap: Map<string, number> = new Map();
+
     protected override async doFailJob(jobId: string): Promise<boolean> {
-        return await this.resetJob(jobId);
+        if (!this.jobFailureMap.has(jobId)) {
+            this.jobFailureMap.set(jobId, 0);
+        }
+
+        if (this.jobFailureMap.get(jobId)! <= 5) {
+            this.jobFailureMap.set(jobId, this.jobFailureMap.get(jobId)! + 1);
+            return await this.resetJob(jobId);
+        }
+
+        return true;
     }
 }
