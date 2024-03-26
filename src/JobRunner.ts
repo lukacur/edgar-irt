@@ -2,19 +2,39 @@ import { IInputDataExtractor } from "./ApplicationModel/Jobs/DataExtractors/IInp
 import { IJobProvider } from "./ApplicationModel/Jobs/Providers/IJobProvider.js";
 import { IWorkResultPersistor } from "./ApplicationModel/Jobs/WorkResultPersistors/IWorkResultPersistor.js";
 import { IJobWorker } from "./ApplicationModel/Jobs/Workers/IJobWorker.js";
+import { InputExtractorRegistry } from "./PluginSupport/Registries/Implementation/InputExtractorRegistry.js";
+import { JobWorkerRegistry } from "./PluginSupport/Registries/Implementation/JobWorkerRegistry.js";
+import { PersistorRegistry } from "./PluginSupport/Registries/Implementation/PersistorRegistry.js";
 
 export class JobRunner {
     constructor(
         private readonly jobProvider: IJobProvider,
-        private readonly dataExtractor: IInputDataExtractor,
-        private readonly jobWorker: IJobWorker,
-        private readonly jobWorkResultPersistor: IWorkResultPersistor,
+        private readonly dataExtractor?: IInputDataExtractor,
+        private readonly jobWorker?: IJobWorker,
+        private readonly jobWorkResultPersistor?: IWorkResultPersistor,
     ) {}
 
     private stopped: boolean = false;
     private runningPromise: Promise<void> | null = null;
 
-    private async run(): Promise<void> {
+    private async runStrict(): Promise<void> {
+        if (
+            this.dataExtractor === undefined ||
+                this.jobWorker === undefined ||
+                this.jobWorkResultPersistor === undefined
+        ) {
+            throw new Error(
+                `Job runner not properly configured: Missing configuration for generic job running. Given config:
+                    dataExtractor: ${this.dataExtractor === undefined ? undefined : JSON.stringify(this.dataExtractor)};
+                    jobWorker: ${this.jobWorker === undefined ? undefined : JSON.stringify(this.jobWorker)};
+                    persistor: ${
+                        this.jobWorkResultPersistor === undefined ?
+                            undefined :
+                            JSON.stringify(this.jobWorkResultPersistor)
+                    };`
+            );
+        }
+
         while (!this.stopped) {
             const jobConfig = await this.jobProvider.provideJob();
 
@@ -60,9 +80,79 @@ export class JobRunner {
                 await this.jobProvider.failJob(jobConfig.jobId);
             }
         }
-        
-        this.runningPromise = null;
-        return;
+    }
+    
+    private async runGeneric(): Promise<void> {
+        while (!this.stopped) {
+            const jobConfig = await this.jobProvider.provideJob();
+
+            try {
+                const inputExtractor = InputExtractorRegistry.instance.getItem(
+                    jobConfig.inputExtractorConfig.type,
+                    jobConfig
+                );
+
+                const jobWorker = JobWorkerRegistry.instance.getItem(
+                    jobConfig.jobWorkerConfig.type,
+                    jobConfig
+                );
+
+                const persistor = PersistorRegistry.instance.getItem(
+                    jobConfig.dataPersistorConfig.type,
+                    jobConfig,
+                );
+
+                const jobInput = await inputExtractor.formatJobInput(jobConfig);
+            
+                let success = await jobWorker.startExecution(jobConfig, jobInput);
+                if (!success) {
+                    await this.jobProvider.failJob(jobConfig.jobId);
+                    continue;
+                }
+
+                while (jobWorker.hasNextStep()) {
+                    if (!(await jobWorker.executeNextStep())) {
+                        success = false;
+                        break;
+                    }
+                }
+
+                if (!success) {
+                    await this.jobProvider.failJob(jobConfig.jobId);
+                    continue;
+                }
+
+                const result = await jobWorker.getExecutionResult();
+                if (result?.status !== "success") {
+                    console.log(`Job execution failed. Reason: ${result?.reason ?? "unknown reason"}`);
+                    await this.jobProvider.failJob(jobConfig.jobId);
+                    continue;
+                }
+
+                if (!(await persistor.perisistResult(result.result, jobConfig))) {
+                    await this.jobProvider.failJob(jobConfig.jobId);
+                    continue;
+                }
+
+                await this.jobProvider.finishJob(jobConfig.jobId);
+            } catch (err) {
+                console.log(err);
+
+                await this.jobProvider.failJob(jobConfig.jobId);
+            }
+        }
+    }
+
+    private async run(): Promise<void> {
+        const prom: Promise<void> = (
+            this.dataExtractor === undefined ||
+            this.jobWorker === undefined ||
+            this.jobWorkResultPersistor === undefined
+        ) ?
+        this.runGeneric() :
+        this.runStrict();
+
+        return prom.then(() => { this.runningPromise = null; });
     }
 
     /**
