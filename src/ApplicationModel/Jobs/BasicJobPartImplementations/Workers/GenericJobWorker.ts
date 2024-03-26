@@ -5,6 +5,7 @@ import { IJobWorker } from "../../Workers/IJobWorker.js";
 
 export class GenericJobWorker extends AbstractJobWorker<object, object> {
     private executionResult: object | null = null;
+
     constructor(
         private readonly jobConfig: IJobConfiguration,
     ) {
@@ -13,7 +14,7 @@ export class GenericJobWorker extends AbstractJobWorker<object, object> {
 
     protected override async executeStep(
         jobStep: IJobStep,
-        stepInput: object | null
+        stepInput: (object | null)[]
     ): Promise<StepResult<object> | null> {
         return (this.executionResult = await jobStep.run(stepInput));
     }

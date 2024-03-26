@@ -11,16 +11,16 @@ interface URLStepConfiguration {
 
 export class URLRequestJobStep
     extends AbstractGenericJobStep<URLStepConfiguration, URLStepConfiguration, Response> {
-    public async runTyped(stepInput: URLStepConfiguration | null): Promise<StepResult<Response>> {
-        stepInput ??= this.stepConfiguration;
+    public async runTyped(stepInput: (URLStepConfiguration | null)[]): Promise<StepResult<Response>> {
+        const stepIn = stepInput[0] ?? this.stepConfiguration;
 
         try {
             const result = await fetch(
-                stepInput.url,
+                stepIn.url,
                 {
-                    method: stepInput.httpMethod,
-                    body: stepInput.body,
-                    headers: stepInput.headers,
+                    method: stepIn.httpMethod,
+                    body: stepIn.body,
+                    headers: stepIn.headers,
                 },
             );
 

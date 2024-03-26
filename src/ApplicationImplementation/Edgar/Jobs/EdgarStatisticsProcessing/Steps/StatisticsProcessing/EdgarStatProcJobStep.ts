@@ -8,7 +8,7 @@ import { DelayablePromise } from "../../../../../../Util/DelayablePromise.js";
 import { StepResult } from "../../../../../../ApplicationModel/Jobs/IJobStep.js";
 
 export class EdgarStatProcJobStep
-    extends AbstractGenericJobStep<EdgarStatProcStepConfiguration, IRCalculationResult, object> {
+    extends AbstractGenericJobStep<EdgarStatProcStepConfiguration, object, IRCalculationResult> {
     constructor (
         stepTimeoutMs: number,
         stepConfiguration: EdgarStatProcStepConfiguration,
@@ -16,9 +16,15 @@ export class EdgarStatProcJobStep
         super(stepTimeoutMs, stepConfiguration);
     }
 
-    public override async runTyped(stepInput: object | null): Promise<StepResult<IRCalculationResult>> {
+    public override async runTyped(stepInput: (object | null)[]): Promise<StepResult<IRCalculationResult>> {
         const delProm = new DelayablePromise<IRCalculationResult>();
         const childProcArgs: string[] = [];
+
+        if (stepInput[0] === null) {
+            throw new Error(`Step ${EdgarStatProcJobStep.name} requires an input`);
+        }
+
+        const stepIn: object = stepInput[0];
         
         /*if (params !== null) {
             for (const paramKey in params) {
@@ -48,7 +54,7 @@ export class EdgarStatProcJobStep
 
         await writeFile(
             childProcJSONInput,
-            JSON.stringify([stepInput]),
+            JSON.stringify([stepIn]),
             { encoding: "utf-8" }
         );
 

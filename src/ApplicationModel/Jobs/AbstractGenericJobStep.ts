@@ -10,9 +10,9 @@ export abstract class AbstractGenericJobStep<
         public readonly stepConfiguration: TStepConfiguration,
     ) {}
 
-    protected abstract runTyped(stepInput: TStepInput | null): Promise<StepResult<TRunResult>>;
+    protected abstract runTyped(stepInput: (TStepInput | null)[]): Promise<StepResult<TRunResult>>;
 
-    public async run(stepInput: object | null): Promise<StepResult<object>> {
-        return await this.runTyped(stepInput as TStepInput);
+    public async run(stepInput: (object | null)[]): Promise<StepResult<object>> {
+        return await this.runTyped(stepInput as (TStepInput | null)[]);
     }
 }

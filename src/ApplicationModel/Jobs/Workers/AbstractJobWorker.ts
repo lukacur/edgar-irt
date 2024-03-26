@@ -7,20 +7,20 @@ export abstract class AbstractJobWorker<
     TJobOutput extends object
 > implements IJobWorker {
     private currentStepIdx: number = 0;
-    private currentStepInput: object | null = null;
+    private currentStepInput: (object & { ttl?: number } | null)[] = [null];
 
     protected readonly jobSteps: IJobStep[] = [];
 
     private lastStepResult?: StepResult<TJobOutput> | null = undefined;
 
-    protected abstract executeStep(jobStep: IJobStep, stepInput: object | null): Promise<StepResult<TJobOutput> | null>;
+    protected abstract executeStep(jobStep: IJobStep, stepInput: (object | null)[]): Promise<StepResult<TJobOutput> | null>;
 
     public async startExecution(jobConfiguration: IJobConfiguration, initialInput: TJobStepInput | null): Promise<boolean> {
         this.jobSteps.splice(0, this.jobSteps.length);
         this.jobSteps.push(...(await jobConfiguration.getJobSteps()));
 
         this.currentStepIdx = 0;
-        this.currentStepInput = initialInput;
+        this.currentStepInput = [initialInput];
 
         try {
             await this.executeNextStep();
@@ -61,9 +61,29 @@ export abstract class AbstractJobWorker<
                 this.currentStepInput
             );
 
+            if (stepResult?.resultTTLSteps !== undefined) {
+                if (stepResult.resultTTLSteps !== -1 && stepResult.resultTTLSteps <= 0) {
+                    throw new Error("Invalid TTL range. TTL value should be undefined, -1 or greater than 0");
+                }
+            }
+
+            this.currentStepInput = this.currentStepInput
+                .filter(si => si?.ttl !== undefined && (si.ttl === -1 || si.ttl > 0))
+                .map(si => {
+                    if (si?.ttl !== undefined && si.ttl !== -1) {
+                        si.ttl--;
+                    }
+
+                    return si;
+                });
+
             this.lastStepResult = stepResult;
 
-            this.currentStepInput = stepResult?.result ?? null;
+            this.currentStepInput.unshift(
+                (stepResult === null) ?
+                    null :
+                    { ...stepResult.result, ttl: stepResult.resultTTLSteps }
+            );
 
             return true;
         } catch (err) {
