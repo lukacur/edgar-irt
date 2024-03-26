@@ -1,0 +1,78 @@
+import { FactoryDelegate, GenericFactory } from "../../PluginSupport/GenericFactory.js";
+import { InputExtractorRegistry } from "../../PluginSupport/Registries/Implementation/InputExtractorRegistry.js";
+import { JobWorkerRegistry } from "../../PluginSupport/Registries/Implementation/JobWorkerRegistry.js";
+import { PersistorRegistry } from "../../PluginSupport/Registries/Implementation/PersistorRegistry.js";
+
+export type AvailableRegistry = "InputDataExtractor" | "JobWorker" | "Persistor";
+
+export function RegisterDelegateToRegistry(
+    registry: AvailableRegistry,
+    key: string
+) {
+    return function <TDecoratedItem extends FactoryDelegate>(
+        target: Object,
+        propertyKey: string | symbol,
+        descriptor: TypedPropertyDescriptor<TDecoratedItem>
+    ) {
+        if (!descriptor.value) {
+            throw new Error(
+                `Unable to register to registry with MethodDecorator:
+                  decorator: ${RegisterDelegateToRegistry.name}
+                  target: ${target.constructor.name};
+                  method: ${propertyKey.toString()}`
+            );
+        }
+        switch (registry) {
+            case "InputDataExtractor": {
+                InputExtractorRegistry.instance.registerItem(key, descriptor.value);
+                break;
+            }
+
+            case "JobWorker": {
+                JobWorkerRegistry.instance.registerItem(key, descriptor.value);
+                break;
+            }
+
+            case "Persistor": {
+                PersistorRegistry.instance.registerItem(key, descriptor.value);
+                break;
+            }
+        }
+    };
+}
+
+export function RegisterFactoryToRegistry(
+    registry: AvailableRegistry,
+    key: string
+) {
+    return function <TCtor extends new() => GenericFactory>(
+        target: TCtor extends typeof GenericFactory ? TCtor : never
+    ) {
+        if (target === GenericFactory) {
+            throw new Error();
+        }
+        const factoryInst = new target();
+        if (!(factoryInst instanceof GenericFactory)) {
+            throw new Error("Decorator is applied to an unsupported class type");
+        }
+
+        switch (registry) {
+            case "InputDataExtractor": {
+                InputExtractorRegistry.instance.registerItem(key, factoryInst);
+                break;
+            }
+
+            case "JobWorker": {
+                JobWorkerRegistry.instance.registerItem(key, factoryInst);
+                break;
+            }
+
+            case "Persistor": {
+                PersistorRegistry.instance.registerItem(key, factoryInst);
+                break;
+            }
+        }
+
+        return target;
+    }
+}
