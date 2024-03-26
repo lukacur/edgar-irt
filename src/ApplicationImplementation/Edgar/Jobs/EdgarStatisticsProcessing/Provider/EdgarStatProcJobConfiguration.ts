@@ -1,4 +1,4 @@
-import { BlockingConfig, IJobConfiguration } from "../../../../../ApplicationModel/Jobs/IJobConfiguration.js";
+import { BlockingConfig, DataPersistorConfig, IJobConfiguration, InputExtractorConfig, JobWorkerConfig } from "../../../../../ApplicationModel/Jobs/IJobConfiguration.js";
 import { IJobStep } from "../../../../../ApplicationModel/Jobs/IJobStep.js";
 import { CourseBasedBatch } from "../../../Batches/CourseBasedBatch.js";
 
@@ -9,9 +9,14 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
         public readonly jobId: string,
         public readonly jobName: string,
         public readonly idUserStarted: number | null,
+        public readonly jobQueue: string | null,
         public readonly jobTimeoutMs: number,
 
-        public readonly courseBasedBatch: CourseBasedBatch,
+        public readonly inputExtractorConfig: InputExtractorConfig<CourseBasedBatch>,
+
+        public readonly jobWorkerConfig: JobWorkerConfig,
+
+        public readonly dataPersistorConfig: DataPersistorConfig<any>,
 
         public readonly blockingConfig: BlockingConfig,
     ) {}

@@ -63,14 +63,31 @@ export class EdgarStatProcJobProvider extends AbstractGenericJobProvider<EdgarSt
             `Statistics processing job - created @ ${(new Date()).toISOString()}; ` +
                 `(For course id ${queueEntry.idCourse} with start academic year id ${queueEntry.idStartAcademicYear})`,
             null,
+            null,
             this.expectedJobTimeout,
 
-            new CourseBasedBatch(
-                this.dbConn,
-                queueEntry.idCourse,
-                queueEntry.idStartAcademicYear,
-                queueEntry.numberOfIncludedPreviousYears,
-            ),
+            {
+                type: "EdgarStatExtractor",
+                configContent: new CourseBasedBatch(
+                    this.dbConn,
+                    queueEntry.idCourse,
+                    queueEntry.idStartAcademicYear,
+                    queueEntry.numberOfIncludedPreviousYears,
+                ),
+            },
+
+            {
+                type: "EdgarStatWorker",
+                steps: []
+            },
+
+            {
+                type: "EdgarStatPersistance",
+                persistanceTimeoutMs: 10000,
+                configContent: {
+                    
+                }
+            },
 
             { awaitDataExtraction: true, persistResultInBackground: false, workInBackground: false }
         );

@@ -8,7 +8,7 @@ export class EdgarStatProcDataExtractor
     protected override async formatJobInputTyped(jobConfiguration: EdgarStatProcJobConfiguration): Promise<object> {
         const serObj = {};
 
-        await jobConfiguration.courseBasedBatch.serializeInto(serObj);
+        await jobConfiguration.inputExtractorConfig.configContent.serializeInto(serObj);
 
         return serObj;
     }

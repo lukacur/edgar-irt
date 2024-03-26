@@ -4,36 +4,54 @@
     "idUserStarted": 1,
     "jobQueue": "edgar-question-statistics-processing",
     "jobTimeoutMs": 250000,
+
     "blockingConfig": {
-        "awaitInputFormatting": true,
+        "awaitDataExtraction": true,
         "workInBackground": false,
         "persistResultInBackground": false
     },
 
-    "endpointToFetch": {
-        "url": "https://nesto.org:5477",
-        "parsingMethod": "XML",
-        "other": "..."
-    },
-
-    "courseBasedBatch": {
-        "idCourse": 2006,
-        "idStartAcademicYear": 2022,
-        "numberOfIncludedPreviousYears": 6
-    },
-
-    "steps": [
-        {
-            "stepTimeoutMs": 200000,
-            "stepConfiguration": {
-                "type": "calc-with-script",
-
-                "calculationScriptAbsPath": "./test_script.r",
-                "inputJSONInfoAbsPath": "./tests_dir/test_serialization.json",
-
-                "outputFile": "./tests_dir/output/serialization_output.json"
-            },
-            "constructWithJobInfo": false
+    "inputExtractorConfig": {
+        "type": "EdgarStatExtractor",
+        "configContent": {
+            "courseBasedBatch": {
+                "idCourse": 2006,
+                "idStartAcademicYear": 2022,
+                "numberOfIncludedPreviousYears": 6
+            }
         }
-    ]
+    },
+
+    "jobWorkerConfig": {
+        "type": "EdgarStatWorker",
+        "steps": [
+            {
+                "type": "EdgarStatCheckStaleness",
+                "stepTimeoutMs": 5000,
+                "configContent": {
+                    
+                }
+            },
+            {
+                "stepTimeoutMs": 200000,
+                "configContent": {
+                    "type": "calc-with-script",
+    
+                    "calculationScriptAbsPath": "./test_script.r",
+                    "inputJSONInfoAbsPath": "./tests_dir/test_serialization.json",
+    
+                    "outputFile": "./tests_dir/output/serialization_output.json"
+                },
+                "constructWithJobInfo": false
+            }
+        ]
+    },
+
+    "dataPersistorConfig": {
+        "type": "EdgarStatPersistor",
+        "persistanceTimeoutMs": 10000,
+        "configContent": {
+            
+        }
+    }
 }
