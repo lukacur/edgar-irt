@@ -102,7 +102,11 @@ export abstract class AbstractJobWorker<
 
     public async getExecutionResult(): Promise<StepResult<object> | null> {
         if (this.hasNextStep() || this.lastStepResult?.status !== "success") {
-            return null;
+            return (
+                this.lastStepResult !== undefined &&
+                this.lastStepResult !== null &&
+                this.lastStepResult.status !== "success"
+            ) ? this.lastStepResult : null;
         }
 
         return await this.getExecutionResultTyped();
