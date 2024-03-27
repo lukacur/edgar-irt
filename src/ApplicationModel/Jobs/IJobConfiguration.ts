@@ -44,8 +44,8 @@ export interface IJobConfiguration/* <TInputExtractorConfig, TDataPersistorConfi
 
     readonly dataPersistorConfig: DataPersistorConfig<object>;
 
-    addJobStep(step: IJobStep): Promise<boolean>;
-    removeJobStep(step: IJobStep): Promise<boolean>;
+    addJobStep?(step: IJobStep): Promise<boolean>;
+    removeJobStep?(step: IJobStep): Promise<boolean>;
     
-    getJobSteps(): Promise<IJobStep[]>;
+    getJobSteps?(): Promise<IJobStep[]>;
 }

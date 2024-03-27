@@ -16,6 +16,10 @@ export abstract class AbstractJobWorker<
     protected abstract executeStep(jobStep: IJobStep, stepInput: (object | null)[]): Promise<StepResult<TJobOutput> | null>;
 
     public async startExecution(jobConfiguration: IJobConfiguration, initialInput: TJobStepInput | null): Promise<boolean> {
+        if (jobConfiguration.getJobSteps === undefined) {
+            throw new Error("Job was not properly constructed: job config object is missing getJobSteps method");
+        }
+
         this.jobSteps.splice(0, this.jobSteps.length);
         this.jobSteps.push(...(await jobConfiguration.getJobSteps()));
 
