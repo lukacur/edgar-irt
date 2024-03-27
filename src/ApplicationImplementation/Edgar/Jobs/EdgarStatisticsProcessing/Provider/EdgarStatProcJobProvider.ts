@@ -1,14 +1,15 @@
 import { randomUUID } from "crypto";
-import { CourseStatisticsCalculationQueue, CourseStatisticsProcessingRequest } from "../../../../../AdaptiveGradingDaemon/Queue/StatisticsCalculationQueues/CourseStatisticsCalculationQueue.js";
+import { CourseStatisticsCalculationQueue } from "../../../../../AdaptiveGradingDaemon/Queue/StatisticsCalculationQueues/CourseStatisticsCalculationQueue.js";
 import { AbstractGenericJobProvider } from "../../../../../ApplicationModel/Jobs/Providers/AbstractGenericJobProvider.js";
 import { DatabaseConnection } from "../../../../Database/DatabaseConnection.js";
 import { EdgarStatProcJobConfiguration } from "./EdgarStatProcJobConfiguration.js";
-import { CourseBasedBatch } from "../../../Batches/CourseBasedBatch.js";
 import { IJobStep } from "../../../../../ApplicationModel/Jobs/IJobStep.js";
+import { IJobConfiguration } from "../../../../../ApplicationModel/Jobs/IJobConfiguration.js";
+import { DelayablePromise } from "../../../../../Util/DelayablePromise.js";
 
 type JobQueueInfoEntry = {
     timeoutId: NodeJS.Timeout,
-    associatedQueueEntry: CourseStatisticsProcessingRequest,
+    associatedQueueEntry: IJobConfiguration,
 };
 
 export class EdgarStatProcJobProvider extends AbstractGenericJobProvider<EdgarStatProcJobConfiguration> {
@@ -56,41 +57,18 @@ export class EdgarStatProcJobProvider extends AbstractGenericJobProvider<EdgarSt
 
     protected async provideJobTyped(presetJobId?: string): Promise<EdgarStatProcJobConfiguration> {
         const queueEntry = await this.calculationQueue.dequeue();
-        const jobId = presetJobId ?? randomUUID();
+        let jobId = presetJobId ?? randomUUID();
 
-        const jobConfig = new EdgarStatProcJobConfiguration(
-            jobId,
-            `Statistics processing job - created @ ${(new Date()).toISOString()}; ` +
-                `(For course id ${queueEntry.idCourse} with start academic year id ${queueEntry.idStartAcademicYear})`,
-            null,
-            null,
-            this.expectedJobTimeout,
+        /*`Statistics processing job - created @ ${(new Date()).toISOString()}; ` +
+                `(For course id ${<object & { idCourse: number}>queueEntry.inputExtractorConfig.configContent.idCourse} with start academic year id ${queueEntry.idStartAcademicYear})`,*/
 
-            {
-                type: "EdgarStatExtractor",
-                configContent: new CourseBasedBatch(
-                    this.dbConn,
-                    queueEntry.idCourse,
-                    queueEntry.idStartAcademicYear,
-                    queueEntry.numberOfIncludedPreviousYears,
-                ),
-            },
-
-            {
-                type: "EdgarStatWorker",
-                steps: []
-            },
-
-            {
-                type: "EdgarStatPersistance",
-                persistanceTimeoutMs: 10000,
-                configContent: {
-                    
-                }
-            },
-
-            { awaitDataExtraction: true, persistResultInBackground: false, workInBackground: false }
+        const jobConfig = await EdgarStatProcJobConfiguration.fromGenericJobConfig(
+            queueEntry,
+            (jid) => jid ?? jobId,
+            (name) => name ?? `Statistics processing job - created @ ${(new Date()).toISOString()};`
         );
+
+        jobId = jobConfig.jobId;
 
         let configurationSuccessful = true;
 
@@ -167,7 +145,7 @@ export class EdgarStatProcJobProvider extends AbstractGenericJobProvider<EdgarSt
             this.jobFailureMap.set(jobId, this.jobFailureMap.get(jobId)! + 1);
 
             if (retryMode === "retry") {
-            return await this.resetJob(jobId);
+                return await this.resetJob(jobId);
             } else {
                 const prm = new DelayablePromise<boolean>();
                 setTimeout(async () => prm.delayedResolve(await this.resetJob(jobId)), retryMode.retryAfterMs);

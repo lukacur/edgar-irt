@@ -1,3 +1,4 @@
+import { IJobConfiguration } from "../../../ApplicationModel/Jobs/IJobConfiguration.js";
 import { IQueueSystemBase } from "../IQueueSystemBase.js";
 
 export type CourseStatisticsProcessingRequest = {
@@ -8,21 +9,21 @@ export type CourseStatisticsProcessingRequest = {
     forceCalculation: boolean;
 }
 
-export class CourseStatisticsCalculationQueue implements IQueueSystemBase<CourseStatisticsProcessingRequest> {
+export class CourseStatisticsCalculationQueue implements IQueueSystemBase<IJobConfiguration> {
     constructor(
         public readonly queueName: string,
-        private readonly usedQueue: IQueueSystemBase<CourseStatisticsProcessingRequest>
+        private readonly usedQueue: IQueueSystemBase<IJobConfiguration>
     ) {}
 
-    public async enqueue(data: CourseStatisticsProcessingRequest): Promise<boolean> {
+    public async enqueue(data: IJobConfiguration): Promise<boolean> {
         return await this.usedQueue.enqueue(data);
     }
 
-    public async dequeue(): Promise<CourseStatisticsProcessingRequest> {
+    public async dequeue(): Promise<IJobConfiguration> {
         return await this.usedQueue.dequeue();
     }
 
-    public async peek(): Promise<CourseStatisticsProcessingRequest | null> {
+    public async peek(): Promise<IJobConfiguration | null> {
         return await this.usedQueue.peek();
     }
 
