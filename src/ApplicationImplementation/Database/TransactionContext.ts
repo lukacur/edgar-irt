@@ -61,11 +61,11 @@ export class TransactionContext {
         }
 
         try {
-            await this.client.query("COMMIT");
-            await this.client.query("SET search_path TO public;")
+            await this.client.query("COMMIT;");
         } catch (err) {
             console.log(err);
         } finally {
+            await this.client.query("SET search_path TO public;");
             this.client.release();
         }
 
@@ -80,11 +80,11 @@ export class TransactionContext {
         }
 
         try {
-            await this.client.query("ROLLBACK");
-            await this.client.query("SET search_path TO public;")
+            await this.client.query("ROLLBACK;");
         } catch (err) {
             console.log(err);
         } finally {
+            await this.client.query("SET search_path TO public;");
             this.client.release();
         }
 

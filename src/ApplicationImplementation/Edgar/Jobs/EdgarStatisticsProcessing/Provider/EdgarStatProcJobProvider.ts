@@ -55,6 +55,10 @@ export class EdgarStatProcJobProvider extends AbstractGenericJobProvider<EdgarSt
         return false;
     }
 
+    /*
+     * TODO: decide if returned jobs should be updated or not; e. g. check if a job ID is already present in the DB and 
+     * update it or create an entirely new job
+    */
     protected async provideJobTyped(presetJobId?: string): Promise<EdgarStatProcJobConfiguration> {
         const queueEntry = await this.calculationQueue.dequeue();
         let jobId = presetJobId ?? randomUUID();
@@ -64,7 +68,7 @@ export class EdgarStatProcJobProvider extends AbstractGenericJobProvider<EdgarSt
 
         const jobConfig = await EdgarStatProcJobConfiguration.fromGenericJobConfig(
             queueEntry,
-            (jid) => jid ?? jobId,
+            (jid) => jobId ?? jid,
             (name) => name ?? `Statistics processing job - created @ ${(new Date()).toISOString()};`
         );
 
