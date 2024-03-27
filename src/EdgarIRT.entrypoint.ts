@@ -21,6 +21,12 @@ import { EdgarStatProcStepConfiguration } from "./ApplicationImplementation/Edga
 import { JobService } from "./JobService.js";
 import { CheckIfCalculationNeededStep } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Steps/CheckIfCalculationNeeded/CheckIfCalculationNeededStep.js";
 import { CheckIfCalculationNeededStepConfiguration } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Steps/CheckIfCalculationNeeded/CheckIfCalculationNeededStepConfiguration.js";
+import { randomUUID } from "crypto";
+import { EdgarStatProcJobConfiguration } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Provider/EdgarStatProcJobConfiguration.js";
+import { EdgarStatsProcessingConstants } from "./ApplicationImplementation/Edgar/EdgarStatsProcessing.constants.js";
+import { RegisterDelegateToRegistry } from "./ApplicationModel/Decorators/Registration.decorator.js";
+import { DatabaseConnectionRegistry } from "./PluginSupport/Registries/Implementation/DatabaseConnectionRegistry.js";
+import { RegistryDefaultConstants } from "./PluginSupport/RegistryDefault.constants.js";
 
 type AvailableTests =
     "db" |
@@ -32,7 +38,8 @@ type AvailableTests =
     "serialization" |
     "queue" |
     "job" |
-    "total_job";
+    "total_job" |
+    "generic_job";
 
 export class MainRunner {
     private static async delayableAwaiter<T>(prom: DelayablePromise<T>) {
@@ -390,7 +397,36 @@ export class MainRunner {
         const resultPersistor = new EdgarStatProcWorkResultPersistor(dbConn);
 
         await calcQueue.enqueue(
-            { idCourse: 2006, idStartAcademicYear: 2022, numberOfIncludedPreviousYears: 0, forceCalculation: false }
+            new EdgarStatProcJobConfiguration(
+                randomUUID(),
+                "Test job - total job test",
+                null,
+                "",
+                200000,
+                {
+                    type: "",
+                    configContent: new CourseBasedBatch(
+                        dbConn,
+                        2006,
+                        2022,
+                        0,
+                    )
+                },
+                {
+                    type: "",
+                    steps: []
+                },
+                {
+                    type: "",
+                    persistanceTimeoutMs: 50000,
+                    configContent: {}
+                },
+                {
+                    awaitDataExtraction: true,
+                    persistResultInBackground: false,
+                    workInBackground: false
+                }
+            )
         );
 
         const jobConfig = await jobProvider.provideJob();
@@ -400,13 +436,13 @@ export class MainRunner {
         success = await jobWorker.startExecution(jobConfig, data);
 
         if (!success) {
-            await jobProvider.failJob(jobConfig.jobId);
+            await jobProvider.failJob(jobConfig.jobId, "retry");
             throw new Error("Processing error occurred");
         }
 
         while (jobWorker.hasNextStep()) {
             if (!(await jobWorker.executeNextStep())) {
-                await jobProvider.failJob(jobConfig.jobId);
+                await jobProvider.failJob(jobConfig.jobId, "retry");
                 throw new Error("Step-by-step execution error occurred");
             }
         }
@@ -414,7 +450,7 @@ export class MainRunner {
         const result = await jobWorker.getExecutionResult();
 
         if (result === null) {
-            await jobProvider.failJob(jobConfig.jobId);
+            await jobProvider.failJob(jobConfig.jobId, "no-retry");
             throw new Error("Unable to calculate: script call failed");
         }
 
@@ -427,7 +463,7 @@ export class MainRunner {
         }
 
         if (!success) {
-            await jobProvider.failJob(jobConfig.jobId);
+            await jobProvider.failJob(jobConfig.jobId, "no-retry");
             throw new Error("Calculation unsuccessful");
         }
 
@@ -447,7 +483,36 @@ export class MainRunner {
             ),
         );
         await calcQueue.enqueue(
-            { idCourse: 2006, idStartAcademicYear: 2022, numberOfIncludedPreviousYears: 0, forceCalculation: false }
+            new EdgarStatProcJobConfiguration(
+                randomUUID(),
+                "Test job - total job test",
+                null,
+                "",
+                200000,
+                {
+                    type: "",
+                    configContent: new CourseBasedBatch(
+                        dbConn,
+                        2006,
+                        2022,
+                        0,
+                    )
+                },
+                {
+                    type: "",
+                    steps: []
+                },
+                {
+                    type: "",
+                    persistanceTimeoutMs: 50000,
+                    configContent: {}
+                },
+                {
+                    awaitDataExtraction: true,
+                    persistResultInBackground: false,
+                    workInBackground: false
+                }
+            )
         );
 
         const jobProvider = new EdgarStatProcJobProvider(
@@ -491,10 +556,182 @@ export class MainRunner {
         return jobService.shutdownJobService();
     }
 
-    private static readonly CURRENT_TEST: AvailableTests = "total_job";
+    public static async doGenericJobTest(dbConn: DatabaseConnection): Promise<void> {
+        const calcQueue = new CourseStatisticsCalculationQueue(
+            "",
+            new FileQueueSystem(
+                "test-file-queue",
+                "./queues/file/json-file-queue.queue.json"
+            ),
+        );
+
+        await calcQueue.enqueue(
+            /*{
+                jobId: randomUUID(),
+                jobName: "Test job - total job test for course statistics calculation",
+                idUserStarted: null,
+                jobQueue: "",
+                jobTimeoutMs: 200000,
+
+                blockingConfig: {
+                    awaitDataExtraction: true,
+                    persistResultInBackground: false,
+                    workInBackground: false,
+                },
+
+                inputExtractorConfig: {
+                    type: EdgarStatsProcessingConstants.DATA_EXTRACTOR_REGISTRY_ENTRY,
+                    configContent: {
+                        databaseConnection: RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY,
+                        idCourse: 2006,
+                        idStartAcademicYear: 2022,
+                        numberOfIncludedPreviousYears: 0,
+                    },
+                },
+
+                jobWorkerConfig: {
+                    type: EdgarStatsProcessingConstants.JOB_WORKER_REGISTRY_ENTRY,
+                    steps: [
+                        {
+                            type: EdgarStatsProcessingConstants.STALENESS_CHECK_STEP_ENTRY,
+                            stepTimeoutMs: 20000,
+                            configContent: {
+                                databaseConnection: RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY,
+                                calculationsValidFor: {
+                                    days: 30,
+                                    hours: 0,
+                                    minutes: 0,
+                                    seconds: 0
+                                },
+                                forceCalculation: false,
+                            },
+                        },
+                        {
+                            type: EdgarStatsProcessingConstants.STATISTICS_CALCULATION_STEP_ENTRY,
+                            stepTimeoutMs: 200000,
+                            configContent: {
+                                databaseConnection: RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY,
+                                calculationScriptAbsPath: "./test_script.r",
+                                inputJSONInfoAbsPath: "./tests_dir/test_serialization.json",
+                                outputFile: "./tests_dir/output/serialization_output.json",
+                            },
+                        }
+                    ]
+                },
+
+                dataPersistorConfig: {
+                    type: EdgarStatsProcessingConstants.PERSISTOR_ENTRY,
+                    persistanceTimeoutMs: 100000,
+                    configContent: {
+                        databaseConnection: RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY,
+                    },
+                },
+            },*/
+
+            JSON.parse(
+                `{
+                    "jobId": "aa7cd-1584bbf-2283-ccbcdffa55301",
+                    "jobName": "Process question statistics for course 'Objektno orijentirano programiranje' in academic years 2018-2024",
+                    "idUserStarted": null,
+                    "jobQueue": "edgar-question-statistics-processing",
+                    "jobTimeoutMs": 250000,
+                
+                    "blockingConfig": {
+                        "awaitDataExtraction": true,
+                        "workInBackground": false,
+                        "persistResultInBackground": false
+                    },
+                
+                    "inputExtractorConfig": {
+                        "type": "${EdgarStatsProcessingConstants.DATA_EXTRACTOR_REGISTRY_ENTRY}",
+                        "configContent": {
+                            "databaseConnection": "${RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY}",
+                            "idCourse": 2006,
+                            "idStartAcademicYear": 2022,
+                            "numberOfIncludedPreviousYears": 0
+                        }
+                    },
+                
+                    "jobWorkerConfig": {
+                        "type": "${EdgarStatsProcessingConstants.JOB_WORKER_REGISTRY_ENTRY}",
+                        "steps": [
+                            {
+                                "type": "${EdgarStatsProcessingConstants.STALENESS_CHECK_STEP_ENTRY}",
+                                "stepTimeoutMs": 5000,
+                                "configContent": {
+                                    "databaseConnection": "${RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY}",
+                                    "calculationsValidFor": {
+                                        "days": 2,
+                                        "hours": 15,
+                                        "minutes": 1,
+                                        "seconds": 10
+                                    },
+                                    "forceCalculation": false
+                                }
+                            },
+                            {
+                                "type": "${EdgarStatsProcessingConstants.STATISTICS_CALCULATION_STEP_ENTRY}",
+                                "stepTimeoutMs": 200000,
+                                "configContent": {
+                                    "databaseConnection": "${RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY}",
+                                    "calculationScriptAbsPath": "./test_script.r",
+                                    "inputJSONInfoAbsPath": "./tests_dir/test_serialization.json",
+                                    "outputFile": "./tests_dir/output/serialization_output.json"
+                                },
+                                "constructWithJobInfo": false
+                            }
+                        ]
+                    },
+                
+                    "dataPersistorConfig": {
+                        "type": "${EdgarStatsProcessingConstants.PERSISTOR_ENTRY}",
+                        "persistanceTimeoutMs": 100000,
+                        "configContent": {
+                            "databaseConnection": "${RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY}"
+                        }
+                    }
+                }`
+            )
+        );
+
+        const jobProvider = new EdgarStatProcJobProvider(
+            dbConn,
+            calcQueue,
+            200000,
+            []
+        );
+
+        const jobService = JobService.configureNew()
+            .useProvider(jobProvider)
+            .build();
+        
+        jobService.startJobService();
+
+        return jobService.shutdownJobService();
+    }
+
+    private static defaultConnection: DatabaseConnection | null;
+
+    @RegisterDelegateToRegistry(
+        "DatabaseConnection",
+        RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY
+    )
+    private createDefaultConnection(...args: any[]): object {
+        if (MainRunner.defaultConnection === null) {
+            throw new Error("Default connection was not set up");
+        }
+
+        return MainRunner.defaultConnection;
+    }
+
+    private static readonly CURRENT_TEST: AvailableTests = "generic_job";
 
     public static async main(args: string[]): Promise<void> {
-        const conn = await DatabaseConnection.fromConfigFile("./database-config.json");
+        MainRunner.defaultConnection = await DatabaseConnection.fromConfigFile("./database-config.json");
+
+        const conn = DatabaseConnectionRegistry.instance.getItem(
+            RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY
+        );
         let prom: Promise<void>;
 
         switch (MainRunner.CURRENT_TEST) {
@@ -545,6 +782,11 @@ export class MainRunner {
 
             case "total_job": {
                 prom = MainRunner.doTotalJobTest(conn);
+                break;
+            }
+
+            case "generic_job": {
+                prom = MainRunner.doGenericJobTest(conn);
                 break;
             }
 
