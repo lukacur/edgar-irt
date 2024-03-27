@@ -1,5 +1,6 @@
 import { BlockingConfig, DataPersistorConfig, IJobConfiguration, InputExtractorConfig, JobWorkerConfig } from "../../../../../ApplicationModel/Jobs/IJobConfiguration.js";
 import { IJobStep } from "../../../../../ApplicationModel/Jobs/IJobStep.js";
+import { JobStepRegistry } from "../../../../../PluginSupport/Registries/Implementation/JobStepRegistry.js";
 import { CourseBasedBatch } from "../../../Batches/CourseBasedBatch.js";
 
 export class EdgarStatProcJobConfiguration implements IJobConfiguration {
@@ -45,5 +46,29 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
     
     public async getJobSteps(): Promise<IJobStep[]> {
         return this.jobSteps;
+    }
+
+    public static async fromGenericJobConfig(
+        config: IJobConfiguration,
+        jobIdProvider?: (currJobId: string) => string,
+        nameProvider?: (currentName: string) => string
+    ): Promise<EdgarStatProcJobConfiguration> {
+        const instance = new EdgarStatProcJobConfiguration(
+            (jobIdProvider !== undefined) ? jobIdProvider(config.jobId) : config.jobId,
+            (nameProvider !== undefined) ? nameProvider(config.jobName) : config.jobName,
+            config.idUserStarted,
+            config.jobQueue,
+            config.jobTimeoutMs,
+            <InputExtractorConfig<CourseBasedBatch>>config.inputExtractorConfig,
+            config.jobWorkerConfig,
+            config.dataPersistorConfig,
+            config.blockingConfig,
+        );
+
+        instance.jobSteps.push(
+            ...config.jobWorkerConfig.steps.map(jsd => JobStepRegistry.instance.getItem(jsd.type, jsd))
+        );
+
+        return instance;
     }
 }
