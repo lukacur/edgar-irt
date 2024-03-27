@@ -151,14 +151,28 @@ export class EdgarStatProcJobProvider extends AbstractGenericJobProvider<EdgarSt
 
     private jobFailureMap: Map<string, number> = new Map();
 
-    protected override async doFailJob(jobId: string): Promise<boolean> {
+    protected override async doFailJob(
+        jobId: string,
+        retryMode: "retry" | "no-retry" | { retryAfterMs: number }
+    ): Promise<boolean> {
+        if (retryMode === "no-retry") {
+            return true;
+        }
+
         if (!this.jobFailureMap.has(jobId)) {
             this.jobFailureMap.set(jobId, 0);
         }
 
         if (this.jobFailureMap.get(jobId)! <= 5) {
             this.jobFailureMap.set(jobId, this.jobFailureMap.get(jobId)! + 1);
+
+            if (retryMode === "retry") {
             return await this.resetJob(jobId);
+            } else {
+                const prm = new DelayablePromise<boolean>();
+                setTimeout(async () => prm.delayedResolve(await this.resetJob(jobId)), retryMode.retryAfterMs);
+                return prm.getWrappedPromise();
+            }
         }
 
         return true;

@@ -45,7 +45,7 @@ export class JobRunner {
             
                 let success = await currWorker.startExecution(jobConfig, jobInput);
                 if (!success) {
-                    await this.jobProvider.failJob(jobConfig.jobId);
+                    await this.jobProvider.failJob(jobConfig.jobId, "retry");
                     continue;
                 }
 
@@ -57,19 +57,27 @@ export class JobRunner {
                 }
 
                 if (!success) {
-                    await this.jobProvider.failJob(jobConfig.jobId);
+                    await this.jobProvider.failJob(jobConfig.jobId, "retry");
                     continue;
                 }
 
                 const result = await currWorker.getExecutionResult();
                 if (result?.status !== "success") {
-                    console.log(`Job execution failed. Reason: ${result?.reason ?? "unknown reason"}`);
-                    await this.jobProvider.failJob(jobConfig.jobId);
+                    const status = result?.status;
+
+                    console.log(
+                        `Job execution failed with status ${status}. Reason: ${result?.reason ?? "unknown reason"}`
+                    );
+
+                    await this.jobProvider.failJob(
+                        jobConfig.jobId,
+                        (status === "failure") ? "retry" : "no-retry"
+                    );
                     continue;
                 }
 
                 if (!(await this.jobWorkResultPersistor.perisistResult(result.result, jobConfig))) {
-                    await this.jobProvider.failJob(jobConfig.jobId);
+                    await this.jobProvider.failJob(jobConfig.jobId, { retryAfterMs: 15000 });
                     continue;
                 }
 
@@ -77,7 +85,7 @@ export class JobRunner {
             } catch (err) {
                 console.log(err);
 
-                await this.jobProvider.failJob(jobConfig.jobId);
+                await this.jobProvider.failJob(jobConfig.jobId, { retryAfterMs: 20000 });
             }
         }
     }
@@ -89,24 +97,24 @@ export class JobRunner {
             try {
                 const inputExtractor = InputExtractorRegistry.instance.getItem(
                     jobConfig.inputExtractorConfig.type,
-                    jobConfig
+                    jobConfig.inputExtractorConfig,
                 );
 
                 const jobWorker = JobWorkerRegistry.instance.getItem(
                     jobConfig.jobWorkerConfig.type,
-                    jobConfig
+                    jobConfig,
                 );
 
                 const persistor = PersistorRegistry.instance.getItem(
                     jobConfig.dataPersistorConfig.type,
-                    jobConfig,
+                    jobConfig.dataPersistorConfig,
                 );
 
                 const jobInput = await inputExtractor.formatJobInput(jobConfig);
             
                 let success = await jobWorker.startExecution(jobConfig, jobInput);
                 if (!success) {
-                    await this.jobProvider.failJob(jobConfig.jobId);
+                    await this.jobProvider.failJob(jobConfig.jobId, "retry");
                     continue;
                 }
 
@@ -118,19 +126,27 @@ export class JobRunner {
                 }
 
                 if (!success) {
-                    await this.jobProvider.failJob(jobConfig.jobId);
+                    await this.jobProvider.failJob(jobConfig.jobId, "retry");
                     continue;
                 }
 
                 const result = await jobWorker.getExecutionResult();
                 if (result?.status !== "success") {
-                    console.log(`Job execution failed. Reason: ${result?.reason ?? "unknown reason"}`);
-                    await this.jobProvider.failJob(jobConfig.jobId);
+                    const status = result?.status;
+
+                    console.log(
+                        `Job execution failed with status ${status}. Reason: ${result?.reason ?? "unknown reason"}`
+                    );
+
+                    await this.jobProvider.failJob(
+                        jobConfig.jobId,
+                        (status === "failure") ? "retry" : "no-retry",
+                    );
                     continue;
                 }
 
                 if (!(await persistor.perisistResult(result.result, jobConfig))) {
-                    await this.jobProvider.failJob(jobConfig.jobId);
+                    await this.jobProvider.failJob(jobConfig.jobId, { retryAfterMs: 15000 });
                     continue;
                 }
 
@@ -138,7 +154,7 @@ export class JobRunner {
             } catch (err) {
                 console.log(err);
 
-                await this.jobProvider.failJob(jobConfig.jobId);
+                await this.jobProvider.failJob(jobConfig.jobId, { retryAfterMs: 20000 });
             }
         }
     }

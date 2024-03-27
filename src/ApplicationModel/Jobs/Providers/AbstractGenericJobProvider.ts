@@ -54,9 +54,15 @@ abstract class DatabaseJobInfoStoringJobProvider<TJobConfiguration extends IJobC
         return finishedJob;
     }
 
-    protected abstract doFailJob(jobId: string): Promise<boolean>;
+    protected abstract doFailJob(
+        jobId: string,
+        retryMode: "retry" | "no-retry" | { retryAfterMs: number }
+    ): Promise<boolean>;
 
-    public async failJob(jobId: string): Promise<boolean> {
+    public async failJob(
+        jobId: string,
+        retryMode: "retry" | "no-retry" | { retryAfterMs: number }
+    ): Promise<boolean> {
         const transaction = await this.dbConn.beginTransaction("job_tracking_schema");
 
         let failedJob: boolean = false;
@@ -67,7 +73,7 @@ abstract class DatabaseJobInfoStoringJobProvider<TJobConfiguration extends IJobC
                 [jobId]
             );
 
-            failedJob = await this.doFailJob(jobId);
+            failedJob = await this.doFailJob(jobId, retryMode);
 
             if (failedJob) {
                 await transaction.commit();
