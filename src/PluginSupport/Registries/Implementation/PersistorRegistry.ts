@@ -1,5 +1,4 @@
 import { IWorkResultPersistor } from "../../../ApplicationModel/Jobs/WorkResultPersistors/IWorkResultPersistor.js";
-import { GenericFactory } from "../../GenericFactory.js";
 import { GenericRegistry } from "../GenericRegistry.js";
 
 export class PersistorRegistry extends GenericRegistry {
@@ -10,6 +9,6 @@ export class PersistorRegistry extends GenericRegistry {
     private constructor() { super(); }
 
     public override getItem<TReturnObject extends object = IWorkResultPersistor>(ieType: string, ...args: any[]): TReturnObject {
-        return <TReturnObject> super.getItem(ieType, args);
+        return <TReturnObject> super.getItem(ieType, ...args);
     }
 }

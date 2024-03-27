@@ -26,8 +26,8 @@ export abstract class GenericRegistry {
 
         return <TReturnObject>(
             ("create" in regIe) ?
-                regIe.create(args) :
-                regIe(args)
+                regIe.create(...args) :
+                regIe(...args)
         );
     }
 }

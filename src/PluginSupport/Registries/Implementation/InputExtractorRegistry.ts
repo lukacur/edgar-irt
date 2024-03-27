@@ -13,6 +13,6 @@ export class InputExtractorRegistry extends GenericRegistry {
         ieType: string,
         ...args: any[]
     ): TReturnObject {
-        return <TReturnObject> super.getItem(ieType, args);
+        return <TReturnObject> super.getItem(ieType, ...args);
     }
 }
