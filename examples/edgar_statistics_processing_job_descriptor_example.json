@@ -1,7 +1,7 @@
 {
     "jobId": "aa7cd-1584bbf-2283-ccbcdffa55301",
     "jobName": "Process question statistics for course 'Objektno orijentirano programiranje' in academic years 2018-2024",
-    "idUserStarted": 1,
+    "idUserStarted": null,
     "jobQueue": "edgar-question-statistics-processing",
     "jobTimeoutMs": 250000,
 
@@ -12,34 +12,39 @@
     },
 
     "inputExtractorConfig": {
-        "type": "EdgarStatExtractor",
+        "type": "EdgarStatsProcessing/DataExtractor",
         "configContent": {
-            "courseBasedBatch": {
-                "idCourse": 2006,
-                "idStartAcademicYear": 2022,
-                "numberOfIncludedPreviousYears": 6
-            }
+            "databaseConnection": "DEFAULT_CONNECTION",
+            "idCourse": 2006,
+            "idStartAcademicYear": 2022,
+            "numberOfIncludedPreviousYears": 4
         }
     },
 
     "jobWorkerConfig": {
-        "type": "EdgarStatWorker",
+        "type": "EdgarStatsProcessing/JobWorker",
         "steps": [
             {
-                "type": "EdgarStatCheckStaleness",
+                "type": "EdgarStatsProcessing/CheckStalenessStep",
                 "stepTimeoutMs": 5000,
                 "configContent": {
-                    
+                    "databaseConnection": "DEFAULT_CONNECTION",
+                    "calculationsValidFor": {
+                        "days": 2,
+                        "hours": 15,
+                        "minutes": 1,
+                        "seconds": 10
+                    },
+                    "forceCalculation": false
                 }
             },
             {
+                "type": "EdgarStatsProcessing/StatisticsCalculation",
                 "stepTimeoutMs": 200000,
                 "configContent": {
-                    "type": "calc-with-script",
-    
+                    "databaseConnection": "DEFAULT_CONNECTION",
                     "calculationScriptAbsPath": "./test_script.r",
                     "inputJSONInfoAbsPath": "./tests_dir/test_serialization.json",
-    
                     "outputFile": "./tests_dir/output/serialization_output.json"
                 },
                 "constructWithJobInfo": false
@@ -48,10 +53,10 @@
     },
 
     "dataPersistorConfig": {
-        "type": "EdgarStatPersistor",
-        "persistanceTimeoutMs": 10000,
+        "type": "EdgarStatsProcessing/Persistor",
+        "persistanceTimeoutMs": 100000,
         "configContent": {
-            
+            "databaseConnection": "DEFAULT_CONNECTION"
         }
     }
 }
