@@ -6,6 +6,9 @@ import { readFile, unlink, writeFile } from "fs/promises";
 import { execFile } from "child_process";
 import { DelayablePromise } from "../../../../../../Util/DelayablePromise.js";
 import { StepResult } from "../../../../../../ApplicationModel/Jobs/IJobStep.js";
+import { RegisterDelegateToRegistry } from "../../../../../../ApplicationModel/Decorators/Registration.decorator.js";
+import { EdgarStatsProcessingConstants } from "../../../../EdgarStatsProcessing.constants.js";
+import { JobStepDescriptor } from "../../../../../../ApplicationModel/Jobs/IJobConfiguration.js";
 
 export class EdgarStatProcJobStep
     extends AbstractGenericJobStep<EdgarStatProcStepConfiguration, object, IRCalculationResult> {
@@ -123,5 +126,16 @@ export class EdgarStatProcJobStep
                 await unlink(childProcJSONOutput);
             }
         }
+    }
+
+    @RegisterDelegateToRegistry(
+        "JobStep",
+        EdgarStatsProcessingConstants.STATISTICS_CALCULATION_STEP_ENTRY
+    )
+    public createGeneric(stepDescriptor: JobStepDescriptor, ...args: any[]): object {
+        return new EdgarStatProcJobStep(
+            stepDescriptor.stepTimeoutMs,
+            <EdgarStatProcStepConfiguration>stepDescriptor.configContent,
+        );
     }
 }

@@ -1,6 +1,10 @@
+import { RegisterDelegateToRegistry } from "../../../../../ApplicationModel/Decorators/Registration.decorator.js";
+import { DataPersistorConfig } from "../../../../../ApplicationModel/Jobs/IJobConfiguration.js";
 import { AbstractTypedWorkResultPersistor } from "../../../../../ApplicationModel/Jobs/WorkResultPersistors/AbstractTypedWorkResultPersistor.js";
+import { DatabaseConnectionRegistry } from "../../../../../PluginSupport/Registries/Implementation/DatabaseConnectionRegistry.js";
 import { DatabaseConnection } from "../../../../Database/DatabaseConnection.js";
 import { TransactionContext } from "../../../../Database/TransactionContext.js";
+import { EdgarStatsProcessingConstants } from "../../../EdgarStatsProcessing.constants.js";
 import { CourseBasedCalculation, IRCalculationResult, TestBasedCalculation } from "../../../Statistics/IRCalculationResult.js";
 import { EdgarStatProcJobConfiguration } from "../Provider/EdgarStatProcJobConfiguration.js";
 
@@ -206,5 +210,24 @@ export class EdgarStatProcWorkResultPersistor
         }
 
         return false;
+    }
+
+    @RegisterDelegateToRegistry(
+        "Persistor",
+        EdgarStatsProcessingConstants.PERSISTOR_ENTRY
+    )
+    public createGeneric(
+        persistorConfig: DataPersistorConfig<{ databaseConnection?: string }>,
+        ...args: any[]
+    ): object {
+        const configEntry = persistorConfig.configContent;
+
+        if (configEntry.databaseConnection === undefined) {
+            throw new Error("Database connection is required but was not provided in the configuration");
+        }
+
+        return new EdgarStatProcWorkResultPersistor(
+            DatabaseConnectionRegistry.instance.getItem(configEntry.databaseConnection),
+        );
     }
 }

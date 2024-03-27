@@ -1,11 +1,16 @@
+import { RegisterDelegateToRegistry } from "../../../../../../ApplicationModel/Decorators/Registration.decorator.js";
 import { AbstractGenericJobStep } from "../../../../../../ApplicationModel/Jobs/AbstractGenericJobStep.js";
+import { JobStepDescriptor } from "../../../../../../ApplicationModel/Jobs/IJobConfiguration.js";
 import { StepResult } from "../../../../../../ApplicationModel/Jobs/IJobStep.js";
-import { DelayablePromise } from "../../../../../../Util/DelayablePromise.js";
+import { GenericFactory } from "../../../../../../PluginSupport/GenericFactory.js";
+import { DatabaseConnectionRegistry } from "../../../../../../PluginSupport/Registries/Implementation/DatabaseConnectionRegistry.js";
 import { DatabaseConnection } from "../../../../../Database/DatabaseConnection.js";
+import { EdgarStatsProcessingConstants } from "../../../../EdgarStatsProcessing.constants.js";
 import { CheckIfCalculationNeededStepConfiguration } from "./CheckIfCalculationNeededStepConfiguration.js";
 
 export class CheckIfCalculationNeededStep
-    extends AbstractGenericJobStep<CheckIfCalculationNeededStepConfiguration, object, object> {
+    extends AbstractGenericJobStep<CheckIfCalculationNeededStepConfiguration, object, object>
+    implements GenericFactory {
     constructor(
         stepTimeoutMs: number,
         stepConfiguration: CheckIfCalculationNeededStepConfiguration,
@@ -22,8 +27,9 @@ export class CheckIfCalculationNeededStep
                 `${this.stepConfiguration.calculationsValidFor.seconds ?? 0} seconds`;
     }
 
-    protected async runTyped(stepInput: object | null): Promise<StepResult<object>> {
-        if (stepInput === null) {
+    protected async runTyped(stepInput: (object | null)[]): Promise<StepResult<object>> {
+        const inputEl = stepInput[0];
+        if (inputEl === null || inputEl === undefined) {
             return {
                 status: "failure",
                 reason: `Input to this step can't be null ${CheckIfCalculationNeededStep.name}`,
@@ -33,7 +39,7 @@ export class CheckIfCalculationNeededStep
         }
 
         if (
-            !("id" in stepInput && "idStartAcademicYear" in stepInput && "numberOfIncludedPreviousYears" in stepInput)
+            !("id" in inputEl && "idStartAcademicYear" in inputEl && "numberOfIncludedPreviousYears" in inputEl)
         ) {
             return {
                 status: "cancelChain",
@@ -42,11 +48,8 @@ export class CheckIfCalculationNeededStep
             };
         }
 
-        const validStepInput =
-            stepInput as { id: number, idStartAcademicYear: number, numberOfIncludedPreviousYears: number };
-        
-        const { id, idStartAcademicYear, numberOfIncludedPreviousYears } = validStepInput;
-        console.log({ id, idStartAcademicYear, numberOfIncludedPreviousYears });
+        const validinputEl =
+            inputEl as { id: number, idStartAcademicYear: number, numberOfIncludedPreviousYears: number };
         
 
         const result = await this.dbConn.doQuery<{ existance: boolean }>(
@@ -62,9 +65,9 @@ export class CheckIfCalculationNeededStep
 
             ) AS existance`,
             [
-                /* $1 */ validStepInput.id,
-                /* $2 */ validStepInput.idStartAcademicYear.toString(),
-                /* $3 */ validStepInput.numberOfIncludedPreviousYears.toString(),
+                /* $1 */ validinputEl.id,
+                /* $2 */ validinputEl.idStartAcademicYear.toString(),
+                /* $3 */ validinputEl.numberOfIncludedPreviousYears.toString(),
                 /* $4 */ 
             ]
         );
@@ -79,7 +82,25 @@ export class CheckIfCalculationNeededStep
         
         return {
             status: "success",
-            result: stepInput,
+            result: inputEl,
         };
+    }
+
+    @RegisterDelegateToRegistry(
+        "JobStep",
+        EdgarStatsProcessingConstants.STALENESS_CHECK_STEP_ENTRY
+    )
+    public create(stepDescriptor: JobStepDescriptor, ...args: any[]): object {
+        const config: { databaseConnection?: string } | undefined = stepDescriptor?.configContent;
+
+        if (config?.databaseConnection === undefined) {
+            throw new Error("Database connection is required but was not provided in the step descriptor");
+        }
+
+        return new CheckIfCalculationNeededStep(
+            stepDescriptor.stepTimeoutMs,
+            <CheckIfCalculationNeededStepConfiguration>stepDescriptor.configContent,
+            DatabaseConnectionRegistry.instance.getItem(config.databaseConnection)
+        );
     }
 }

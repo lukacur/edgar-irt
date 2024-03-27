@@ -3,6 +3,9 @@ import { IRCalculationResult } from "../../../Statistics/IRCalculationResult.js"
 import { EdgarStatProcJobStep } from "../Steps/StatisticsProcessing/EdgarStatProcJobStep.js";
 import { StepResult } from "../../../../../ApplicationModel/Jobs/IJobStep.js";
 import { IJobWorker } from "../../../../../ApplicationModel/Jobs/Workers/IJobWorker.js";
+import { RegisterFactoryToRegistry } from "../../../../../ApplicationModel/Decorators/Registration.decorator.js";
+import { EdgarStatsProcessingConstants } from "../../../EdgarStatsProcessing.constants.js";
+import { GenericFactory } from "../../../../../PluginSupport/GenericFactory.js";
 
 type CalculationParams = {
     nBestParts: number | null,
@@ -10,10 +13,14 @@ type CalculationParams = {
     scoreNtiles: number | null,
 };
 
+@RegisterFactoryToRegistry(
+    "JobWorker",
+    EdgarStatsProcessingConstants.JOB_WORKER_REGISTRY_ENTRY
+)
 export class EdgarStatProcWorker extends AbstractJobWorker<
     object,
     IRCalculationResult
-> {
+> implements GenericFactory {
     private calcResultCache: IRCalculationResult | null = null;
 
     private async calculate(
@@ -79,6 +86,10 @@ export class EdgarStatProcWorker extends AbstractJobWorker<
             status: "success",
             result: this.calcResultCache,
         };
+    }
+
+    public create(...ctorArgs: any[]): object {
+        return new EdgarStatProcWorker();
     }
     
     public override clone(): IJobWorker {
