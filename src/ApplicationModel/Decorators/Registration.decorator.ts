@@ -65,13 +65,10 @@ export function RegisterFactoryToRegistry(
     key: string
 ) {
     return function <TCtor extends new() => GenericFactory>(
-        target: TCtor extends typeof GenericFactory ? TCtor : never
+        target: InstanceType<TCtor> extends GenericFactory ? TCtor : never
     ) {
-        if (target === GenericFactory) {
-            throw new Error();
-        }
         const factoryInst = new target();
-        if (!(factoryInst instanceof GenericFactory)) {
+        if (!("create" in factoryInst) || typeof(factoryInst.create) !== "function") {
             throw new Error("Decorator is applied to an unsupported class type");
         }
 
