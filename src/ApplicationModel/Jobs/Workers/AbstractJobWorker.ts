@@ -111,6 +111,4 @@ export abstract class AbstractJobWorker<
 
         return await this.getExecutionResultTyped();
     }
-
-    public abstract clone(): IJobWorker;
 }

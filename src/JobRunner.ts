@@ -41,7 +41,7 @@ export class JobRunner {
             try {
                 const jobInput = await this.dataExtractor.formatJobInput(jobConfig);
 
-                let currWorker = this.jobWorker.clone();
+                let currWorker = this.jobWorker;
             
                 let success = await currWorker.startExecution(jobConfig, jobInput);
                 if (!success) {

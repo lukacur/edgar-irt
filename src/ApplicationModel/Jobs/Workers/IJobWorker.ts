@@ -6,6 +6,4 @@ export interface IJobWorker {
     hasNextStep(): boolean;
     executeNextStep(): Promise<boolean>;
     getExecutionResult(): Promise<StepResult<object> | null>;
-
-    clone(): IJobWorker;
 }
