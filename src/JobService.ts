@@ -126,9 +126,15 @@ class JobServiceConfigurer {
 
     private preBuildCheckPassed(): boolean {
         return this.jobProvider !== undefined &&
-            this.dataExtractor !== undefined &&
-            this.jobWorker !== undefined &&
-            this.jobWorkResultPersistor !== undefined;
+            (
+                this.dataExtractor !== undefined &&
+                this.jobWorker !== undefined &&
+                this.jobWorkResultPersistor !== undefined ||
+
+                this.dataExtractor === undefined &&
+                this.jobWorker === undefined &&
+                this.jobWorkResultPersistor === undefined
+            );
     }
 
     public build(): ConfiguredJobService {
