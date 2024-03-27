@@ -1,9 +1,16 @@
 import { FactoryDelegate, GenericFactory } from "../../PluginSupport/GenericFactory.js";
+import { DatabaseConnectionRegistry } from "../../PluginSupport/Registries/Implementation/DatabaseConnectionRegistry.js";
 import { InputExtractorRegistry } from "../../PluginSupport/Registries/Implementation/InputExtractorRegistry.js";
+import { JobStepRegistry } from "../../PluginSupport/Registries/Implementation/JobStepRegistry.js";
 import { JobWorkerRegistry } from "../../PluginSupport/Registries/Implementation/JobWorkerRegistry.js";
 import { PersistorRegistry } from "../../PluginSupport/Registries/Implementation/PersistorRegistry.js";
 
-export type AvailableRegistry = "InputDataExtractor" | "JobWorker" | "Persistor";
+export type AvailableRegistry =
+    "InputDataExtractor" |
+    "JobWorker" |
+    "JobStep" |
+    "Persistor" |
+    "DatabaseConnection";
 
 export function RegisterDelegateToRegistry(
     registry: AvailableRegistry,
@@ -37,6 +44,18 @@ export function RegisterDelegateToRegistry(
                 PersistorRegistry.instance.registerItem(key, descriptor.value);
                 break;
             }
+
+            case "JobStep": {
+                JobStepRegistry.instance.registerItem(key, descriptor.value);
+                break;
+            }
+
+            case "DatabaseConnection": {
+                DatabaseConnectionRegistry.instance.registerItem(key, descriptor.value);
+                break;
+            }
+
+            default: throw new Error("Not yet implemented");
         }
     };
 }
