@@ -1,7 +1,6 @@
 import { IJobConfiguration } from "../../IJobConfiguration.js";
 import { IJobStep, StepResult } from "../../IJobStep.js";
 import { AbstractJobWorker } from "../../Workers/AbstractJobWorker.js";
-import { IJobWorker } from "../../Workers/IJobWorker.js";
 
 export class GenericJobWorker extends AbstractJobWorker<object, object> {
     private executionResult: object | null = null;
@@ -30,9 +29,5 @@ export class GenericJobWorker extends AbstractJobWorker<object, object> {
             status: "success",
             result: this.executionResult,
         };
-    }
-
-    public override clone(): IJobWorker {
-        return new GenericJobWorker(this.jobConfig);
     }
 }
