@@ -82,6 +82,8 @@ export class JobRunner {
                 }
 
                 await this.jobProvider.finishJob(jobConfig.jobId);
+
+                console.log(`Job execution finished successfully for job with ID ${jobConfig.jobId}`);
             } catch (err) {
                 console.log(err);
 
@@ -151,6 +153,8 @@ export class JobRunner {
                 }
 
                 await this.jobProvider.finishJob(jobConfig.jobId);
+
+                console.log(`Job execution finished successfully for job with ID ${jobConfig.jobId}`);
             } catch (err) {
                 console.log(err);
 
