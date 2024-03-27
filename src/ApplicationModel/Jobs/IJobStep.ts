@@ -14,16 +14,24 @@ export type StepResult<TResult> =
         {
             status: "success";
         } |
-        {
-            status: "cancelChain";
-            reason: string;
-        } |
-        {
-            status: "failure";
-            reason: string;
-            canRetry?: boolean;
-            retryAfterMs?: number;
-        }
+        (
+            {
+                reason: string;
+            } &
+            (
+                {
+                    status: "cancelChain";
+                } |
+                {
+                    status: "noRetry";
+                } |
+                {
+                    status: "failure";
+                    canRetry?: boolean;
+                    retryAfterMs?: number;
+                }
+            )
+        )
     );
 
 
