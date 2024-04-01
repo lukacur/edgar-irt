@@ -27,6 +27,10 @@ import { EdgarStatsProcessingConstants } from "./ApplicationImplementation/Edgar
 import { RegisterDelegateToRegistry } from "./ApplicationModel/Decorators/Registration.decorator.js";
 import { DatabaseConnectionRegistry } from "./PluginSupport/Registries/Implementation/DatabaseConnectionRegistry.js";
 import { RegistryDefaultConstants } from "./PluginSupport/RegistryDefault.constants.js";
+import { DynamicScriptImporter } from "./PluginSupport/DynamicScriptImporter.js";
+import { PersistorRegistry } from "./PluginSupport/Registries/Implementation/PersistorRegistry.js";
+import path from "path";
+import { AbstractTypedWorkResultPersistor } from "./ApplicationModel/Jobs/WorkResultPersistors/AbstractTypedWorkResultPersistor.js";
 
 type AvailableTests =
     "db" |
@@ -39,7 +43,8 @@ type AvailableTests =
     "queue" |
     "job" |
     "total_job" |
-    "generic_job";
+    "generic_job" |
+    "dynamic_imports";
 
 export class MainRunner {
     private static async delayableAwaiter<T>(prom: DelayablePromise<T>) {
@@ -713,6 +718,29 @@ export class MainRunner {
         return jobService.shutdownJobService();
     }
 
+    private static async doDynamicImportsTest(): Promise<void> {
+        const data = await DynamicScriptImporter.importScript<AbstractTypedWorkResultPersistor<any, any>>({
+            url: path.join(import.meta.url, "..", "./ExamplePersistorPluginScript.js")
+        });
+        const fooTypeInst = new data.type();
+
+        if (!(fooTypeInst instanceof AbstractTypedWorkResultPersistor)) {
+            throw new Error("Invalid type!");
+        }
+
+        console.log(fooTypeInst);
+
+        console.log(
+            DatabaseConnectionRegistry.instance.getItem("example_connection")
+        );
+
+        console.log(
+            PersistorRegistry.instance.getItem("example_persistor")
+        );
+
+        (data.teardown !== undefined && typeof(data.teardown) === "function") ? await data.teardown() : null;
+    }
+
     private static defaultConnection: DatabaseConnection | null;
 
     @RegisterDelegateToRegistry(
@@ -727,7 +755,7 @@ export class MainRunner {
         return MainRunner.defaultConnection;
     }
 
-    private static readonly CURRENT_TEST: AvailableTests = "generic_job";
+    private static readonly CURRENT_TEST: AvailableTests = "dynamic_imports";
 
     public static async main(args: string[]): Promise<void> {
         MainRunner.defaultConnection = await DatabaseConnection.fromConfigFile("./database-config.json");
@@ -790,6 +818,11 @@ export class MainRunner {
 
             case "generic_job": {
                 prom = MainRunner.doGenericJobTest(conn);
+                break;
+            }
+
+            case "dynamic_imports": {
+                prom = MainRunner.doDynamicImportsTest();
                 break;
             }
 
