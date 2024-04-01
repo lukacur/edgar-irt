@@ -16,5 +16,9 @@ export interface IJobProvider {
      * @param jobId the ID of the job that should be failed
      * @param retryMode retry mode for the job
      */
-    failJob(jobId: string, retryMode: "retry" | "no-retry" | { retryAfterMs: number }): Promise<boolean>;
+    failJob(
+        jobId: string,
+        retryMode: "retry" | "no-retry" | { retryAfterMs: number },
+        statusMessage?: string,
+    ): Promise<boolean>;
 }

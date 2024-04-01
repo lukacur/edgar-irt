@@ -62,8 +62,9 @@ abstract class DatabaseJobInfoStoringJobProvider<TJobConfiguration extends IJobC
         let finishedJob: boolean = false;
         try {
             await transaction.doQuery(
-                `UPDATE job SET (job_status, finished_on) = ('FINISHED', CURRENT_TIMESTAMP)
-                WHERE id = $1`,
+                `UPDATE job
+                    SET (job_status, finished_on, job_status_message) = ('FINISHED', CURRENT_TIMESTAMP, 'Success')
+                    WHERE id = $1`,
                 [jobId]
             );
 
@@ -85,12 +86,14 @@ abstract class DatabaseJobInfoStoringJobProvider<TJobConfiguration extends IJobC
 
     protected abstract doFailJob(
         jobId: string,
-        retryMode: "retry" | "no-retry" | { retryAfterMs: number }
+        retryMode: "retry" | "no-retry" | { retryAfterMs: number },
+        statusMessage?: string,
     ): Promise<boolean>;
 
     public async failJob(
         jobId: string,
-        retryMode: "retry" | "no-retry" | { retryAfterMs: number }
+        retryMode: "retry" | "no-retry" | { retryAfterMs: number },
+        statusMessage?: string,
     ): Promise<boolean> {
         const transaction = await this.dbConn.beginTransaction("job_tracking_schema");
 
@@ -99,12 +102,15 @@ abstract class DatabaseJobInfoStoringJobProvider<TJobConfiguration extends IJobC
             await transaction.doQuery(
                 // TODO: If job status is failed then maybe add a successor job ID
                 // TODO: Add another status 'FAILED_NO_RESTART' that indicates that the job should not be restarted
-                `UPDATE job SET (job_status, finished_on) = ('FAILED', CURRENT_TIMESTAMP)
-                WHERE id = $1`,
-                [jobId]
+                `UPDATE job SET (job_status, finished_on, job_status_message) = ('FAILED', CURRENT_TIMESTAMP, $1)
+                    WHERE id = $2`,
+                [
+                    /* $1 */ statusMessage ?? null,
+                    /* $2 */ jobId,
+                ]
             );
 
-            failedJob = await this.doFailJob(jobId, retryMode);
+            failedJob = await this.doFailJob(jobId, retryMode, statusMessage);
 
             if (failedJob) {
                 await transaction.commit();
