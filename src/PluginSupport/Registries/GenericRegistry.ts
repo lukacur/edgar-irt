@@ -1,4 +1,3 @@
-import { IWorkResultPersistor } from "../../ApplicationModel/Jobs/WorkResultPersistors/IWorkResultPersistor.js";
 import { FactoryDelegate, GenericFactory } from "../GenericFactory.js";
 
 export abstract class GenericRegistry {
@@ -8,7 +7,7 @@ export abstract class GenericRegistry {
         this.registeredInputExtractors.set(ieType, typeFactory);
     }
 
-    public getItem<TReturnObject extends object = IWorkResultPersistor>(
+    public getItem<TReturnObject extends object>(
         ieType: string,
         ...args: any[]
     ): TReturnObject {
