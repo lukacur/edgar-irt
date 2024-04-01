@@ -20,6 +20,7 @@ export type JobStepDescriptor = {
 
 export type JobWorkerConfig = {
     type: string;
+    databaseConnection: string;
     steps: JobStepDescriptor[];
 };
 

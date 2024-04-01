@@ -23,6 +23,7 @@
 
     "jobWorkerConfig": {
         "type": "EdgarStatsProcessing/JobWorker",
+        "databaseConnection": "DEFAULT_CONNECTION",
         "steps": [
             {
                 "type": "EdgarStatsProcessing/CheckStalenessStep",

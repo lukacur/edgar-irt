@@ -393,7 +393,7 @@ export class MainRunner {
             )]
         );
         const dataExtractor = new EdgarStatProcDataExtractor();
-        const jobWorker = new EdgarStatProcWorker();
+        const jobWorker = new EdgarStatProcWorker(dbConn);
         const resultPersistor = new EdgarStatProcWorkResultPersistor(dbConn);
 
         await calcQueue.enqueue(
@@ -414,6 +414,7 @@ export class MainRunner {
                 },
                 {
                     type: "",
+                    databaseConnection: RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY,
                     steps: []
                 },
                 {
@@ -500,6 +501,7 @@ export class MainRunner {
                 },
                 {
                     type: "",
+                    databaseConnection: RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY,
                     steps: []
                 },
                 {
@@ -541,7 +543,7 @@ export class MainRunner {
             ]
         );
         const dataExtractor = new EdgarStatProcDataExtractor();
-        const jobWorker = new EdgarStatProcWorker();
+        const jobWorker = new EdgarStatProcWorker(dbConn);
         const resultPersistor = new EdgarStatProcWorkResultPersistor(dbConn);
 
         const jobService = JobService.configureNew()
@@ -654,6 +656,7 @@ export class MainRunner {
                 
                     "jobWorkerConfig": {
                         "type": "${EdgarStatsProcessingConstants.JOB_WORKER_REGISTRY_ENTRY}",
+                        "databaseConnection": "${RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY}",
                         "steps": [
                             {
                                 "type": "${EdgarStatsProcessingConstants.STALENESS_CHECK_STEP_ENTRY}",

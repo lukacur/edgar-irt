@@ -104,7 +104,7 @@ export class JobRunner {
 
                 const jobWorker = JobWorkerRegistry.instance.getItem(
                     jobConfig.jobWorkerConfig.type,
-                    jobConfig,
+                    jobConfig.jobWorkerConfig,
                 );
 
                 const persistor = PersistorRegistry.instance.getItem(

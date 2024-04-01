@@ -1,4 +1,4 @@
-import { IJobConfiguration } from "../../../ApplicationModel/Jobs/IJobConfiguration.js";
+import { JobWorkerConfig } from "../../../ApplicationModel/Jobs/IJobConfiguration.js";
 import { IJobWorker } from "../../../ApplicationModel/Jobs/Workers/IJobWorker.js";
 import { GenericRegistry } from "../GenericRegistry.js";
 
@@ -11,9 +11,9 @@ export class JobWorkerRegistry extends GenericRegistry {
 
     public override getItem<TReturnObject extends object = IJobWorker>(
         ieType: string,
-        jobConfig: IJobConfiguration,
+        workerConfig: JobWorkerConfig,
         ...args: any[]
     ): TReturnObject {
-        return <TReturnObject>super.getItem(ieType, jobConfig, ...args);
+        return <TReturnObject>super.getItem(ieType, workerConfig, ...args);
     }
 }

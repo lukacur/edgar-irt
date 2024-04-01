@@ -12,15 +12,16 @@ type CalculationParams = {
     scoreNtiles: number | null,
 };
 
-@RegisterFactoryToRegistry(
-    "JobWorker",
-    EdgarStatsProcessingConstants.JOB_WORKER_REGISTRY_ENTRY
-)
 export class EdgarStatProcWorker extends AbstractJobWorker<
     object,
     IRCalculationResult
 > implements GenericFactory {
     private calcResultCache: IRCalculationResult | null = null;
+
+    constructor(
+        private readonly dbConn: DatabaseConnection,
+    ) { super(); }
+
 
     private async calculate(
         jobStep: EdgarStatProcJobStep,
@@ -87,7 +88,13 @@ export class EdgarStatProcWorker extends AbstractJobWorker<
         };
     }
 
-    public create(...ctorArgs: any[]): object {
-        return new EdgarStatProcWorker();
+    @RegisterDelegateToRegistry(
+        "JobWorker",
+        EdgarStatsProcessingConstants.JOB_WORKER_REGISTRY_ENTRY
+    )
+    public create(config: JobWorkerConfig, ...ctorArgs: any[]): object {
+        return new EdgarStatProcWorker(
+            DatabaseConnectionRegistry.instance.getItem(config.databaseConnection)
+        );
     }
 }
