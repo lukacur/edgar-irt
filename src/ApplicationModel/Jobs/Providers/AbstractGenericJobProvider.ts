@@ -16,9 +16,17 @@ abstract class DatabaseJobInfoStoringJobProvider<TJobConfiguration extends IJobC
         // TODO: Insert the whole job configuration into the database
         // TODO: Maybe add a job type
         await this.dbConn.doQuery(
-            `INSERT INTO job_tracking_schema.jobs(id, name, id_user_started, started_on, job_status)
-                VALUES ($1, $2, $3, CURRENT_TIMESTAMP, 'RUNNING')`,
-            [job.jobId, job.jobName, job.idUserStarted]
+            `INSERT INTO job_tracking_schema.job(id, name, id_user_started, job_definition, started_on, job_status)
+                VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, 'RUNNING')`,
+            [
+                /* $1 */ job.jobId,
+                /* $2 */ job.jobName,
+                /* $3 */ job.idUserStarted,
+
+                /* || */ (job.getRawDescriptor !== undefined && typeof(job.getRawDescriptor) === "function") ?
+                /* $4 */    await job.getRawDescriptor() :
+                /* || */    null
+            ]
         );
 
         return job;
@@ -34,7 +42,7 @@ abstract class DatabaseJobInfoStoringJobProvider<TJobConfiguration extends IJobC
         let finishedJob: boolean = false;
         try {
             await transaction.doQuery(
-                `UPDATE jobs SET (job_status, job_update_time) = ('FINISHED', CURRENT_TIMESTAMP)
+                `UPDATE job SET (job_status, finished_on) = ('FINISHED', CURRENT_TIMESTAMP)
                 WHERE id = $1`,
                 [jobId]
             );
@@ -71,7 +79,7 @@ abstract class DatabaseJobInfoStoringJobProvider<TJobConfiguration extends IJobC
             await transaction.doQuery(
                 // TODO: If job status is failed then maybe add a successor job ID
                 // TODO: Add another status 'FAILED_NO_RESTART' that indicates that the job should not be restarted
-                `UPDATE jobs SET (job_status, job_update_time) = ('FAILED', CURRENT_TIMESTAMP)
+                `UPDATE job SET (job_status, finished_on) = ('FAILED', CURRENT_TIMESTAMP)
                 WHERE id = $1`,
                 [jobId]
             );

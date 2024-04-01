@@ -6,6 +6,8 @@ import { CourseBasedBatch } from "../../../Batches/CourseBasedBatch.js";
 export class EdgarStatProcJobConfiguration implements IJobConfiguration {
     private readonly jobSteps: IJobStep[] = [];
 
+    private rawDescriptor: string | null = null;
+
     constructor(
         public readonly jobId: string,
         public readonly jobName: string,
@@ -48,6 +50,11 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
         return this.jobSteps;
     }
 
+    public async getRawDescriptor(): Promise<string | null> {
+        // FIXME: This could be unsafe?
+        return this.rawDescriptor ?? JSON.stringify(this);
+    }
+
     public static async fromGenericJobConfig(
         config: IJobConfiguration,
         jobIdProvider?: (currJobId: string) => string,
@@ -64,6 +71,8 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
             config.dataPersistorConfig,
             config.blockingConfig,
         );
+        
+        instance.rawDescriptor = JSON.stringify(config);
 
         instance.jobSteps.push(
             ...config.jobWorkerConfig.steps.map(jsd => JobStepRegistry.instance.getItem(jsd.type, jsd))

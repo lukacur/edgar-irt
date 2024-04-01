@@ -48,4 +48,6 @@ export interface IJobConfiguration/* <TInputExtractorConfig, TDataPersistorConfi
     removeJobStep?(step: IJobStep): Promise<boolean>;
     
     getJobSteps?(): Promise<IJobStep[]>;
+
+    getRawDescriptor?(): Promise<string | null>;
 }
