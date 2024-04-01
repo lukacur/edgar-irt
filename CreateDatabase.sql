@@ -122,6 +122,7 @@ CREATE TABLE IF NOT EXISTS job_step (
 	finished_on TIMESTAMP,
 
 	job_step_status job_step_status_type NOT NULL DEFAULT 'NOT_STARTED',
+	job_step_status_message TEXT,
 
 	ordinal INT,
 	parent_job VARCHAR(512) NOT NULL,
