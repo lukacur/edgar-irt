@@ -99,5 +99,24 @@ CREATE TABLE IF NOT EXISTS job (
 		REFERENCES public.app_user(id)
 );
 
+CREATE TYPE job_step_status_type
+	AS ENUM('NOT_STARTED', 'RUNNING', 'SUCCESS', 'FAILURE', 'SKIP_CHAIN', 'CRITICALLY_ERRORED');
+
+CREATE TABLE IF NOT EXISTS job_step (
+	id VARCHAR(512) PRIMARY KEY,
+	config JSON,
+	started_on TIMESTAMP,
+	finished_on TIMESTAMP,
+
+	job_step_status job_step_status_type NOT NULL DEFAULT 'NOT_STARTED',
+
+	ordinal INT,
+	parent_job VARCHAR(512) NOT NULL,
+
+	CONSTRAINT fk_js_job
+		FOREIGN KEY (parent_job)
+		REFERENCES job(id)
+);
+
 COMMIT;
 END;
