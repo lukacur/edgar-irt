@@ -11,6 +11,18 @@ export class GenericJobWorker extends AbstractJobWorker<object, object> {
         super();
     }
 
+    protected override initStepsToDB(jobConfig: IJobConfiguration): Promise<void> {
+        throw new Error("Not implemented");
+    }
+
+    protected override startStepDB(jobStep: IJobStep): Promise<void> {
+        throw new Error("Not implemented");
+    }
+    
+    protected override saveJobStepResultToDB(jobStep: IJobStep, stepResult: StepResult<object> | null): Promise<void> {
+        throw new Error("Not implemented");
+    }
+
     protected override async executeStep(
         jobStep: IJobStep,
         stepInput: (object | null)[]

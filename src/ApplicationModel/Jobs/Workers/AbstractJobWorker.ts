@@ -15,6 +15,8 @@ export abstract class AbstractJobWorker<
 
     protected abstract executeStep(jobStep: IJobStep, stepInput: (object | null)[]): Promise<StepResult<TJobOutput> | null>;
 
+    protected abstract initStepsToDB(jobConfig: IJobConfiguration): Promise<void>;
+
     public async startExecution(jobConfiguration: IJobConfiguration, initialInput: TJobStepInput | null): Promise<boolean> {
         if (jobConfiguration.getJobSteps === undefined) {
             throw new Error("Job was not properly constructed: job config object is missing getJobSteps method");
@@ -22,6 +24,8 @@ export abstract class AbstractJobWorker<
 
         this.jobSteps.splice(0, this.jobSteps.length);
         this.jobSteps.push(...(await jobConfiguration.getJobSteps()));
+
+        await this.initStepsToDB(jobConfiguration);
 
         this.currentStepIdx = 0;
         this.currentStepInput = [initialInput];
@@ -50,12 +54,16 @@ export abstract class AbstractJobWorker<
         return this.jobSteps[this.currentStepIdx];
     }
 
+    protected abstract startStepDB(jobStep: IJobStep): Promise<void>;
+
     public async executeNextStep(): Promise<boolean> {
         const jobStep = this.getNextStepInfo();
 
         if (jobStep === null) {
             return false;
         }
+
+        await this.startStepDB(jobStep);
 
         try {
             this.currentStepIdx++;
@@ -89,14 +97,21 @@ export abstract class AbstractJobWorker<
                     { ...stepResult.result, ttl: stepResult.resultTTLSteps }
             );
 
+            await this.saveJobStepResultToDB(jobStep, stepResult);
+
             return true;
         } catch (err) {
             console.log(err);
-            this.currentStepIdx--;
+            this.currentStepIdx = this.jobSteps.length;
         }
 
         return false;
     }
+
+    protected abstract saveJobStepResultToDB(
+        jobStep: IJobStep,
+        stepResult: StepResult<TJobOutput> | null
+    ): Promise<void>;
 
     protected abstract getExecutionResultTyped(): Promise<StepResult<TJobOutput> | null>;
 

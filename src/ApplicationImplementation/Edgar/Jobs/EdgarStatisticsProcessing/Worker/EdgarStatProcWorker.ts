@@ -1,10 +1,13 @@
 import { AbstractJobWorker } from "../../../../../ApplicationModel/Jobs/Workers/AbstractJobWorker.js";
 import { IRCalculationResult } from "../../../Statistics/IRCalculationResult.js";
 import { EdgarStatProcJobStep } from "../Steps/StatisticsProcessing/EdgarStatProcJobStep.js";
-import { StepResult } from "../../../../../ApplicationModel/Jobs/IJobStep.js";
-import { RegisterFactoryToRegistry } from "../../../../../ApplicationModel/Decorators/Registration.decorator.js";
+import { getStepResultDBEnumValue, IJobStep, StepResult } from "../../../../../ApplicationModel/Jobs/IJobStep.js";
 import { EdgarStatsProcessingConstants } from "../../../EdgarStatsProcessing.constants.js";
 import { GenericFactory } from "../../../../../PluginSupport/GenericFactory.js";
+import { DatabaseConnection } from "../../../../Database/DatabaseConnection.js";
+import { RegisterDelegateToRegistry } from "../../../../../ApplicationModel/Decorators/Registration.decorator.js";
+import { IJobConfiguration, JobWorkerConfig } from "../../../../../ApplicationModel/Jobs/IJobConfiguration.js";
+import { DatabaseConnectionRegistry } from "../../../../../PluginSupport/Registries/Implementation/DatabaseConnectionRegistry.js";
 
 type CalculationParams = {
     nBestParts: number | null,
@@ -22,6 +25,41 @@ export class EdgarStatProcWorker extends AbstractJobWorker<
         private readonly dbConn: DatabaseConnection,
     ) { super(); }
 
+    protected override async initStepsToDB(jobConfig: IJobConfiguration): Promise<void> {
+        const transaction = await this.dbConn.beginTransaction("job_tracking_schema");
+
+        try {
+            await transaction.waitForReady();
+    
+            let ord = 1;
+            for (const step of this.jobSteps) {
+                await transaction.doQuery(
+                    `INSERT INTO job_step (id, config, job_step_status, ordinal, parent_job)
+                        VALUES ($1, $2, 'NOT_STARTED', $3, $4);`,
+                    [
+                        /* $1 */ step.stepRunId,
+    
+                        /* || */ (jobConfig.jobWorkerConfig.steps.length === 0) ?
+                        /* $2 */    null :
+                        /* || */    JSON.stringify(jobConfig.jobWorkerConfig.steps[ord - 1]),
+    
+                        /* $3 */ ord,
+                        /* $4 */jobConfig.jobId,
+                    ]
+                );
+    
+                ord++;
+            }
+
+            await transaction.commit();
+        } catch (err) {
+            console.log(err);
+        } finally {
+            if (!transaction.isFinished()) {
+                await transaction.rollback();
+            }
+        }
+    }
 
     private async calculate(
         jobStep: EdgarStatProcJobStep,
@@ -64,6 +102,30 @@ export class EdgarStatProcWorker extends AbstractJobWorker<
         }
     }
 
+    protected override async startStepDB(jobStep: IJobStep): Promise<void> {
+        const transaction = await this.dbConn.beginTransaction("job_tracking_schema");
+
+        try {
+            await transaction.waitForReady();
+
+            await transaction.doQuery(
+                `UPDATE job_step SET (started_on, job_step_status) = (CURRENT_TIMESTAMP, 'RUNNING')
+                    WHERE id = $1;`,
+                [
+                    /* $1 */ jobStep.stepRunId,
+                ]
+            );
+
+            await transaction.commit();
+        } catch (err) {
+            console.log(err);
+        } finally {
+            if (!transaction.isFinished()) {
+                await transaction.rollback();
+            }
+        }
+    }
+
     protected override async executeStep(
         jobStep: EdgarStatProcJobStep,
         stepInput: (object | null)[]
@@ -73,6 +135,34 @@ export class EdgarStatProcWorker extends AbstractJobWorker<
             stepInput,
             true,
         );
+    }
+
+    protected override async saveJobStepResultToDB(
+        jobStep: IJobStep,
+        stepResult: StepResult<IRCalculationResult> | null
+    ): Promise<void> {
+        const transaction = await this.dbConn.beginTransaction("job_tracking_schema");
+
+        try {
+            await transaction.waitForReady();
+
+            await transaction.doQuery(
+                `UPDATE job_step SET (finished_on, job_step_status) = (CURRENT_TIMESTAMP, $1)
+                    WHERE id = $2;`,
+                [
+                    /* $1 */ getStepResultDBEnumValue(stepResult),
+                    /* $2 */ jobStep.stepRunId,
+                ]
+            );
+
+            await transaction.commit();
+        } catch (err) {
+            console.log(err);
+        } finally {
+            if (!transaction.isFinished()) {
+                await transaction.rollback();
+            }
+        }
     }
 
     protected override async getExecutionResultTyped(): Promise<StepResult<IRCalculationResult> | null> {
