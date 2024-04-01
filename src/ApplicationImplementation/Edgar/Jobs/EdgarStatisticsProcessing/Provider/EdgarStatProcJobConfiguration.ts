@@ -4,6 +4,7 @@ import { JobPartsParser } from "../../../../../Util/JobPartsParser.js";
 import { CourseBasedBatch } from "../../../Batches/CourseBasedBatch.js";
 
 export class EdgarStatProcJobConfiguration implements IJobConfiguration {
+    public readonly jobTypeAbbrevation = "STATPROC";
     private readonly jobSteps: IJobStep[] = [];
 
     private rawDescriptor: string | null = null;
@@ -72,7 +73,7 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
             config.blockingConfig,
         );
         
-        instance.rawDescriptor = JSON.stringify(config);
+        instance.rawDescriptor = JSON.stringify({ ...config, jobTypeAbbrevation: instance.jobTypeAbbrevation });
 
         const parsedJobSteps = await JobPartsParser.with(config).parseJobStepDescriptors();
 

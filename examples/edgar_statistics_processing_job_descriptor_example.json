@@ -1,5 +1,6 @@
 {
     "jobId": "aa7cd-1584bbf-2283-ccbcdffa55301",
+    "jobTypeAbbrevation": "STATPROC",
     "jobName": "Process question statistics for course 'Objektno orijentirano programiranje' in academic years 2018-2024",
     "idUserStarted": null,
     "jobQueue": "edgar-question-statistics-processing",

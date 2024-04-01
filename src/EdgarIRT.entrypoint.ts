@@ -638,6 +638,7 @@ export class MainRunner {
             JSON.parse(
                 `{
                     "jobId": "aa7cd-1584bbf-2283-ccbcdffa55301",
+                    "jobTypeAbbrevation": "STATPROC",
                     "jobName": "Process question statistics for course 'Objektno orijentirano programiranje' in academic years 2018-2024",
                     "idUserStarted": null,
                     "jobQueue": "edgar-question-statistics-processing",
@@ -755,7 +756,7 @@ export class MainRunner {
         return MainRunner.defaultConnection;
     }
 
-    private static readonly CURRENT_TEST: AvailableTests = "dynamic_imports";
+    private static readonly CURRENT_TEST: AvailableTests = "generic_job";
 
     public static async main(args: string[]): Promise<void> {
         MainRunner.defaultConnection = await DatabaseConnection.fromConfigFile("./database-config.json");

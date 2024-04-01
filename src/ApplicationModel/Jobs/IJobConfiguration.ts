@@ -44,6 +44,7 @@ export type DataPersistorConfig<TConfigContent extends object> = {
 
 export interface IJobConfiguration/* <TInputExtractorConfig, TDataPersistorConfig> */ {
     readonly jobId: string;
+    readonly jobTypeAbbrevation: string;
     readonly jobName: string;
     readonly idUserStarted: number | null;
     readonly jobQueue: string | null;

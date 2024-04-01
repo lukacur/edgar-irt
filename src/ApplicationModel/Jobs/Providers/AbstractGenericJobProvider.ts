@@ -13,18 +13,38 @@ abstract class DatabaseJobInfoStoringJobProvider<TJobConfiguration extends IJobC
     public async provideJob(): Promise<IJobConfiguration> {
         const job = await this.provideJobWithId(randomUUID());
 
-        // TODO: Insert the whole job configuration into the database
-        // TODO: Maybe add a job type
+        const queryResult = await this.dbConn.doQuery<{ id: number }>(
+            "SELECT id FROM job_tracking_schema.job_type WHERE abbrevation = $1",
+            [job.jobTypeAbbrevation]
+        );
+
+        if (queryResult === null || queryResult.count === 0) {
+            await this.doFailJob(job.jobId, "no-retry");
+            throw new Error(
+                `Job type abbrevation is not defined in the database (abbrevation ${job.jobTypeAbbrevation})`
+            );
+        }
+
+        const jobTypeId = queryResult.rows[0].id;
+
         await this.dbConn.doQuery(
-            `INSERT INTO job_tracking_schema.job(id, name, id_user_started, job_definition, started_on, job_status)
-                VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, 'RUNNING')`,
+            `INSERT INTO job_tracking_schema.job (
+                id,
+                id_job_type,
+                name,
+                id_user_started,
+                job_definition,
+                started_on,
+                job_status
+            ) VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, 'RUNNING')`,
             [
                 /* $1 */ job.jobId,
-                /* $2 */ job.jobName,
-                /* $3 */ job.idUserStarted,
+                /* $2 */ jobTypeId,
+                /* $3 */ job.jobName,
+                /* $4 */ job.idUserStarted,
 
                 /* || */ (job.getRawDescriptor !== undefined && typeof(job.getRawDescriptor) === "function") ?
-                /* $4 */    await job.getRawDescriptor() :
+                /* $5 */    await job.getRawDescriptor() :
                 /* || */    null
             ]
         );
