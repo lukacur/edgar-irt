@@ -1,6 +1,6 @@
 import { BlockingConfig, DataPersistorConfig, IJobConfiguration, InputExtractorConfig, JobWorkerConfig } from "../../../../../ApplicationModel/Jobs/IJobConfiguration.js";
 import { IJobStep } from "../../../../../ApplicationModel/Jobs/IJobStep.js";
-import { JobStepRegistry } from "../../../../../PluginSupport/Registries/Implementation/JobStepRegistry.js";
+import { JobPartsParser } from "../../../../../Util/JobPartsParser.js";
 import { CourseBasedBatch } from "../../../Batches/CourseBasedBatch.js";
 
 export class EdgarStatProcJobConfiguration implements IJobConfiguration {
@@ -74,9 +74,9 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
         
         instance.rawDescriptor = JSON.stringify(config);
 
-        instance.jobSteps.push(
-            ...config.jobWorkerConfig.steps.map(jsd => JobStepRegistry.instance.getItem(jsd.type, jsd))
-        );
+        const parsedJobSteps = await JobPartsParser.with(config).parseJobStepDescriptors();
+
+        instance.jobSteps.push(...parsedJobSteps);
 
         return instance;
     }

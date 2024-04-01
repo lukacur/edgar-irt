@@ -2,9 +2,7 @@ import { IInputDataExtractor } from "./ApplicationModel/Jobs/DataExtractors/IInp
 import { IJobProvider } from "./ApplicationModel/Jobs/Providers/IJobProvider.js";
 import { IWorkResultPersistor } from "./ApplicationModel/Jobs/WorkResultPersistors/IWorkResultPersistor.js";
 import { IJobWorker } from "./ApplicationModel/Jobs/Workers/IJobWorker.js";
-import { InputExtractorRegistry } from "./PluginSupport/Registries/Implementation/InputExtractorRegistry.js";
-import { JobWorkerRegistry } from "./PluginSupport/Registries/Implementation/JobWorkerRegistry.js";
-import { PersistorRegistry } from "./PluginSupport/Registries/Implementation/PersistorRegistry.js";
+import { JobPartsParser } from "./Util/JobPartsParser.js";
 
 export class JobRunner {
     constructor(
@@ -97,21 +95,13 @@ export class JobRunner {
             const jobConfig = await this.jobProvider.provideJob();
 
             try {
-                const inputExtractor = InputExtractorRegistry.instance.getItem(
-                    jobConfig.inputExtractorConfig.type,
-                    jobConfig.inputExtractorConfig,
-                );
+                const parser = JobPartsParser.with(jobConfig);
 
-                const jobWorker = JobWorkerRegistry.instance.getItem(
-                    jobConfig.jobWorkerConfig.type,
-                    jobConfig.jobWorkerConfig,
-                );
+                const inputExtractor = await parser.getInputDataExtractor();
+                const jobWorker = await parser.getJobWorker();
+                const persistor = await parser.getResultPersistor();
 
-                const persistor = PersistorRegistry.instance.getItem(
-                    jobConfig.dataPersistorConfig.type,
-                    jobConfig.dataPersistorConfig,
-                );
-
+                // TODO: Maybe 'formatInitialJobInput(jobConfig)'?
                 const jobInput = await inputExtractor.formatJobInput(jobConfig);
             
                 let success = await jobWorker.startExecution(jobConfig, jobInput);
