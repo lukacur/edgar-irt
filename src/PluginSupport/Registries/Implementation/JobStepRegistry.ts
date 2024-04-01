@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { IJobStep } from "../../../ApplicationModel/Jobs/IJobStep.js";
 import { GenericRegistry } from "../GenericRegistry.js";
 
@@ -12,6 +13,9 @@ export class JobStepRegistry extends GenericRegistry {
         ieType: string,
         ...args: any[]
     ): TReturnObject {
-        return <TReturnObject>super.getItem(ieType, ...args);
+        const step = <TReturnObject & { stepRunId: string }>super.getItem(ieType, ...args);
+        step.stepRunId = randomUUID();
+
+        return step;
     }
 }

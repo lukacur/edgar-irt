@@ -5,6 +5,8 @@ export abstract class AbstractGenericJobStep<
     TStepInput extends object,
     TRunResult extends object,
 > implements IJobStep {
+    public stepRunId: string = "";
+
     constructor(
         public readonly stepTimeoutMs: number,
         public readonly stepConfiguration: TStepConfiguration,

@@ -34,8 +34,24 @@ export type StepResult<TResult> =
         )
     );
 
+export function getStepResultDBEnumValue<TRes extends object>(stepResult: StepResult<TRes> | null): string {
+    if (stepResult === null) {
+        return "CRITICALLY_ERRORED";
+    }
+
+    switch (stepResult.status) {
+        case "success": return "SUCCESS";
+        case "cancelChain": return "SKIP_CHAIN";
+        case "noRetry":
+        case "failure": return "FAILURE";
+
+        default: throw new Error("Not yet implemented");
+    }
+}
+
 
 export interface IJobStep {
+    stepRunId: string;
     readonly stepTimeoutMs: number;
     readonly stepConfiguration: object;
 
