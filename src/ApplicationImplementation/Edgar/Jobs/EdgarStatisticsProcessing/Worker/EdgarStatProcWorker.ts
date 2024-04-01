@@ -146,12 +146,29 @@ export class EdgarStatProcWorker extends AbstractJobWorker<
         try {
             await transaction.waitForReady();
 
+            let statMsg: string | null = null;
+            if (stepResult === null) {
+                statMsg = "[EdgarStatProcWorker.ts] Critical failure (step result was null)";
+            } else if (stepResult.status === "success") {
+                statMsg = "Success";
+            } else {
+                statMsg =
+                `[EdgarStatProcWorker.ts] Job step failed with status ${stepResult.status} ` +
+                    `(step implementation: ${jobStep.constructor.name})` +
+                    `
+                    Time: ${new Date().toISOString()}
+                    Reason: ${stepResult.reason}
+                    `;
+            }
+
             await transaction.doQuery(
-                `UPDATE job_step SET (finished_on, job_step_status) = (CURRENT_TIMESTAMP, $1)
-                    WHERE id = $2;`,
+                `UPDATE job_step
+                    SET (finished_on, job_step_status, job_step_status_message) = (CURRENT_TIMESTAMP, $1, $2)
+                    WHERE id = $3;`,
                 [
                     /* $1 */ getStepResultDBEnumValue(stepResult),
-                    /* $2 */ jobStep.stepRunId,
+                    /* $2 */ statMsg,
+                    /* $3 */ jobStep.stepRunId,
                 ]
             );
 
