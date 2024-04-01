@@ -85,13 +85,14 @@ SET search_path TO job_tracking_schema;
 
 CREATE TYPE job_status_type AS ENUM('RUNNING', 'FINISHED', 'FAILED');
 
-CREATE TABLE IF NOT EXISTS jobs (
+CREATE TABLE IF NOT EXISTS job (
 	id VARCHAR(512) PRIMARY KEY,
 	name VARCHAR(2048) NOT NULL,
 	id_user_started INT,
+	job_definition JSON,
 	started_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	job_status job_status_type,
-	job_update_time TIMESTAMP,
+	finished_on TIMESTAMP,
 
 	CONSTRAINT fk_jobs_app_user
 		FOREIGN KEY (id_user_started)
