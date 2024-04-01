@@ -83,10 +83,18 @@ CREATE SCHEMA IF NOT EXISTS job_tracking_schema;
 
 SET search_path TO job_tracking_schema;
 
+CREATE TABLE IF NOT EXISTS job_type (
+	id INT PRIMARY KEY,
+	abbrevation VARCHAR(10) NOT NULL UNIQUE,
+	title VARCHAR(512),
+	description VARCHAR(1024)
+);
+
 CREATE TYPE job_status_type AS ENUM('RUNNING', 'FINISHED', 'FAILED');
 
 CREATE TABLE IF NOT EXISTS job (
 	id VARCHAR(512) PRIMARY KEY,
+	id_job_type INT NOT NULL,
 	name VARCHAR(2048) NOT NULL,
 	id_user_started INT,
 	job_definition JSON,
@@ -94,9 +102,13 @@ CREATE TABLE IF NOT EXISTS job (
 	job_status job_status_type,
 	finished_on TIMESTAMP,
 
-	CONSTRAINT fk_jobs_app_user
+	CONSTRAINT fk_job_app_user
 		FOREIGN KEY (id_user_started)
-		REFERENCES public.app_user(id)
+		REFERENCES public.app_user(id),
+
+	CONSTRAINT fk_job_job_type
+		FOREIGN KEY (id_job_type)
+		REFERENCES job_type(id)
 );
 
 CREATE TYPE job_step_status_type
@@ -120,3 +132,31 @@ CREATE TABLE IF NOT EXISTS job_step (
 
 COMMIT;
 END;
+
+-- Database prefil with certain job types --
+INSERT INTO job_type (id, abbrevation, title, description)
+	VALUES
+	(
+		1,
+		'STATPROC',
+		'Edgar exam question statistics processing',
+		'A job that calculates exam question statistics. This job is ran when a user wants to generate information on question statistics.'
+	),
+	(
+		2,
+		'PEERREV',
+		'Edgar Peer Assessment Analysis',
+		'A job that runs analysis on the Peer Assessment assignments.'
+	),
+	(
+		3,
+		'EXMRPT',
+		'Edgar exam statistics report',
+		'A job that generates statistics reports for certain exams selected by the user'
+	),
+	(
+		4,
+		'OTHR',
+		'Other',
+		'A job type that declares that the job is of an unspecified type.'
+	);
