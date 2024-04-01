@@ -100,6 +100,7 @@ CREATE TABLE IF NOT EXISTS job (
 	job_definition JSON,
 	started_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	job_status job_status_type,
+	job_status_message TEXT,
 	finished_on TIMESTAMP,
 
 	CONSTRAINT fk_job_app_user
