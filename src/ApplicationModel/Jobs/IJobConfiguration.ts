@@ -1,5 +1,9 @@
 import { IJobStep } from "./IJobStep.js";
 
+export type ImportInfo = {
+    url: string;
+};
+
 export type BlockingConfig = {
     awaitDataExtraction: boolean;
     workInBackground: boolean;
@@ -8,11 +12,15 @@ export type BlockingConfig = {
 
 export type InputExtractorConfig<TConfigContent extends object> = {
     type: string;
+    importInfo?: ImportInfo;
+
     configContent: TConfigContent;
 };
 
 export type JobStepDescriptor = {
     type: string;
+    importInfo?: ImportInfo;
+
     stepTimeoutMs: number;
     resultTTL?: number;
     configContent: object;
@@ -20,12 +28,16 @@ export type JobStepDescriptor = {
 
 export type JobWorkerConfig = {
     type: string;
+    importInfo?: ImportInfo;
+
     databaseConnection: string;
     steps: JobStepDescriptor[];
 };
 
 export type DataPersistorConfig<TConfigContent extends object> = {
     type: string;
+    importInfo?: ImportInfo;
+
     persistanceTimeoutMs: number;
     configContent: TConfigContent;
 };
