@@ -15,23 +15,30 @@ export class DatabaseConnection {
     private pool: pg.Pool | null = null;
 
     private setupPooledConnection() {
-        const pool = new Pool({
-            host: this.config.host,
-            port: this.config.port,
-            database: this.config.database,
-
-            user: this.config.user,
-            password: this.config.password,
-
-            min: this.config.minConnections ?? 10,
-            max: this.config.maxConnections ?? 20,
-        });
-
-        this.pool = pool;
+        if (this.connectionString !== undefined && typeof(this.connectionString) === "string") {
+            this.pool = new Pool({
+                connectionString: this.connectionString,
+            });
+        } else if (this.config !== undefined && typeof(this.config) === "object") {
+            this.pool = new Pool({
+                host: this.config.host,
+                port: this.config.port,
+                database: this.config.database,
+    
+                user: this.config.user,
+                password: this.config.password,
+    
+                min: this.config.minConnections ?? 10,
+                max: this.config.maxConnections ?? 20,
+            });
+        }
     }
 
+    private constructor(connectionString: string);
+    private constructor(str: undefined, config: IDatabaseConfig);
     private constructor(
-        private readonly config: IDatabaseConfig,
+        private readonly connectionString?: string,
+        private readonly config?: IDatabaseConfig,
     ) {
         this.setupPooledConnection();
     }
@@ -45,7 +52,15 @@ export class DatabaseConnection {
             await readFile(configFileLocation, { encoding: "utf-8" })
         );
 
-        return new DatabaseConnection(configuration);
+        return new DatabaseConnection(undefined, configuration);
+    }
+
+    public static async fromConfig(configuration: IDatabaseConfig): Promise<DatabaseConnection> {
+        return new DatabaseConnection(undefined, configuration);
+    }
+
+    public static async fromConnectionString(connectionString: string): Promise<DatabaseConnection> {
+        return new DatabaseConnection(connectionString);
     }
 
     public async beginTransaction(workingSchema: string = "public"): Promise<TransactionContext> {
