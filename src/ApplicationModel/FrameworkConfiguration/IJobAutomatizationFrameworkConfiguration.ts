@@ -16,8 +16,16 @@ type DatabaseConnectivity =
 type SmtpConfiguration = {
     defaults: {
         from: string;
-        to: string;
+        to?: string[];
+        cc?: string[];
+        bcc?: string[];
         subject: string;
+    };
+
+    alwaysInclude: {
+        to?: string[];
+        cc?: string[];
+        bcc?: string[];
     };
 
     host: string;

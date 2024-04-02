@@ -1,9 +1,9 @@
 type EmailBaseInfo = {
     from?: string;
-    to?: string;
+    to?: string[];
 
-    cc?: string;
-    bcc?: string;
+    cc?: string[];
+    bcc?: string[];
 
     subject: string;
 };
