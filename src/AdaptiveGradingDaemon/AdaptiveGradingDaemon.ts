@@ -1,15 +1,14 @@
 import { Worker } from "worker_threads";
 import { DelayablePromise } from "../Util/DelayablePromise.js";
 import { DaemonConfig, DaemonOptions, QueueDescriptor, ScanInterval } from "./DaemonConfig.model.js";
-import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { readFile } from "fs/promises";
 import { IQueueSystemBase } from "./Queue/IQueueSystemBase.js";
 import { DirQueueSystem } from "./Queue/QueueSystemImplementations/DirQueueSystem.js";
 import { FileQueueSystem } from "./Queue/QueueSystemImplementations/FileQueueSystem.js";
 import { PgBossQueueSystem } from "./Queue/QueueSystemImplementations/PgBossQueueSystem.js";
 import { QueueRegistry } from "./Queue/QueueRegistry.js";
+import { AdaptiveGradingConfigProvider } from "../ApplicationImplementation/ApplicationConfiguration/AdaptiveGradingConfigProvider.js";
 
 type ForceShutdownHandler<TSource> = (source: TSource, reason?: string) => void;
 
@@ -76,23 +75,16 @@ export class AdaptiveGradingDaemon {
     }
 
     private async readConfiguration(configFilePath: string): Promise<void> {
-        if (!fs.existsSync(configFilePath)) {
-            throw new Error(`File not found: ${configFilePath}`);
+        if (AdaptiveGradingConfigProvider.instance.hasConfiguration()) {
+            console.log(
+                "[WARN]: Configuration was previously loaded into the config provider singleton; using that " +
+                `configuration instead of configuration file: ${configFilePath}`
+            );
+        } else {
+            await AdaptiveGradingConfigProvider.instance.parseConfigFile(configFilePath);
         }
 
-        let configuration: DaemonConfig | null = null;
-        try {
-            configuration = JSON.parse(
-                await readFile(
-                    configFilePath,
-                    { encoding: "utf-8", flag: "r" }
-                )
-            );
-        } catch (_) {}
-
-        if (configuration === null) {
-            throw new Error(`Unable to parse given configuration file at: ${configFilePath}`);
-        } 
+        let configuration: DaemonConfig = AdaptiveGradingConfigProvider.instance.getConfiguration();
 
         this.scanInterval = configuration.scanInterval;
 

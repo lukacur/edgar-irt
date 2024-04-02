@@ -31,6 +31,7 @@ import { DynamicScriptImporter } from "./PluginSupport/DynamicScriptImporter.js"
 import { PersistorRegistry } from "./PluginSupport/Registries/Implementation/PersistorRegistry.js";
 import path from "path";
 import { AbstractTypedWorkResultPersistor } from "./ApplicationModel/Jobs/WorkResultPersistors/AbstractTypedWorkResultPersistor.js";
+import { fileURLToPath } from "url";
 
 type AvailableTests =
     "db" |
@@ -721,7 +722,7 @@ export class MainRunner {
 
     private static async doDynamicImportsTest(): Promise<void> {
         const data = await DynamicScriptImporter.importScript<AbstractTypedWorkResultPersistor<any, any>>({
-            url: path.join(import.meta.url, "..", "./ExamplePersistorPluginScript.js")
+            url: path.join(fileURLToPath(import.meta.url), "..", "./ExamplePersistorPluginScript.js")
         });
         const fooTypeInst = new data.type();
 

@@ -2,6 +2,7 @@
     "scanInterval": {
         "seconds": 3
     },
+
     "declaredQueues": [
         {
             "queueName": "edgar-irt-input-queue",
@@ -39,5 +40,7 @@
             "name": "queue_entry",
             "suffix": "_for_stats_analysis"
         }
-    ]
+    ],
+
+    "statisticsCalculationSchemaName": "statistics_schema"
 }

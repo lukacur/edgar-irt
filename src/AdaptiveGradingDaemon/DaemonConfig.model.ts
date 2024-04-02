@@ -39,4 +39,5 @@ export type QueueDescriptor =
 export interface DaemonConfig {
     scanInterval: ScanInterval;
     declaredQueues: QueueDescriptor[];
+    statisticsCalculationSchemaName: string;
 }
