@@ -1,0 +1,37 @@
+import path from "path";
+import { DaemonConfig } from "../../AdaptiveGradingDaemon/DaemonConfig.model.js";
+import * as fs from 'fs';
+import { readFile } from "fs/promises";
+
+export class AdaptiveGradingConfigProvider {
+    public static readonly instance = new AdaptiveGradingConfigProvider();
+
+    private constructor() {}
+
+    private configuration: DaemonConfig | null = null;
+
+    public async parseConfigFile(filePath: string): Promise<void> {
+        if (!fs.existsSync(filePath)) {
+            throw new Error(`Given configuration file ${path.resolve(filePath)} does not exist`);
+        }
+
+        this.configuration = JSON.parse(
+            await readFile(
+                filePath,
+                { encoding: "utf-8", flag: "r" }
+            )
+        );
+    }
+
+    public hasConfiguration(): boolean {
+        return this.configuration !== null;
+    }
+
+    public getConfiguration(): DaemonConfig {
+        if (this.configuration === null) {
+            throw new Error("Configuration was not loaded");
+        }
+
+        return this.configuration;
+    }
+}
