@@ -4,6 +4,10 @@ import { IWorkResultPersistor } from "./ApplicationModel/Jobs/WorkResultPersisto
 import { IJobWorker } from "./ApplicationModel/Jobs/Workers/IJobWorker.js";
 import { JobPartsParser } from "./Util/JobPartsParser.js";
 
+import { MailerProvider } from "./Util/MailerProvider.js";
+
+type ErrorReport = { jobId: string, stage: string, message: string, status: string }
+
 export class JobRunner {
     constructor(
         private readonly jobProvider: IJobProvider,
@@ -30,6 +34,22 @@ export class JobRunner {
         `;
     }
 
+    private async sendErrorReportMessage(errorReport: ErrorReport): Promise<void> {
+        await MailerProvider.instance.getMailer().sendMail({
+            base: {
+                subject: "Job automatization - job failure"
+            },
+            body: {
+                type: "plain",
+                content: `This email is sent in order to inform you that a job with id '${errorReport.jobId}' ` +
+                            `failed on pipeline stage '${errorReport.stage}' with status '${errorReport.status}'.` +
+                            `
+Failure message:
+${errorReport.message.split('\n').join('\n    ')}`,
+            }
+        });
+    }
+
     private async runStrict(): Promise<void> {
         if (
             this.dataExtractor === undefined ||
@@ -49,7 +69,12 @@ export class JobRunner {
         }
         
 
+        let errorReport: ErrorReport | null = null;
         while (!this.stopped) {
+            if (errorReport !== null) {
+                this.sendErrorReportMessage(errorReport);
+                errorReport = null;
+            }
             const jobConfig = await this.jobProvider.provideJob();
 
             try {
@@ -59,12 +84,20 @@ export class JobRunner {
             
                 let success = await currWorker.startExecution(jobConfig, jobInput);
                 if (!success) {
+                    errorReport ??= {
+                        jobId: jobConfig.jobId,
+                        stage: "Worker initial step",
+                        message: "",
+                        status: "General failure"
+                    };
+
                     await this.jobProvider.failJob(
                         jobConfig.jobId,
                         "retry",
-                        "[JobRunner.ts] Error occured when running job: unable to run initial job step " +
-                            "(IJobWorker.startExecution() returned 'false')" +
-                            this.errorMessageAdditionalInfoProvider("runStrict")
+                        errorReport.message =
+                            "[JobRunner.ts] Error occured when running job: unable to run initial job step " +
+                                "(IJobWorker.startExecution() returned 'false')" +
+                                this.errorMessageAdditionalInfoProvider("runStrict")
                     );
                     continue;
                 }
@@ -77,12 +110,20 @@ export class JobRunner {
                 }
 
                 if (!success) {
+                    errorReport ??= {
+                        jobId: jobConfig.jobId,
+                        stage: "Worker job step execution",
+                        message: "",
+                        status: "General failure"
+                    };
+
                     await this.jobProvider.failJob(
                         jobConfig.jobId,
                         "retry",
-                        "[JobRunner.ts] Error occured when running job: job was implicitly failed by a job step " +
-                            "(IJobWorker.executeNextStep() returned 'false' when 'true' was expected)" +
-                            this.errorMessageAdditionalInfoProvider("runStrict")
+                        errorReport.message =
+                            "[JobRunner.ts] Error occured when running job: job was implicitly failed by a job step " +
+                                "(IJobWorker.executeNextStep() returned 'false' when 'true' was expected)" +
+                                this.errorMessageAdditionalInfoProvider("runStrict")
                     );
                     continue;
                 }
@@ -95,25 +136,41 @@ export class JobRunner {
                         `Job execution failed with status ${status}. Reason: ${result?.reason ?? "unknown reason"}`
                     );
 
+                    errorReport ??= {
+                        jobId: jobConfig.jobId,
+                        stage: "Worker explicit step",
+                        message: "",
+                        status: status!
+                    };
+
                     await this.jobProvider.failJob(
                         jobConfig.jobId,
                         (status === "failure") ? "retry" : "no-retry",
-                        "[JobRunner.ts] Error occured when running job: job was explicitly failed by a job step " +
-                            "(IJobWorker.getExecutionResult() return value had status !== 'success')" +
-                            `
-                            Failure reason: ${result?.reason ?? "Unspecified reason"}` +
-                            this.errorMessageAdditionalInfoProvider("runStrict")
+                        errorReport.message =
+                            "[JobRunner.ts] Error occured when running job: job was explicitly failed by a job step " +
+                                "(IJobWorker.getExecutionResult() return value had status !== 'success')" +
+                                `
+                                Failure reason: ${result?.reason ?? "Unspecified reason"}` +
+                                this.errorMessageAdditionalInfoProvider("runStrict")
                     );
                     continue;
                 }
 
                 if (!(await this.jobWorkResultPersistor.perisistResult(result.result, jobConfig))) {
+                    errorReport ??= {
+                        jobId: jobConfig.jobId,
+                        stage: "Result persistance step",
+                        message: "",
+                        status: "General failure"
+                    };
+
                     await this.jobProvider.failJob(
                         jobConfig.jobId,
                         { retryAfterMs: 15000 },
-                        "[JobRunner.ts] Error occured when running job: persistance of the result was unsuccessful " +
-                            "(IJobWorker.perisistResult() returned 'false')" +
-                            this.errorMessageAdditionalInfoProvider("runStrict")
+                        errorReport.message =
+                            "[JobRunner.ts] Error occured when running job: persistance of the result was " +
+                                "unsuccessful (IJobWorker.perisistResult() returned 'false')" +
+                                this.errorMessageAdditionalInfoProvider("runStrict")
                     );
                     continue;
                 }
@@ -133,25 +190,39 @@ export class JobRunner {
                     stackTrace = err.stack ?? null;
                 }
 
+                errorReport ??= {
+                    jobId: jobConfig.jobId,
+                    stage: "Job execution - general",
+                    message: "",
+                    status: "Job fatal failure"
+                };
+
                 await this.jobProvider.failJob(
                     jobConfig.jobId,
                     { retryAfterMs: 20000 },
-                    `[JobRunner.ts] Error occured when running job: exception of type ${errorName} was thrown` +
-                        `
-                        Error message:
-                          ${errorMessage}
+                    errorReport.message =
+                        `[JobRunner.ts] Error occured when running job: exception of type ${errorName} was thrown` +
+                            `
+                            Error message:
+                            ${errorMessage}
 
-                        Stack trace:
-                          ${stackTrace}
-                        ` +
-                        this.errorMessageAdditionalInfoProvider("runStrict")
+                            Stack trace:
+                            ${stackTrace}
+                            ` +
+                            this.errorMessageAdditionalInfoProvider("runStrict")
                 );
             }
         }
     }
     
     private async runGeneric(): Promise<void> {
+        let errorReport: ErrorReport | null = null;
         while (!this.stopped) {
+            if (errorReport !== null) {
+                this.sendErrorReportMessage(errorReport);
+                errorReport = null;
+            }
+
             const jobConfig = await this.jobProvider.provideJob();
 
             try {
@@ -166,12 +237,20 @@ export class JobRunner {
             
                 let success = await jobWorker.startExecution(jobConfig, jobInput);
                 if (!success) {
+                    errorReport ??= {
+                        jobId: jobConfig.jobId,
+                        stage: "Worker initial step",
+                        message: "",
+                        status: "General failure"
+                    };
+
                     await this.jobProvider.failJob(
                         jobConfig.jobId,
                         "retry",
-                        "[JobRunner.ts] Error occured when running job: unable to run initial job step " +
-                            "(IJobWorker.startExecution() returned 'false')" +
-                            this.errorMessageAdditionalInfoProvider("runGeneric")
+                        errorReport.message =
+                            "[JobRunner.ts] Error occured when running job: unable to run initial job step " +
+                                "(IJobWorker.startExecution() returned 'false')" +
+                                this.errorMessageAdditionalInfoProvider("runGeneric")
                     );
                     continue;
                 }
@@ -184,12 +263,20 @@ export class JobRunner {
                 }
 
                 if (!success) {
+                    errorReport ??= {
+                        jobId: jobConfig.jobId,
+                        stage: "Worker job step execution",
+                        message: "",
+                        status: "General failure"
+                    };
+
                     await this.jobProvider.failJob(
                         jobConfig.jobId,
                         "retry",
-                        "[JobRunner.ts] Error occured when running job: job was implicitly failed by a job step " +
-                            "(IJobWorker.executeNextStep() returned 'false' when 'true' was expected)" +
-                            this.errorMessageAdditionalInfoProvider("runGeneric")
+                        errorReport.message =
+                            "[JobRunner.ts] Error occured when running job: job was implicitly failed by a job step " +
+                                "(IJobWorker.executeNextStep() returned 'false' when 'true' was expected)" +
+                                this.errorMessageAdditionalInfoProvider("runGeneric")
                     );
                     continue;
                 }
@@ -202,25 +289,41 @@ export class JobRunner {
                         `Job execution failed with status ${status}. Reason: ${result?.reason ?? "unknown reason"}`
                     );
 
+                    errorReport ??= {
+                        jobId: jobConfig.jobId,
+                        stage: "Worker explicit step",
+                        message: "",
+                        status: status!
+                    };
+
                     await this.jobProvider.failJob(
                         jobConfig.jobId,
                         (status === "failure") ? "retry" : "no-retry",
-                        "[JobRunner.ts] Error occured when running job: job was explicitly failed by a job step " +
-                            "(IJobWorker.getExecutionResult() return value had status !== 'success')" +
-                            `
-                            Failure reason: ${result?.reason ?? "Unspecified reason"}` +
-                            this.errorMessageAdditionalInfoProvider("runGeneric")
+                        errorReport.message =
+                            "[JobRunner.ts] Error occured when running job: job was explicitly failed by a job step " +
+                                "(IJobWorker.getExecutionResult() return value had status !== 'success')" +
+                                `
+                                Failure reason: ${result?.reason ?? "Unspecified reason"}` +
+                                this.errorMessageAdditionalInfoProvider("runGeneric")
                     );
                     continue;
                 }
 
                 if (!(await persistor.perisistResult(result.result, jobConfig))) {
+                    errorReport ??= {
+                        jobId: jobConfig.jobId,
+                        stage: "Result persistance step",
+                        message: "",
+                        status: "General failure"
+                    };
+
                     await this.jobProvider.failJob(
                         jobConfig.jobId,
                         { retryAfterMs: 15000 },
-                        "[JobRunner.ts] Error occured when running job: persistance of the result was unsuccessful " +
-                            "(IJobWorker.perisistResult() returned 'false')" +
-                            this.errorMessageAdditionalInfoProvider("runGeneric")
+                        errorReport.message =
+                            "[JobRunner.ts] Error occured when running job: persistance of the result was " +
+                            "unsuccessful (IJobWorker.perisistResult() returned 'false')" +
+                                this.errorMessageAdditionalInfoProvider("runGeneric")
                     );
                     continue;
                 }
@@ -240,18 +343,26 @@ export class JobRunner {
                     stackTrace = err.stack ?? null;
                 }
 
+                errorReport ??= {
+                    jobId: jobConfig.jobId,
+                    stage: "Job execution - general",
+                    message: "",
+                    status: "Job fatal failure"
+                };
+
                 await this.jobProvider.failJob(
                     jobConfig.jobId,
                     { retryAfterMs: 20000 },
-                    `[JobRunner.ts] Error occured when running job: exception of type ${errorName} was thrown` +
-                        `
-                        Error message:
-                          ${errorMessage}
+                    errorReport.message =
+                        `[JobRunner.ts] Error occured when running job: exception of type ${errorName} was thrown` +
+                            `
+                            Error message:
+                            ${errorMessage}
 
-                        Stack trace:
-                          ${stackTrace}
-                        ` +
-                        this.errorMessageAdditionalInfoProvider("runGeneric")
+                            Stack trace:
+                            ${stackTrace}
+                            ` +
+                            this.errorMessageAdditionalInfoProvider("runGeneric")
                 );
             }
         }
