@@ -79,6 +79,10 @@ export abstract class AbstractJobWorker<
                 }
             }
 
+            for (const idx of (stepResult?.consumedInputIndexes ?? [])) {
+                this.currentStepInput.splice(idx, 1);
+            }
+
             this.currentStepInput = this.currentStepInput
                 .filter(si => si?.ttl !== undefined && (si.ttl === -1 || si.ttl > 0))
                 .map(si => {

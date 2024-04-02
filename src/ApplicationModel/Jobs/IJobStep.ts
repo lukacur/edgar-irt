@@ -9,6 +9,7 @@ export type StepResult<TResult> =
          *           this result (input) is equal to the value set in this property
          */
         resultTTLSteps?: number;
+        consumedInputIndexes?: number[];
     } &
     (
         {
