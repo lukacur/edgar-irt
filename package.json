@@ -11,11 +11,13 @@
   "author": "Luka Curic",
   "license": "ISC",
   "dependencies": {
+    "nodemailer": "^6.9.13",
     "pg": "^8.11.3",
     "pg-boss": "^9.0.3"
   },
   "devDependencies": {
     "@types/node": "^20.11.20",
+    "@types/nodemailer": "^6.4.14",
     "@types/pg": "^8.10.9"
   }
 }
