@@ -10,6 +10,7 @@ export abstract class AbstractGenericJobStep<
     constructor(
         public readonly stepTimeoutMs: number,
         public readonly stepConfiguration: TStepConfiguration,
+        public readonly resultTTL?: number,
     ) {}
 
     protected abstract runTyped(stepInput: (TStepInput | null)[]): Promise<StepResult<TRunResult>>;
