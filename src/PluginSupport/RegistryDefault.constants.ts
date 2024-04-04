@@ -5,5 +5,6 @@ export class RegistryDefaultConstants {
         URL_INPUT_FETCH: "URLInputFetch",
         INSERT_OBJECT: "InsertObject",
         SEND_EMAIL: "SendEmail",
+        RUN_FILE: "RunFile",
     } as const;
 }
