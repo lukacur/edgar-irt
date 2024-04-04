@@ -160,6 +160,7 @@ export class RunFileJobStep extends AbstractGenericJobStep<RunFileConfiguration,
                 return {
                     status: "success",
                     result: null,
+                    isCritical: this.isCritical,
                     resultTTLSteps: this.resultTTL,
                 };
             }
@@ -181,6 +182,7 @@ export class RunFileJobStep extends AbstractGenericJobStep<RunFileConfiguration,
                     type: resType,
                     executionResult: <any>calcResult,
                 },
+                isCritical: this.isCritical,
                 resultTTLSteps: this.resultTTL,
             };
         } catch (err: any) {
@@ -192,6 +194,7 @@ export class RunFileJobStep extends AbstractGenericJobStep<RunFileConfiguration,
             return {
                 status: "failure",
                 result: null,
+                isCritical: this.isCritical,
                 reason: "Job step execution failed with error:\n    " + ErrorUtil.getErrorDetailedInfo(err, 4),
             };
         } finally {
@@ -208,11 +211,12 @@ export class RunFileJobStep extends AbstractGenericJobStep<RunFileConfiguration,
         "JobStep",
         RegistryDefaultConstants.jobSteps.RUN_FILE,
     )
-    public create(descriptor: JobStepDescriptor, ...args: any[]): object {
+    public create(stepDescriptor: JobStepDescriptor, ...args: any[]): object {
         return new RunFileJobStep(
-            descriptor.stepTimeoutMs,
-            <RunFileConfiguration>descriptor.configContent,
-            descriptor.resultTTL,
+            stepDescriptor.stepTimeoutMs,
+            <RunFileConfiguration>stepDescriptor.configContent,
+            stepDescriptor.isCritical,
+            stepDescriptor.resultTTL,
         )
     }
 }

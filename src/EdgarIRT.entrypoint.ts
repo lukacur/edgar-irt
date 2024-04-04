@@ -536,6 +536,7 @@ export class MainRunner {
                         false,
                     ),
                     dbConn,
+                    true,
                 ),
                 new EdgarStatProcJobStep(
                     200000,

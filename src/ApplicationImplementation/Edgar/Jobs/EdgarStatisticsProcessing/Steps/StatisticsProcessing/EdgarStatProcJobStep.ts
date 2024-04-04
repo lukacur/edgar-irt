@@ -12,14 +12,6 @@ import { JobStepDescriptor } from "../../../../../../ApplicationModel/Jobs/IJobC
 
 export class EdgarStatProcJobStep
     extends AbstractGenericJobStep<EdgarStatProcStepConfiguration, object, IRCalculationResult> {
-    constructor (
-        stepTimeoutMs: number,
-        stepConfiguration: EdgarStatProcStepConfiguration,
-        resultTTL?: number,
-    ) {
-        super(stepTimeoutMs, stepConfiguration, resultTTL);
-    }
-
     public override async runTyped(stepInput: (object | null)[]): Promise<StepResult<IRCalculationResult>> {
         const delProm = new DelayablePromise<IRCalculationResult>();
         const childProcArgs: string[] = [];
@@ -111,6 +103,7 @@ export class EdgarStatProcJobStep
             return {
                 status: "success",
                 result: calcResult,
+                isCritical: this.isCritical,
                 resultTTLSteps: this.resultTTL,
             };
         } catch (err: any) {
@@ -119,6 +112,7 @@ export class EdgarStatProcJobStep
             return {
                 status: "failure",
                 result: null,
+                isCritical: this.isCritical,
                 reason: (typeof(err) === "string") ? err : ('toString' in err) ? err.toString() : "Unknown",
                 canRetry: true,
             };
@@ -138,6 +132,7 @@ export class EdgarStatProcJobStep
         return new EdgarStatProcJobStep(
             stepDescriptor.stepTimeoutMs,
             <EdgarStatProcStepConfiguration>stepDescriptor.configContent,
+            stepDescriptor.isCritical,
             stepDescriptor.resultTTL,
         );
     }

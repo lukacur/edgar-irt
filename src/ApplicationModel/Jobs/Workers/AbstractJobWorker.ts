@@ -42,7 +42,10 @@ export abstract class AbstractJobWorker<
 
     public hasNextStep(): boolean {
         return (
-            this.lastStepResult === undefined || !!this.lastStepResult && this.lastStepResult.status === "success"
+            this.lastStepResult === undefined ||
+                (!!this.lastStepResult &&
+                    (this.lastStepResult.status === "success" || !this.lastStepResult.isCritical)
+                )
         ) && this.currentStepIdx < this.jobSteps.length;
     }
 

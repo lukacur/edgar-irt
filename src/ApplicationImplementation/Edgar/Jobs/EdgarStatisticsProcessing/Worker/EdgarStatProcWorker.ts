@@ -20,6 +20,7 @@ export class EdgarStatProcWorker extends AbstractJobWorker<
     IRCalculationResult
 > implements GenericFactory {
     private calcResultCache: IRCalculationResult & { ttl?: number } | null = null;
+    private wasResultCritical: boolean = false;
 
     constructor(
         private readonly dbConn: DatabaseConnection,
@@ -90,6 +91,8 @@ export class EdgarStatProcWorker extends AbstractJobWorker<
 
         forceRecalculate: boolean = false,
     ): Promise<StepResult<IRCalculationResult> | null> {
+        this.wasResultCritical = jobStep.isCritical;
+
         if (this.calcResultCache === null || forceRecalculate) {
             return await this.calculate(
                 jobStep,
@@ -101,6 +104,7 @@ export class EdgarStatProcWorker extends AbstractJobWorker<
             return {
                 status: "success",
                 result: this.calcResultCache,
+                isCritical: this.wasResultCritical,
                 resultTTLSteps: jobStep.resultTTL,
             };
         }
@@ -192,10 +196,12 @@ export class EdgarStatProcWorker extends AbstractJobWorker<
             status: "failure",
             reason: "No result",
             result: null,
+            isCritical: this.wasResultCritical,
         } :
         {
             status: "success",
             result: this.calcResultCache,
+            isCritical: this.wasResultCritical,
             resultTTLSteps: this.calcResultCache.ttl,
         };
     }

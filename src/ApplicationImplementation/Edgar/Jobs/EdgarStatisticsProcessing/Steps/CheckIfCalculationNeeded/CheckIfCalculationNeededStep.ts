@@ -17,9 +17,11 @@ export class CheckIfCalculationNeededStep
 
         private readonly dbConn: DatabaseConnection,
 
+        isCritical: boolean,
+
         resultTTL?: number,
     ) {
-        super(stepTimeoutMs, stepConfiguration, resultTTL);
+        super(stepTimeoutMs, stepConfiguration, isCritical, resultTTL);
     }
 
     private createSQLIntervalFromConfig(): string {
@@ -35,6 +37,7 @@ export class CheckIfCalculationNeededStep
             return {
                 status: "failure",
                 reason: `Input to this step can't be null ${CheckIfCalculationNeededStep.name}`,
+                isCritical: this.isCritical,
                 result: null,
                 canRetry: false,
             }
@@ -46,6 +49,7 @@ export class CheckIfCalculationNeededStep
             return {
                 status: "cancelChain",
                 reason: "Input is in an invalid format",
+                isCritical: this.isCritical,
                 result: null,
             };
         }
@@ -78,6 +82,7 @@ export class CheckIfCalculationNeededStep
             return {
                 status: "cancelChain",
                 reason: `Calculation already exists and is not older than ${this.createSQLIntervalFromConfig()}`,
+                isCritical: this.isCritical,
                 result: null,
             };
         }
@@ -85,6 +90,7 @@ export class CheckIfCalculationNeededStep
         return {
             status: "success",
             result: inputEl,
+            isCritical: this.isCritical,
             resultTTLSteps: this.resultTTL,
         };
     }
@@ -104,6 +110,7 @@ export class CheckIfCalculationNeededStep
             stepDescriptor.stepTimeoutMs,
             <CheckIfCalculationNeededStepConfiguration>stepDescriptor.configContent,
             DatabaseConnectionRegistry.instance.getItem(config.databaseConnection),
+            stepDescriptor.isCritical,
             stepDescriptor.resultTTL,
         );
     }

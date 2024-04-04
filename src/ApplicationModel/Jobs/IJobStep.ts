@@ -8,6 +8,7 @@ export type StepResult<TResult> =
          *   - > 0 - the result will stay in the worker's step input pipeline until the number of tasks that have seen
          *           this result (input) is equal to the value set in this property
          */
+        isCritical: boolean;
         resultTTLSteps?: number;
         consumedInputIndexes?: number[];
     } &

@@ -18,6 +18,7 @@ export class SaveInputToFileJobStep
                 status: "failure",
                 reason: `File ${this.stepConfiguration.path} already exists`,
                 result: null,
+                isCritical: this.isCritical,
             };
         }
 
@@ -38,6 +39,7 @@ export class SaveInputToFileJobStep
             return {
                 status: "success",
                 result: (this.stepConfiguration.passInputAsOutput) ? stepInput[0] : null,
+                isCritical: this.isCritical,
                 resultTTLSteps: this.resultTTL,
             };
         } catch (err: any) {
@@ -52,15 +54,17 @@ Trace: ${err.stack ?? "-"}` : (("toString" in err) ? err.toString() : "Unknown e
                 `Message:
     ${message.split("\n").join("\n    ")}`,
                 result: null,
+                isCritical: this.isCritical,
             };
         }
     }
     
-    public create(descriptor: JobStepDescriptor, ...args: any[]): object {
+    public create(stepDescriptor: JobStepDescriptor, ...args: any[]): object {
         return new SaveInputToFileJobStep(
-            descriptor.stepTimeoutMs,
-            <SaveInputToFileConfiguration>descriptor.configContent,
-            descriptor.resultTTL,
+            stepDescriptor.stepTimeoutMs,
+            <SaveInputToFileConfiguration>stepDescriptor.configContent,
+            stepDescriptor.isCritical,
+            stepDescriptor.resultTTL,
         );
     }
 }

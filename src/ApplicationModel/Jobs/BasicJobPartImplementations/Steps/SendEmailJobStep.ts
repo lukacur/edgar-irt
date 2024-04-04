@@ -22,9 +22,10 @@ export class SendEmailJobStep extends AbstractGenericJobStep<SendEmailConfigurat
     constructor(
         stepTimeoutMs: number,
         configContent: SendEmailConfiguration,
+        isCritical: boolean,
         resultTTL?: number
     ) {
-        super(stepTimeoutMs, configContent, resultTTL);
+        super(stepTimeoutMs, configContent, isCritical, resultTTL);
 
         if (!MailerProvider.instance.hasMailer()) {
             throw new Error(`No mailer service was registered in the ${MailerProvider.name} singleton instance`);
@@ -40,6 +41,7 @@ export class SendEmailJobStep extends AbstractGenericJobStep<SendEmailConfigurat
                 reason:
                     `Input object of type SendEmailRequest must be provided as step input for ${SendEmailJobStep.name}`,
                 result: null,
+                isCritical: this.isCritical,
                 resultTTLSteps: this.resultTTL,
             }
         }
@@ -85,12 +87,14 @@ export class SendEmailJobStep extends AbstractGenericJobStep<SendEmailConfigurat
                     status: "failure",
                     reason: `Mailer ${this.mailer.constructor.name} returned 'false' when sendMail was attempted`,
                     result: null,
+                    isCritical: this.isCritical,
                 };
             }
 
             return {
                 status: "success",
                 result: null,
+                isCritical: this.isCritical,
                 resultTTLSteps: this.resultTTL,
             }
         } catch (err) {
@@ -98,6 +102,7 @@ export class SendEmailJobStep extends AbstractGenericJobStep<SendEmailConfigurat
                 status: "failure",
                 reason: `An error occured while sending email:\n${ErrorUtil.getErrorDetailedInfo(err, 4)}`,
                 result: null,
+                isCritical: this.isCritical,
             };
         }
     }
@@ -106,11 +111,12 @@ export class SendEmailJobStep extends AbstractGenericJobStep<SendEmailConfigurat
         "JobStep",
         RegistryDefaultConstants.jobSteps.SEND_EMAIL,
     )
-    public create(descriptor: JobStepDescriptor, ...args: any[]): object {
+    public create(stepDescriptor: JobStepDescriptor, ...args: any[]): object {
         return new SendEmailJobStep(
-            descriptor.stepTimeoutMs,
-            <SendEmailConfiguration>descriptor.configContent,
-            descriptor.resultTTL,
+            stepDescriptor.stepTimeoutMs,
+            <SendEmailConfiguration>stepDescriptor.configContent,
+            stepDescriptor.isCritical,
+            stepDescriptor.resultTTL,
         );
     }
 }

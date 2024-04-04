@@ -11,6 +11,7 @@ export class InsertObjectJobStep extends AbstractGenericJobStep<InsertObjectConf
         return {
             status: "success",
             result: this.stepConfiguration.objectToInsert,
+            isCritical: this.isCritical,
             resultTTLSteps: this.resultTTL,
         };
     }
@@ -19,11 +20,12 @@ export class InsertObjectJobStep extends AbstractGenericJobStep<InsertObjectConf
         "JobStep",
         RegistryDefaultConstants.jobSteps.INSERT_OBJECT,
     )
-    public create(descriptor: JobStepDescriptor, ...args: any[]): object {
+    public create(stepDescriptor: JobStepDescriptor, ...args: any[]): object {
         return new InsertObjectJobStep(
-            descriptor.stepTimeoutMs,
-            <InsertObjectConfiguration>descriptor.configContent,
-            descriptor.resultTTL,
+            stepDescriptor.stepTimeoutMs,
+            <InsertObjectConfiguration>stepDescriptor.configContent,
+            stepDescriptor.isCritical,
+            stepDescriptor.resultTTL,
         )
     }
 }

@@ -53,6 +53,7 @@ export class URLRequestJobStep
                 result: {
                     result: responseDataResult,
                 },
+                isCritical: this.isCritical,
                 resultTTLSteps: this.resultTTL,
             };
         } catch (err: any) {
@@ -67,8 +68,9 @@ Stack trace: ${err.stack ?? "-"}` : err.toString();
                 `Exception was thrown when calling 'fetch'
 Error information:
 ${msg.split("\n").join("    \n")}`,
-                canRetry: false,
                 result: null,
+                isCritical: this.isCritical,
+                canRetry: false,
             };
         }
     }
@@ -81,6 +83,7 @@ ${msg.split("\n").join("    \n")}`,
         return new URLRequestJobStep(
             stepDescriptor.stepTimeoutMs,
             <URLJobStepConfiguration>stepDescriptor.configContent,
+            stepDescriptor.isCritical,
             stepDescriptor.resultTTL,
         );
     }

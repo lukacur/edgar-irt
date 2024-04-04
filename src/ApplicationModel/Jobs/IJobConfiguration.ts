@@ -24,6 +24,8 @@ export type JobStepDescriptor = {
     stepTimeoutMs: number;
     resultTTL?: number;
     configContent: object;
+
+    isCritical: boolean;
 };
 
 export type JobWorkerConfig = {
