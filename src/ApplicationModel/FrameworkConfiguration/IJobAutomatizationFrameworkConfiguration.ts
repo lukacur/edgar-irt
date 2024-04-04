@@ -1,4 +1,5 @@
 import { IDatabaseConfig } from "../../ApplicationImplementation/Models/Config/DatabaseConfig.model.js";
+import { EmailHeader, SmtpCredentials } from "../Models/Email/EmailModels.model.js";
 
 type DatabaseConnectivity =
 {
@@ -13,14 +14,8 @@ type DatabaseConnectivity =
     }
 );
 
-type SmtpConfiguration = {
-    defaults: {
-        from: string;
-        to?: string[];
-        cc?: string[];
-        bcc?: string[];
-        subject: string;
-    };
+export type SmtpConfiguration = {
+    defaults: EmailHeader;
 
     alwaysInclude: {
         to?: string[];
@@ -33,17 +28,7 @@ type SmtpConfiguration = {
 
     useTls: boolean;
 
-    credentials:
-        {
-            username: string;
-            password: string;
-        } |
-        {
-            applicationToken: string;
-        } |
-        {
-            certificateBase64: string;
-        };
+    credentials: SmtpCredentials;
 
     timeoutMs: number;
 };

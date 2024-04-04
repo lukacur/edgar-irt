@@ -1,33 +1,4 @@
-type EmailBaseInfo = {
-    from?: string;
-    to?: string[];
-
-    cc?: string[];
-    bcc?: string[];
-
-    subject: string;
-};
-
-type AttachmentInfo = { base64Content: string } | Blob | Buffer;
-
-type EmailBody =
-{
-    content: string;
-    attachments?: AttachmentInfo[]
-} &
-(
-    {
-        type: "html";
-    } |
-    {
-        type: "plain";
-    }
-);
-
-export type EmailInfo = {
-    base: EmailBaseInfo;
-    body: EmailBody;
-};
+import { EmailInfo, SmtpCredentials } from "../ApplicationModel/Models/Email/EmailModels.model.js";
 
 export interface IMailer {
     sendMail(info: EmailInfo): Promise<boolean>;
