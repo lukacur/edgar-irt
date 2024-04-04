@@ -1,7 +1,8 @@
 export class DelayablePromise<T> {
-    // TODO: add a 'private resolved: boolean = false' field
-    private resolveRequestResolver: ((value: boolean) => void) | null = null; // TODO: should be a list
-    private rejectRequestResolver: ((value: boolean) => void) | null = null; // TODO: should be a list
+    private finished: boolean = false;
+
+    private resolveRequests: ((value: boolean) => void)[] = [];
+    private rejectRequests: ((value: boolean) => void)[] = [];
 
     private resolveFn: ((value: T | PromiseLike<T>) => void) | null = null;
     private rejectFn: ((reason: any) => void) | null = null;
@@ -11,13 +12,13 @@ export class DelayablePromise<T> {
     constructor() {
         this.promise = new Promise((resolve, reject) => {
             this.resolveFn = resolve;
-            if (this.resolveRequestResolver !== null) {
-                this.resolveRequestResolver(true);
+            if (this.resolveRequests !== null) {
+                this.resolveRequests.forEach(rs => rs(true));
             }
 
             this.rejectFn = reject;
-            if (this.rejectRequestResolver !== null) {
-                this.rejectRequestResolver(true);
+            if (this.rejectRequests !== null) {
+                this.rejectRequests.forEach(rs => rs(true));
             }
         });
     }
@@ -27,20 +28,30 @@ export class DelayablePromise<T> {
     }
 
     public async delayedResolve(value: T | PromiseLike<T>): Promise<void> {
+        if (this.finished) {
+            return;
+        }
+
         if (this.resolveFn === null) {
-            return (new Promise<boolean>((resolve, _) => this.resolveRequestResolver = resolve))
+            return (new Promise<boolean>((resolve, _) => this.resolveRequests.push(resolve)))
                 .then(() => this.resolveFn!(value));
         }
 
         this.resolveFn(value);
+        this.finished = true;
     }
-
+    
     public async delayedReject(reason?: any): Promise<void> {
-        if (this.rejectFn === null) {
-            return (new Promise<boolean>((resolve, _) => this.rejectRequestResolver = resolve))
-                .then(() => this.rejectFn!(reason));
+        if (this.finished) {
+            return;
         }
 
+        if (this.rejectFn === null) {
+            return (new Promise<boolean>((resolve, _) => this.rejectRequests.push(resolve)))
+                .then(() => this.rejectFn!(reason));
+        }
+        
         this.rejectFn(reason);
+        this.finished = true;
     }
 }
