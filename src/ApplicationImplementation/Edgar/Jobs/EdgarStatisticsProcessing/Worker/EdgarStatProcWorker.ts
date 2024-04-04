@@ -19,7 +19,7 @@ export class EdgarStatProcWorker extends AbstractJobWorker<
     object,
     IRCalculationResult
 > implements GenericFactory {
-    private calcResultCache: IRCalculationResult | null = null;
+    private calcResultCache: IRCalculationResult & { ttl?: number } | null = null;
 
     constructor(
         private readonly dbConn: DatabaseConnection,
@@ -72,6 +72,9 @@ export class EdgarStatProcWorker extends AbstractJobWorker<
 
             if (cacheResult) {
                 this.calcResultCache = calcResult.result
+                if (this.calcResultCache !== null) {
+                    this.calcResultCache.ttl = jobStep.resultTTL;
+                }
             }
 
             return calcResult;
@@ -98,6 +101,7 @@ export class EdgarStatProcWorker extends AbstractJobWorker<
             return {
                 status: "success",
                 result: this.calcResultCache,
+                resultTTLSteps: jobStep.resultTTL,
             };
         }
     }
@@ -192,6 +196,7 @@ export class EdgarStatProcWorker extends AbstractJobWorker<
         {
             status: "success",
             result: this.calcResultCache,
+            resultTTLSteps: this.calcResultCache.ttl,
         };
     }
 

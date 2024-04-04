@@ -15,8 +15,9 @@ export class EdgarStatProcJobStep
     constructor (
         stepTimeoutMs: number,
         stepConfiguration: EdgarStatProcStepConfiguration,
+        resultTTL?: number,
     ) {
-        super(stepTimeoutMs, stepConfiguration);
+        super(stepTimeoutMs, stepConfiguration, resultTTL);
     }
 
     public override async runTyped(stepInput: (object | null)[]): Promise<StepResult<IRCalculationResult>> {
@@ -110,6 +111,7 @@ export class EdgarStatProcJobStep
             return {
                 status: "success",
                 result: calcResult,
+                resultTTLSteps: this.resultTTL,
             };
         } catch (err: any) {
             clearTimeout(execTimeout);
@@ -136,6 +138,7 @@ export class EdgarStatProcJobStep
         return new EdgarStatProcJobStep(
             stepDescriptor.stepTimeoutMs,
             <EdgarStatProcStepConfiguration>stepDescriptor.configContent,
+            stepDescriptor.resultTTL,
         );
     }
 }

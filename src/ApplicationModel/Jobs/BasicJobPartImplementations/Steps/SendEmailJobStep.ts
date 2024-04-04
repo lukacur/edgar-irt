@@ -91,6 +91,7 @@ export class SendEmailJobStep extends AbstractGenericJobStep<SendEmailConfigurat
             return {
                 status: "success",
                 result: null,
+                resultTTLSteps: this.resultTTL,
             }
         } catch (err) {
             return {

@@ -3,7 +3,7 @@ import { IJobStep, StepResult } from "../../IJobStep.js";
 import { AbstractJobWorker } from "../../Workers/AbstractJobWorker.js";
 
 export class GenericJobWorker extends AbstractJobWorker<object, object> {
-    private executionResult: object | null = null;
+    private executionResult: StepResult<object> | null = null;
 
     constructor(
         private readonly jobConfig: IJobConfiguration,
@@ -36,10 +36,6 @@ export class GenericJobWorker extends AbstractJobWorker<object, object> {
             status: "failure",
             reason: "No result present",
             result: null,
-        } :
-        {
-            status: "success",
-            result: this.executionResult,
-        };
+        } : this.executionResult;
     }
 }

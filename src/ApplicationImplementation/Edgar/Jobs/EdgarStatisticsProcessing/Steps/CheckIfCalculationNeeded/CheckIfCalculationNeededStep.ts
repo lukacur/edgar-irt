@@ -16,8 +16,10 @@ export class CheckIfCalculationNeededStep
         stepConfiguration: CheckIfCalculationNeededStepConfiguration,
 
         private readonly dbConn: DatabaseConnection,
+
+        resultTTL?: number,
     ) {
-        super(stepTimeoutMs, stepConfiguration);
+        super(stepTimeoutMs, stepConfiguration, resultTTL);
     }
 
     private createSQLIntervalFromConfig(): string {
@@ -83,6 +85,7 @@ export class CheckIfCalculationNeededStep
         return {
             status: "success",
             result: inputEl,
+            resultTTLSteps: this.resultTTL,
         };
     }
 
@@ -100,7 +103,8 @@ export class CheckIfCalculationNeededStep
         return new CheckIfCalculationNeededStep(
             stepDescriptor.stepTimeoutMs,
             <CheckIfCalculationNeededStepConfiguration>stepDescriptor.configContent,
-            DatabaseConnectionRegistry.instance.getItem(config.databaseConnection)
+            DatabaseConnectionRegistry.instance.getItem(config.databaseConnection),
+            stepDescriptor.resultTTL,
         );
     }
 }

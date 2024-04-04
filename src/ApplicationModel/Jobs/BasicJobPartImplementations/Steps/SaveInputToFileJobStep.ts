@@ -38,6 +38,7 @@ export class SaveInputToFileJobStep
             return {
                 status: "success",
                 result: (this.stepConfiguration.passInputAsOutput) ? stepInput[0] : null,
+                resultTTLSteps: this.resultTTL,
             };
         } catch (err: any) {
             const message: string = (err instanceof Error) ?
