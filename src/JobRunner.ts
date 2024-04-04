@@ -35,19 +35,24 @@ export class JobRunner {
     }
 
     private async sendErrorReportMessage(errorReport: ErrorReport): Promise<void> {
-        await MailerProvider.instance.getMailer().sendMail({
-            base: {
-                subject: "Job automatization - job failure"
-            },
-            body: {
-                type: "plain",
-                content: `This email is sent in order to inform you that a job with id '${errorReport.jobId}' ` +
-                            `failed on pipeline stage '${errorReport.stage}' with status '${errorReport.status}'.` +
-                            `
+        await MailerProvider.instance.getMailer().sendMail(
+            {
+                header: {
+                    subject: "Job automatization - job failure",
+                    from: undefined!,
+                    to: undefined!,
+                },
+                body: {
+                    type: "plain",
+                    content: `This email is sent in order to inform you that a job with id '${errorReport.jobId}' ` +
+                                `failed on pipeline stage '${errorReport.stage}' with status '${errorReport.status}'.` +
+                                `
 Failure message:
 ${errorReport.message.split('\n').join('\n    ')}`,
-            }
-        });
+                }
+            },
+            true
+        );
     }
 
     private async runStrict(): Promise<void> {

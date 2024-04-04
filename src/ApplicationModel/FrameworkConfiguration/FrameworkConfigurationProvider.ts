@@ -24,6 +24,10 @@ export class FrameworkConfigurationProvider {
             async sendMail(info) {
                 return true;
             },
+
+            withUser(credentials) {
+                return this;
+            },
         });
     }
 

@@ -17,7 +17,7 @@ type DatabaseConnectivity =
 export type SmtpConfiguration = {
     defaults: EmailHeader;
 
-    alwaysInclude: {
+    always: {
         to?: string[];
         cc?: string[];
         bcc?: string[];
