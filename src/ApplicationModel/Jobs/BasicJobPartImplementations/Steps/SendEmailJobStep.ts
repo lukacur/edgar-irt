@@ -1,6 +1,8 @@
+import { RegistryDefaultConstants } from "../../../../PluginSupport/RegistryDefault.constants.js";
 import { ArraysUtil } from "../../../../Util/ArraysUtil.js";
 import { ErrorUtil } from "../../../../Util/ErrorUtil.js";
 import { IMailer, MailerProvider } from "../../../../Util/MailerProvider.js";
+import { RegisterDelegateToRegistry } from "../../../Decorators/Registration.decorator.js";
 import { SmtpConfiguration } from "../../../FrameworkConfiguration/IJobAutomatizationFrameworkConfiguration.js";
 import { EmailBody, EmailHeader } from "../../../Models/Email/EmailModels.model.js";
 import { AbstractGenericJobStep } from "../../AbstractGenericJobStep.js";
@@ -99,6 +101,10 @@ export class SendEmailJobStep extends AbstractGenericJobStep<SendEmailConfigurat
         }
     }
 
+    @RegisterDelegateToRegistry(
+        "JobStep",
+        RegistryDefaultConstants.jobSteps.SEND_EMAIL,
+    )
     public create(descriptor: JobStepDescriptor, ...args: any[]): object {
         return new SendEmailJobStep(
             descriptor.stepTimeoutMs,

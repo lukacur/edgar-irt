@@ -4,5 +4,6 @@ export class RegistryDefaultConstants {
     public static readonly jobSteps = {
         URL_INPUT_FETCH: "URLInputFetch",
         INSERT_OBJECT: "InsertObject",
+        SEND_EMAIL: "SendEmail",
     } as const;
 }
