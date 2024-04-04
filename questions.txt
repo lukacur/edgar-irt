@@ -48,7 +48,7 @@ Primjer objekta koji se stvori pozivom metode 'serializeInto' nad CourseBasedBat
                                 
                                 studentScore: 23.0,
                                 testMaxScore: 40.0,
-                                solutionPercentage: 0.575, // TODO: koji je format?
+                                solutionPercentage: 0.575,
                                 
                                 questions: {
                                     13: {

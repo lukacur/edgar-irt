@@ -78,11 +78,6 @@
                 "outputFallthrough": 2
             },
             {
-                "comment": {
-                    "content": "// TODO: propagacija bi trebala (barem za gornju situaciju) biti kompozit"
-                }
-            },
-            {
                 "type": "dynamic",
                 "timeoutMs": 3000,
                 "importInfo": {
@@ -122,7 +117,6 @@
                         ["User-Agent", "Mozilla/5.0..."]
                     ],
                     "queryParams": [
-                        ["comment", "// TODO: DODATI"],
                         ["foo", "bar"]
                     ]
                 },
