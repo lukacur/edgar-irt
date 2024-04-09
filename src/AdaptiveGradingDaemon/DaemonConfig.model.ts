@@ -1,4 +1,5 @@
 import { IDatabaseConfig } from "../ApplicationImplementation/Models/Config/DatabaseConfig.model.js";
+import { HttpMethod } from "../ApplicationModel/Jobs/BasicJobPartImplementations/Steps/Models/URLJobStepConfiguration.js";
 
 export type ScanInterval = {
     days?: number;
@@ -38,6 +39,21 @@ export type QueueDescriptor =
 
 export interface DaemonConfig {
     scanInterval: ScanInterval;
+
+    calculationConfig: {
+        useJudge0: true,
+        endpoint: string,
+        method: HttpMethod,
+    } |
+    {
+        useJudge0: false,
+        scriptPath: string,
+        outputFile: string,
+        generatedJSONInputPath: string,
+    },
+
+    maxJobTimeoutMs?: number;
+
     declaredQueues: QueueDescriptor[];
     statisticsCalculationSchemaName: string;
 }
