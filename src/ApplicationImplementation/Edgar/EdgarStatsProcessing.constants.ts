@@ -16,7 +16,4 @@ export class EdgarStatsProcessingConstants {
 
     public static readonly STATISTICS_CALCULATION_STEP_ENTRY =
         `${EdgarStatsProcessingConstants.REGISTRY_PREFIX}/StatisticsCalculation`;
-
-    public static readonly PERSISTOR_ENTRY =
-        `${EdgarStatsProcessingConstants.REGISTRY_PREFIX}/Persistor`;
 }

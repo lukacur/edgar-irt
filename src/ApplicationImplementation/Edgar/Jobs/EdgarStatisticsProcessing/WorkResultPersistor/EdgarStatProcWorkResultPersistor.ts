@@ -214,7 +214,7 @@ export class EdgarStatProcWorkResultPersistor
 
     @RegisterDelegateToRegistry(
         "Persistor",
-        EdgarStatsProcessingConstants.PERSISTOR_ENTRY
+        EdgarStatsProcessingConstants.DATA_PERSISTOR_REGISTRY_ENTRY,
     )
     public createGeneric(
         persistorConfig: DataPersistorConfig<{ databaseConnection?: string }>,
