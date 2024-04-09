@@ -6,6 +6,8 @@ export type CourseStatisticsProcessingRequest = {
     idStartAcademicYear: number;
     numberOfIncludedPreviousYears: number;
 
+    userRequested: number | null;
+
     forceCalculation: boolean;
 }
 
