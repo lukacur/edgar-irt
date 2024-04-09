@@ -6,13 +6,7 @@ import { DatabaseConnectionRegistry } from "../../../../../PluginSupport/Registr
 import { CourseBasedBatch } from "../../../Batches/CourseBasedBatch.js";
 import { EdgarStatsProcessingConstants } from "../../../EdgarStatsProcessing.constants.js";
 import { EdgarStatProcJobConfiguration } from "../Provider/EdgarStatProcJobConfiguration.js";
-
-type AdditionalConfig = {
-    databaseConnection: string;
-    idCourse: number;
-    idStartAcademicYear: number;
-    numberOfIncludedPreviousYears: number;
-};
+import { EdgarStatProcDataExtractorConfiguration } from "./EdgarStatProcDataExtractorConfiguration.js";
 
 @RegisterFactoryToRegistry(
     "InputDataExtractor",
@@ -34,7 +28,8 @@ export class EdgarStatProcDataExtractor
         return new class extends AbstractGenericInputDataExtractor<IJobConfiguration, any> {
             protected async formatJobInputTyped(jobConfiguration: IJobConfiguration): Promise<any> {
                 const extractorConfiguration =
-                    (<InputExtractorConfig<AdditionalConfig>>jobConfiguration.inputExtractorConfig);
+                    (<InputExtractorConfig<EdgarStatProcDataExtractorConfiguration>>
+                        jobConfiguration.inputExtractorConfig);
 
                 if (extractorConfiguration.type !== EdgarStatsProcessingConstants.DATA_EXTRACTOR_REGISTRY_ENTRY) {
                     throw new Error(
