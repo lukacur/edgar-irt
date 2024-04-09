@@ -16,7 +16,13 @@ class JobServiceInitializer {
 export type ShutdownHookState = "PRE_SHUTDOWN" | "SHUTDOWN" | "POST_SHUTDOWN";
 export type ShutdownHook = (state: ShutdownHookState) => Promise<void>;
 
-class ConfiguredJobService {
+export interface IConfiguredJobService {
+    addShutdownHook(hook: ShutdownHook): ConfiguredJobService;
+    startJobService(): ConfiguredJobService;
+    shutdownJobService(): Promise<void>;
+}
+
+class ConfiguredJobService implements IConfiguredJobService {
     private wasShutdown: boolean = false;
 
     private readonly shutdownHooks: ShutdownHook[] = [];
@@ -137,7 +143,7 @@ class JobServiceConfigurer {
             );
     }
 
-    public build(): ConfiguredJobService {
+    public build(): IConfiguredJobService {
         if (!this.preBuildCheckPassed()) {
             throw new JobServiceConfigurationException("Service not properly configured.");
         }
