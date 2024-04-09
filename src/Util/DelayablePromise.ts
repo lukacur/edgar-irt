@@ -23,6 +23,10 @@ export class DelayablePromise<T> {
         });
     }
 
+    public isFinished(): boolean {
+        return this.finished;
+    }
+
     public getWrappedPromise(): Promise<T> {
         return this.promise;
     }
