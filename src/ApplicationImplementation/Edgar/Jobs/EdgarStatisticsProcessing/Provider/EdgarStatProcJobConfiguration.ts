@@ -1,7 +1,14 @@
-import { BlockingConfig, DataPersistorConfig, IJobConfiguration, InputExtractorConfig, JobWorkerConfig } from "../../../../../ApplicationModel/Jobs/IJobConfiguration.js";
+import { ScanInterval } from "../../../../../AdaptiveGradingDaemon/DaemonConfig.model.js";
+import { CourseStatisticsProcessingRequest } from "../../../../../AdaptiveGradingDaemon/Queue/StatisticsCalculationQueues/CourseStatisticsCalculationQueue.js";
+import { BlockingConfig, DataPersistorConfig, IJobConfiguration, InputExtractorConfig, JobStepDescriptor, JobWorkerConfig } from "../../../../../ApplicationModel/Jobs/IJobConfiguration.js";
 import { IJobStep } from "../../../../../ApplicationModel/Jobs/IJobStep.js";
+import { RegistryDefaultConstants } from "../../../../../PluginSupport/RegistryDefault.constants.js";
 import { JobPartsParser } from "../../../../../Util/JobPartsParser.js";
 import { CourseBasedBatch } from "../../../Batches/CourseBasedBatch.js";
+import { EdgarStatsProcessingConstants } from "../../../EdgarStatsProcessing.constants.js";
+import { EdgarStatProcDataExtractorConfiguration } from "../DataExtractor/EdgarStatProcDataExtractorConfiguration.js";
+import { CheckIfCalculationNeededStepConfiguration } from "../Steps/CheckIfCalculationNeeded/CheckIfCalculationNeededStepConfiguration.js";
+import { EdgarStatProcStepConfiguration } from "../Steps/StatisticsProcessing/EdgarStatProcStepConfiguration.js";
 
 export class EdgarStatProcJobConfiguration implements IJobConfiguration {
     public readonly jobTypeAbbrevation = "STATPROC";
@@ -80,5 +87,108 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
         instance.jobSteps.push(...parsedJobSteps);
 
         return instance;
+    }
+
+    public static async fromStatisticsProcessingRequest(
+        statProcReq: CourseStatisticsProcessingRequest,
+        calculationsValidFor: ScanInterval,
+
+        calculationConfig: {
+            useJudge0: true,
+        } |
+        {
+            useJudge0: false,
+            scriptPath: string,
+            outputFile: string,
+            generatedJSONInputPath: string,
+        },
+
+        jobQueue: string | null,
+
+        jobName?: string,
+        jobTimeoutMs: number = 200000,
+        stalenessCheckTimeoutMs: number = 5000,
+        statProcessingTimeoutMs: number = 150000,
+    ) {
+        let remainingJobTime: number = jobTimeoutMs;
+
+        const ieConfig: EdgarStatProcDataExtractorConfiguration = {
+            databaseConnection: RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY,
+            idCourse: statProcReq.idCourse,
+            idStartAcademicYear: statProcReq.idStartAcademicYear,
+            numberOfIncludedPreviousYears: statProcReq.numberOfIncludedPreviousYears,
+        };
+
+        const cicnsConfig: CheckIfCalculationNeededStepConfiguration = {
+            calculationsValidFor,
+            forceCalculation: statProcReq.forceCalculation,
+        };
+
+        const dpConfig: { databaseConnection?: string } = {
+            databaseConnection: RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY,
+        };
+
+        const jobSteps: JobStepDescriptor[] = [
+            {
+                type: EdgarStatsProcessingConstants.STALENESS_CHECK_STEP_ENTRY,
+                configContent: cicnsConfig,
+                isCritical: true,
+                stepTimeoutMs: stalenessCheckTimeoutMs,
+            },
+        ];
+        remainingJobTime -= stalenessCheckTimeoutMs;
+
+        if (!calculationConfig.useJudge0) {
+            const statCalcConfig: EdgarStatProcStepConfiguration = {
+                calculationScriptAbsPath: calculationConfig.scriptPath,
+                outputFile: calculationConfig.outputFile,
+                inputJSONInfoAbsPath: calculationConfig.generatedJSONInputPath,
+            };
+
+            jobSteps.push(
+                {
+                    type: EdgarStatsProcessingConstants.STATISTICS_CALCULATION_STEP_ENTRY,
+                    configContent: statCalcConfig,
+                    isCritical: true,
+                    stepTimeoutMs: statProcessingTimeoutMs,
+                }
+            );
+        } else {
+            throw new Error("Not implemented");
+        }
+
+        remainingJobTime -= statProcessingTimeoutMs;
+
+        return await EdgarStatProcJobConfiguration.fromGenericJobConfig(
+            {
+                jobId: undefined!,
+                jobName: jobName ?? `Edgar statistics processing job started @ ${new Date().toISOString()}`,
+                jobTypeAbbrevation: "STATPROC",
+
+                idUserStarted: statProcReq.userRequested,
+                jobTimeoutMs,
+                jobQueue,
+
+                blockingConfig: {
+                    awaitDataExtraction: true,
+                    persistResultInBackground: false,
+                    workInBackground: false,
+                },
+                inputExtractorConfig: {
+                    type: EdgarStatsProcessingConstants.DATA_EXTRACTOR_REGISTRY_ENTRY,
+                    configContent: ieConfig,
+                },
+                jobWorkerConfig: {
+                    type: EdgarStatsProcessingConstants.JOB_WORKER_REGISTRY_ENTRY,
+                    databaseConnection: RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY,
+                    steps: jobSteps,
+                },
+                dataPersistorConfig: {
+                    type: EdgarStatsProcessingConstants.DATA_PERSISTOR_REGISTRY_ENTRY,
+                    persistanceTimeoutMs: remainingJobTime,
+                    configContent: dpConfig,
+                },
+            }
+        )
     }
 }
