@@ -9,6 +9,14 @@ import { FileQueueSystem } from "./Queue/QueueSystemImplementations/FileQueueSys
 import { PgBossQueueSystem } from "./Queue/QueueSystemImplementations/PgBossQueueSystem.js";
 import { QueueRegistry } from "./Queue/QueueRegistry.js";
 import { AdaptiveGradingConfigProvider } from "../ApplicationImplementation/ApplicationConfiguration/AdaptiveGradingConfigProvider.js";
+import { CourseStatisticsCalculationQueue, CourseStatisticsProcessingRequest } from "./Queue/StatisticsCalculationQueues/CourseStatisticsCalculationQueue.js";
+import { IConfiguredJobService, JobService } from "../JobService.js";
+import { EdgarStatProcJobProvider } from "../ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Provider/EdgarStatProcJobProvider.js";
+import { DatabaseConnectionRegistry } from "../PluginSupport/Registries/Implementation/DatabaseConnectionRegistry.js";
+import { RegistryDefaultConstants } from "../PluginSupport/RegistryDefault.constants.js";
+import { randomUUID } from "crypto";
+import { IJobConfiguration } from "../ApplicationModel/Jobs/IJobConfiguration.js";
+import { EdgarStatProcJobConfiguration } from "../ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Provider/EdgarStatProcJobConfiguration.js";
 
 type ForceShutdownHandler<TSource> = (source: TSource, reason?: string) => void;
 
@@ -20,10 +28,11 @@ export class AdaptiveGradingDaemon {
         actionProgress: { reportActionProgress: false, noReports: 0 },
     };
 
-    private scanInterval: ScanInterval | null = null;
+    private configuration: DaemonConfig | null = null;
+    private usedWorkQueue: IQueueSystemBase<IJobConfiguration> | null = null;
 
-    private static setupQueue(queueDescriptor: QueueDescriptor): IQueueSystemBase<any> | null {
-        let theQueue: IQueueSystemBase<any> | null;
+    private static setupQueue(queueDescriptor: QueueDescriptor): IQueueSystemBase<IJobConfiguration> | null {
+        let theQueue: IQueueSystemBase<IJobConfiguration> | null;
 
         switch (queueDescriptor.type) {
             case "dir": {
@@ -85,8 +94,9 @@ export class AdaptiveGradingDaemon {
         }
 
         let configuration: DaemonConfig = AdaptiveGradingConfigProvider.instance.getConfiguration();
-
-        this.scanInterval = configuration.scanInterval;
+        if (!("scanInterval" in configuration)) {
+            throw new Error(`Unable to parse given configuration file at: ${configFilePath}`);
+        }
 
         const queues = configuration.declaredQueues;
 
@@ -95,31 +105,38 @@ export class AdaptiveGradingDaemon {
             .filter(q => q !== null)
             .forEach(q => QueueRegistry.instance.registerQueue(q!.queueName, q!));
 
-        if (this.scanInterval === null) {
-            throw new Error(`Unable to parse given configuration file at: ${configFilePath}`);
+        const usedWorkQueueName = queues[Math.ceil(Math.random() * queues.length) - 1].queueName;
+        const qDesc = QueueRegistry.instance.getQueue<IJobConfiguration>(usedWorkQueueName);
+        if (qDesc.status === "failure") {
+            throw new Error(`Unable to get registered queue with name '${this.usedWorkQueue}'`);
         }
+
+        this.usedWorkQueue = qDesc.result;
+
+        this.configuration = configuration;
     }
 
     constructor(
         private readonly configFilePath: string,
         private readonly intervalledAction: () => void | Promise<void>,
         private readonly options: DaemonOptions = AdaptiveGradingDaemon.DEFAULT_OPTIONS,
+        private readonly requestQueue: IQueueSystemBase<CourseStatisticsProcessingRequest>,
         private readonly forceShutdownHandler?: ForceShutdownHandler<AdaptiveGradingDaemon>
     ) {}
 
     private stopSignalProm = new DelayablePromise<DaemonShutdownType>();
-    private intervalClearedProm: Promise<void> | null = null;
+    private runningProm: Promise<void> | null = null;
 
     private getIntervalMillis(): number {
-        if (this.scanInterval === null) {
+        if (this.configuration === null) {
             throw new Error("Daemon not correctly configured");
         }
 
         return (
-            (this.scanInterval.days ?? 0) * (24 * 3600 * 1000) +
-            (this.scanInterval.hours ?? 0) * (3600 * 1000) +
-            (this.scanInterval.minutes ?? 0) * (60 * 1000) +
-            (this.scanInterval.seconds ?? 0) * (1000)
+            (this.configuration.scanInterval.days ?? 0) * (24 * 3600 * 1000) +
+            (this.configuration.scanInterval.hours ?? 0) * (3600 * 1000) +
+            (this.configuration.scanInterval.minutes ?? 0) * (60 * 1000) +
+            (this.configuration.scanInterval.seconds ?? 0) * (1000)
         );
     }
 
@@ -173,11 +190,58 @@ export class AdaptiveGradingDaemon {
         );
     }
 
-    private async run(): Promise<void> {
-        const intClrd = new DelayablePromise<void>();
-        this.intervalClearedProm = intClrd.getWrappedPromise();
+    private static readonly defaultMaxJobTimeout = 200000;
+    private static readonly defaultScanInterval: ScanInterval = { days: 30 };
+    private backedJobService: IConfiguredJobService | null = null;
 
-        if (this.options.actionProgress.reportActionProgress) {
+    private async run(): Promise<void> {
+        if (this.configuration === null) {
+            throw new Error("Daemon not correctly configured");
+        }
+
+        const runDelProm = new DelayablePromise<void>();
+        this.runningProm = runDelProm.getWrappedPromise();
+
+        if (this.usedWorkQueue === null) {
+            throw new Error(`Unable to get registered queue with name '${this.usedWorkQueue}'`);
+        }
+
+        this.backedJobService = JobService.configureNew()
+            .useProvider(
+                new EdgarStatProcJobProvider(
+                    DatabaseConnectionRegistry.instance.getItem(
+                        RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY
+                    ),
+                    new CourseStatisticsCalculationQueue(
+                        `StatProcQueueInst${randomUUID()}`,
+                        this.usedWorkQueue,
+                    ),
+                    this.configuration?.maxJobTimeoutMs ?? AdaptiveGradingDaemon.defaultMaxJobTimeout,
+                    []
+                )
+            )
+            .build();
+
+
+        this.backedJobService.startJobService();
+
+        while (!this.stopSignalProm.isFinished()) {
+            const req = await this.requestQueue.dequeue();
+
+            await this.usedWorkQueue.enqueue(
+                await EdgarStatProcJobConfiguration.fromStatisticsProcessingRequest(
+                    req,
+                    this.configuration.scanInterval,
+                    this.configuration.calculationConfig,
+                    this.usedWorkQueue.queueName,
+                    `Statistics calculation job for course with ID '${req.idCourse}' ` +
+                        `started @ '${new Date().toISOString()}'`,
+                    this.configuration.maxJobTimeoutMs ?? AdaptiveGradingDaemon.defaultMaxJobTimeout,
+                )
+            );
+        }
+
+        /*if (this.options.actionProgress.reportActionProgress) {
             this.startReportWorker();
         }
 
@@ -200,15 +264,15 @@ export class AdaptiveGradingDaemon {
             while (this.runningActions.length !== 0) {
                 await this.runningActions.pop();
             }
-        }
+        }*/
 
-        intClrd.delayedResolve();
+        runDelProm.delayedResolve();
     }
     //#endregion
 
     //#region Daemon controls
     public async start(): Promise<void> {
-        if (this.intervalClearedProm !== null) {
+        if (this.runningProm !== null) {
             throw new Error("Unable to start: daemon already running");
         }
 
@@ -221,12 +285,12 @@ export class AdaptiveGradingDaemon {
     }
 
     private async doShutdown(sdType: DaemonShutdownType): Promise<void> {
-        if (this.intervalClearedProm === null) {
+        if (this.runningProm === null) {
             throw new Error("Unable to shutdown: daemon not started");
         }
 
         await this.stopSignalProm.delayedResolve(sdType);
-        await this.intervalClearedProm;
+        await this.runningProm;
     }
 
     public async shutdown(): Promise<void> {
