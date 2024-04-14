@@ -73,6 +73,7 @@ export class TestInstanceBasedBatch extends EdgarItemBatch<QuestionItem> {
                         (
                             (typeof(tiq.score_perc) === "string") ? parseFloat(tiq.score_perc) : (tiq.score_perc ?? 0)
                         );
+                    const maxScore = (typeof(tiq.max_score) === "string") ? parseFloat(tiq.max_score) : tiq.max_score;
 
                     const qi = new QuestionItem(
                         tiq.id,
@@ -95,7 +96,7 @@ export class TestInstanceBasedBatch extends EdgarItemBatch<QuestionItem> {
                             score
                         ) + scoreDelta, // TODO: confirm that this should be deleted and replaced with 'tiq.score'
 
-                        tiq.max_score,
+                        maxScore,
 
                         scorePerc,
                     );
