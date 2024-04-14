@@ -12,44 +12,58 @@
 
     "maxJobTimeoutMs": 250000,
 
-    "declaredQueues": [
-        {
-            "queueName": "edgar-irt-input-queue",
-            "type": "pg_boss",
-            "connectionString": "postgres://postgres:bazepodataka@127.0.0.1:5433/boss_test"
-        },
-        {
-            "queueName": "edgar-irt-input-queue-other-test",
-            "type": "pg_boss",
-            "configuration": {
-                "host": "127.0.0.1",
-                "port": 5433,
-                "database": "boss_test",
-                "comment": {
-                    "schema": "Property can be defined and set to a string containing schema name"
-                },
-                "user": "postgres",
-                "password": "bazepodataka",
+    "incomingWorkRequestQueue": {
+        "type": "pg_boss", 
+        "queueName": "edgar-irt-work-request-queue",
+        "connectionString": "postgres://postgres:bazepodataka@127.0.0.1:5433/boss_test"
+    },
 
-                "minConnections": 2,
-                "maxConnections": 10
+    "jobRunnerWorkingQueue": {
+        "type": "pg_boss",
+        "queueName": "edgar-job-runner-queue",
+        "connectionString": "postgres://postgres:bazepodataka@127.0.0.1:5433/boss_test"
+    },
+
+    "comment": {
+        "queueExamples": [
+            {
+                "queueName": "edgar-irt-input-queue",
+                "type": "pg_boss",
+                "connectionString": "postgres://postgres:bazepodataka@127.0.0.1:5433/boss_test"
+            },
+            {
+                "queueName": "edgar-irt-input-queue-other-test",
+                "type": "pg_boss",
+                "configuration": {
+                    "host": "127.0.0.1",
+                    "port": 5433,
+                    "database": "boss_test",
+                    "comment": {
+                        "schema": "Property can be defined and set to a string containing schema name"
+                    },
+                    "user": "postgres",
+                    "password": "bazepodataka",
+    
+                    "minConnections": 2,
+                    "maxConnections": 10
+                }
+            },
+            {
+                "queueName": "test-file-queue",
+                "type": "file",
+                "location": "./queues/file/json-file-queue.queue.json"
+            },
+            {
+                "queueName": "test-dir-queue",
+                "type": "dir",
+                "location": "./queues/directory-queue",
+    
+                "prefix": "adap_daemon_",
+                "name": "queue_entry",
+                "suffix": "_for_stats_analysis"
             }
-        },
-        {
-            "queueName": "test-file-queue",
-            "type": "file",
-            "location": "./queues/file/json-file-queue.queue.json"
-        },
-        {
-            "queueName": "test-dir-queue",
-            "type": "dir",
-            "location": "./queues/directory-queue",
-
-            "prefix": "adap_daemon_",
-            "name": "queue_entry",
-            "suffix": "_for_stats_analysis"
-        }
-    ],
+        ]
+    },
 
     "statisticsCalculationSchemaName": "statistics_schema"
 }

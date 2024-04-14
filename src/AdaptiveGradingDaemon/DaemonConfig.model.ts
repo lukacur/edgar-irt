@@ -50,10 +50,12 @@ export interface DaemonConfig {
         scriptPath: string,
         outputFile: string,
         generatedJSONInputPath: string,
-    },
+    };
 
     maxJobTimeoutMs?: number;
 
-    declaredQueues: QueueDescriptor[];
+    incomingWorkRequestQueue: QueueDescriptor;
+    jobRunnerWorkingQueue: QueueDescriptor;
+
     statisticsCalculationSchemaName: string;
 }

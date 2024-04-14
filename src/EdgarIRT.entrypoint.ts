@@ -205,7 +205,6 @@ export class MainRunner {
             "./adapGrading.config.json",
             () => console.log("Yea..."),
             { waitForActionCompletion: true, actionProgress: { reportActionProgress: true, noReports: 10 } },
-            MainRunner.daemonQueue,
             (dmn, reason) => console.log(`This is a forced daemon shutdown: ${reason ?? ""}`)
         );
 

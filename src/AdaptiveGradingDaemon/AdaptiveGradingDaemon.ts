@@ -1,6 +1,6 @@
 import { Worker } from "worker_threads";
 import { DelayablePromise } from "../Util/DelayablePromise.js";
-import { DaemonConfig, DaemonOptions, QueueDescriptor, ScanInterval } from "./DaemonConfig.model.js";
+import { DaemonConfig, DaemonOptions, QueueDescriptor } from "./DaemonConfig.model.js";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import { IQueueSystemBase } from "./Queue/IQueueSystemBase.js";
@@ -29,10 +29,14 @@ export class AdaptiveGradingDaemon {
     };
 
     private configuration: DaemonConfig | null = null;
+
+    private usedRequestQueue: IQueueSystemBase<CourseStatisticsProcessingRequest> | null = null;
     private usedWorkQueue: IQueueSystemBase<IJobConfiguration> | null = null;
 
-    private static setupQueue(queueDescriptor: QueueDescriptor): IQueueSystemBase<IJobConfiguration> | null {
-        let theQueue: IQueueSystemBase<IJobConfiguration> | null;
+    private static setupQueue<TQueueItem extends object>(
+        queueDescriptor: QueueDescriptor
+    ): IQueueSystemBase<TQueueItem> | null {
+        let theQueue: IQueueSystemBase<TQueueItem> | null;
 
         switch (queueDescriptor.type) {
             case "dir": {
@@ -98,20 +102,18 @@ export class AdaptiveGradingDaemon {
             throw new Error(`Unable to parse given configuration file at: ${configFilePath}`);
         }
 
-        const queues = configuration.declaredQueues;
+        this.usedRequestQueue = AdaptiveGradingDaemon.setupQueue(configuration.incomingWorkRequestQueue);
+        this.usedWorkQueue = AdaptiveGradingDaemon.setupQueue(configuration.jobRunnerWorkingQueue);
 
-        queues
-            .map(AdaptiveGradingDaemon.setupQueue)
-            .filter(q => q !== null)
-            .forEach(q => QueueRegistry.instance.registerQueue(q!.queueName, q!));
-
-        const usedWorkQueueName = queues[Math.ceil(Math.random() * queues.length) - 1].queueName;
-        const qDesc = QueueRegistry.instance.getQueue<IJobConfiguration>(usedWorkQueueName);
-        if (qDesc.status === "failure") {
-            throw new Error(`Unable to get registered queue with name '${this.usedWorkQueue}'`);
+        if (
+            this.usedRequestQueue === null || this.usedWorkQueue === null ||
+                !(
+                    QueueRegistry.instance.registerQueue(this.usedRequestQueue.queueName, this.usedRequestQueue) &&
+                        QueueRegistry.instance.registerQueue(this.usedWorkQueue.queueName, this.usedWorkQueue)
+                )
+        ) {
+            throw new Error("Unable to setup queues used by the daemon");
         }
-
-        this.usedWorkQueue = qDesc.result;
 
         this.configuration = configuration;
     }
@@ -120,7 +122,6 @@ export class AdaptiveGradingDaemon {
         private readonly configFilePath: string,
         private readonly intervalledAction: () => void | Promise<void>,
         private readonly options: DaemonOptions = AdaptiveGradingDaemon.DEFAULT_OPTIONS,
-        private readonly requestQueue: IQueueSystemBase<CourseStatisticsProcessingRequest>,
         private readonly forceShutdownHandler?: ForceShutdownHandler<AdaptiveGradingDaemon>
     ) {}
 
@@ -191,11 +192,10 @@ export class AdaptiveGradingDaemon {
     }
 
     private static readonly defaultMaxJobTimeout = 200000;
-    private static readonly defaultScanInterval: ScanInterval = { days: 30 };
     private backedJobService: IConfiguredJobService | null = null;
 
     private async run(): Promise<void> {
-        if (this.configuration === null) {
+        if (this.configuration === null || this.usedRequestQueue === null || this.usedWorkQueue === null) {
             throw new Error("Daemon not correctly configured");
         }
 
@@ -226,7 +226,7 @@ export class AdaptiveGradingDaemon {
         this.backedJobService.startJobService();
 
         while (!this.stopSignalProm.isFinished()) {
-            const req = await this.requestQueue.dequeue();
+            const req = await this.usedRequestQueue.dequeue();
 
             await this.usedWorkQueue.enqueue(
                 await EdgarStatProcJobConfiguration.fromStatisticsProcessingRequest(
