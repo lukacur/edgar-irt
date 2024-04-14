@@ -5,13 +5,13 @@ import { AbstractLogisticFunctionParams } from "./IRT/LogisticFunction/LogisticF
 import { StandardLogisticFunction } from "./IRT/LogisticFunction/StandardLogisticFunction.js";
 import { DelayablePromise } from "./Util/DelayablePromise.js";
 import { CourseBasedBatch } from "./ApplicationImplementation/Edgar/Batches/CourseBasedBatch.js";
-import { mkdir, writeFile } from 'fs/promises'
+import { mkdir, readFile, writeFile } from 'fs/promises'
 import { existsSync } from "fs";
 import { IQueueSystemBase } from "./AdaptiveGradingDaemon/Queue/IQueueSystemBase.js";
 import { FileQueueSystem } from "./AdaptiveGradingDaemon/Queue/QueueSystemImplementations/FileQueueSystem.js";
 import { DirQueueSystem } from "./AdaptiveGradingDaemon/Queue/QueueSystemImplementations/DirQueueSystem.js";
 import { PgBossQueueSystem } from "./AdaptiveGradingDaemon/Queue/QueueSystemImplementations/PgBossQueueSystem.js";
-import { CourseStatisticsCalculationQueue } from "./AdaptiveGradingDaemon/Queue/StatisticsCalculationQueues/CourseStatisticsCalculationQueue.js";
+import { CourseStatisticsCalculationQueue, CourseStatisticsProcessingRequest } from "./AdaptiveGradingDaemon/Queue/StatisticsCalculationQueues/CourseStatisticsCalculationQueue.js";
 import { EdgarStatProcJobProvider } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Provider/EdgarStatProcJobProvider.js";
 import { EdgarStatProcDataExtractor } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/DataExtractor/EdgarStatProcDataExtractor.js";
 import { EdgarStatProcWorker } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Worker/EdgarStatProcWorker.js";
@@ -32,6 +32,7 @@ import { PersistorRegistry } from "./PluginSupport/Registries/Implementation/Per
 import path from "path";
 import { AbstractTypedWorkResultPersistor } from "./ApplicationModel/Jobs/WorkResultPersistors/AbstractTypedWorkResultPersistor.js";
 import { fileURLToPath } from "url";
+import { FrameworkConfigurationProvider } from "./ApplicationModel/FrameworkConfiguration/FrameworkConfigurationProvider.js";
 
 type AvailableTests =
     "db" |
@@ -151,6 +152,50 @@ export class MainRunner {
         );
     }
 
+    private static daemonQueue: IQueueSystemBase<CourseStatisticsProcessingRequest> =
+        new FileQueueSystem("FOO-QUEUE", "./queues/daemon/daemon-file-q.json")
+        /*new class implements IQueueSystemBase<CourseStatisticsProcessingRequest> {
+            queueName: string = "FOO-QUEUE";
+
+            private readonly entries: CourseStatisticsProcessingRequest[] = [];
+
+            public async enqueue(data: CourseStatisticsProcessingRequest): Promise<boolean> {
+                this.entries.push(data);
+
+                if (this.waitingForQueue.length !== 0) {
+                    this.waitingForQueue.shift()!.delayedResolve(this.entries.shift()!);
+                }
+
+                return true;
+            }
+
+            private waitingForQueue: DelayablePromise<CourseStatisticsProcessingRequest>[] = [];
+
+            public async dequeue(): Promise<CourseStatisticsProcessingRequest> {
+                if (this.entries.length === 0) {
+                    const prom = new DelayablePromise<CourseStatisticsProcessingRequest>();
+
+                    this.waitingForQueue.push(prom);
+                    return prom.getWrappedPromise();
+                }
+
+                return this.entries.shift()!;
+            }
+
+            public async peek(): Promise<CourseStatisticsProcessingRequest | null> {
+                return this.entries[0] ?? null;
+            }
+
+            public async empty(): Promise<boolean> {
+                this.entries.splice(0, this.entries.length);
+
+                return true;
+            }
+
+            public async close(): Promise<void> {}
+            
+        };*/
+
     private static async doDaemonTest(args: string[]): Promise<void> {
         console.log("Passed arguments:");
         console.log(args);
@@ -160,6 +205,7 @@ export class MainRunner {
             "./adapGrading.config.json",
             () => console.log("Yea..."),
             { waitForActionCompletion: true, actionProgress: { reportActionProgress: true, noReports: 10 } },
+            MainRunner.daemonQueue,
             (dmn, reason) => console.log(`This is a forced daemon shutdown: ${reason ?? ""}`)
         );
 
@@ -168,7 +214,7 @@ export class MainRunner {
         (async () => {
             await daemon.start();
 
-            const prm = new DelayablePromise<void>();
+            /*const prm = new DelayablePromise<void>();
 
             setTimeout(() => prm.delayedResolve(), 10000);
 
@@ -186,8 +232,26 @@ export class MainRunner {
             } catch (err) {
                 console.log("Unable to shutdown adaptive grading daemon. Reason:");
                 console.log(err);
-            }
+            }*/
         })();
+
+        await MainRunner.daemonQueue.enqueue({
+            forceCalculation: false,
+            idCourse: 2006,
+            idStartAcademicYear: 2022,
+            numberOfIncludedPreviousYears: 0,
+            userRequested: null,
+        });
+
+        const prm = new DelayablePromise<void>();
+
+        setTimeout(
+            async () => {
+                await daemon.shutdown();
+                await prm.delayedResolve();
+            },
+            200000
+        );
 
         process.on("SIGTERM", (sig) => {
             terminated = true;
@@ -208,6 +272,8 @@ export class MainRunner {
                 process.exit(0);
             }
         });
+
+        await prm.getWrappedPromise();
     }
 
     private static async doDelayedPromiseTest(): Promise<void> {
@@ -391,7 +457,6 @@ export class MainRunner {
             [new EdgarStatProcJobStep(
                 200000,
                 new EdgarStatProcStepConfiguration(
-                    "calc-with-script",
                     "./test_script.r",
                     "./tests_dir/test_serialization.json",
                     "./tests_dir/output/serialization_output.json",
@@ -534,6 +599,7 @@ export class MainRunner {
                     new CheckIfCalculationNeededStepConfiguration(
                         { days: 30 },
                         false,
+                        RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY,
                     ),
                     dbConn,
                     true,
@@ -541,7 +607,6 @@ export class MainRunner {
                 new EdgarStatProcJobStep(
                     200000,
                     new EdgarStatProcStepConfiguration(
-                        "calc-with-script",
                         "./test_script.r",
                         "./tests_dir/test_serialization.json",
                         "./tests_dir/output/serialization_output.json",
@@ -695,7 +760,7 @@ export class MainRunner {
                     },
                 
                     "dataPersistorConfig": {
-                        "type": "${EdgarStatsProcessingConstants.PERSISTOR_ENTRY}",
+                        "type": "${EdgarStatsProcessingConstants.DATA_PERSISTOR_REGISTRY_ENTRY}",
                         "persistanceTimeoutMs": 100000,
                         "configContent": {
                             "databaseConnection": "${RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY}"
@@ -744,7 +809,7 @@ export class MainRunner {
         (data.teardown !== undefined && typeof(data.teardown) === "function") ? await data.teardown() : null;
     }
 
-    private static defaultConnection: DatabaseConnection | null;
+    /*private static defaultConnection: DatabaseConnection | null;
 
     @RegisterDelegateToRegistry(
         "DatabaseConnection",
@@ -756,16 +821,36 @@ export class MainRunner {
         }
 
         return MainRunner.defaultConnection;
-    }
+    }*/
 
-    private static readonly CURRENT_TEST: AvailableTests = "generic_job";
+    private static readonly CURRENT_TEST: AvailableTests = "daemon";
 
     public static async main(args: string[]): Promise<void> {
-        MainRunner.defaultConnection = await DatabaseConnection.fromConfigFile("./database-config.json");
+        // MainRunner.defaultConnection = await DatabaseConnection.fromConfigFile("./database-config.json");
+        FrameworkConfigurationProvider.instance.useConfiguration({
+            databaseConnectivity: {
+                connectionConfiguration: JSON.parse(
+                    await readFile("./database-config.json", { encoding: "utf-8" })
+                ),
+                jobSchemaName: "job_tracking_schema",
+            },
+            smtpConfiguration: {
+                always: {},
+                credentials: {certificateBase64: ""},
+                defaults: {from: "foo", subject: "Foo", to: []},
+                host: "",
+                port: 0,
+                timeoutMs: 10000,
+                useTls: true,
+            }
+        });
+
+        await FrameworkConfigurationProvider.instance.registerDefaultConnectionProvider();
 
         const conn = DatabaseConnectionRegistry.instance.getItem(
             RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY
         );
+
         let prom: Promise<void>;
 
         switch (MainRunner.CURRENT_TEST) {
