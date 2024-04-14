@@ -68,6 +68,55 @@ fun_calculateTestBasedQuestionStats <- function(param_course) {
         )
       )
       
+      var_answersCorrect <- setNames(
+        aggregate(
+          isCorrect ~ idQuestion,
+          var_tiqsUnioned,
+          FUN = function(x) c(sum(ifelse(x, 1, 0)))
+        ),
+        c("idQuestion", "correct")
+      )
+      var_toMerge <- list(var_answersCorrect)
+      
+      var_answersIncorrect <- setNames(
+        aggregate(
+          isIncorrect ~ idQuestion,
+          var_tiqsUnioned,
+          FUN = function(x) c(sum(ifelse(x, 1, 0)))
+        ),
+        c("idQuestion", "incorrect")
+      )
+      var_toMerge <- append(var_toMerge, list(var_answersIncorrect))
+      
+      var_answersUnanswered <- setNames(
+        aggregate(
+          isUnanswered ~ idQuestion,
+          var_tiqsUnioned,
+          FUN = function(x) c(sum(ifelse(x, 1, 0)))
+        ),
+        c("idQuestion", "unanswered")
+      )
+      var_toMerge <- append(var_toMerge, list(var_answersUnanswered))
+      
+      var_answersPartial <- setNames(
+        aggregate(
+          isPartial ~ idQuestion,
+          var_tiqsUnioned,
+          FUN = function(x) c(sum(ifelse(x, 1, 0)))
+        ),
+        c("idQuestion", "partial")
+      )
+      var_toMerge <- append(var_toMerge, list(var_answersPartial))
+      
+      var_mergedDf <- var_toMerge[1]
+      
+      for (x in var_toMerge[2:length(var_toMerge)]) {
+        called <- do.call(data.frame, x)
+        var_mergedDf <- merge(var_mergedDf, called, by = c("idQuestion"))
+      }
+      
+      var_stats <- merge(var_stats, var_mergedDf, by = c("idQuestion"))
+      
       return(list(idTest = testRow$id, testData = var_stats))
     }
   )
@@ -86,6 +135,7 @@ fun_calculateTestBasedQuestionStats <- function(param_course) {
 fun_calculateCourseBasedQuestionStats <- function(param_course) {
   var_testFrame <- param_course$tests[[1]]
   
+  # flat map start
   var_tiFrames <- Map(
     function(e) { return(e$testInstanceQuestions) },
     var_testFrame$testInstances
@@ -97,6 +147,7 @@ fun_calculateCourseBasedQuestionStats <- function(param_course) {
   for (i in 2:length(var_flattenedTiFrames)) {
     var_unionedTiFrames <- rbind(var_unionedTiFrames, var_flattenedTiFrames[[i]])
   }
+  # flat map end
   
   var_questionsScoreMeans <- setNames(
     aggregate(
