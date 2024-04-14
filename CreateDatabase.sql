@@ -71,6 +71,10 @@ CREATE TABLE IF NOT EXISTS question_param_test_level_calculation (
 	median DOUBLE PRECISION,
 	sum DOUBLE PRECISION,
 	part_of_total_sum DOUBLE PRECISION,
+	correct INT,
+	incorrect INT,
+	unanswered INT,
+	partial INT,
 	
 	CONSTRAINT fk_qptlc_qparam_calc
 		FOREIGN KEY (id_question_param_calculation)
@@ -87,7 +91,9 @@ CREATE TABLE IF NOT EXISTS job_type (
 	id INT PRIMARY KEY,
 	abbrevation VARCHAR(10) NOT NULL UNIQUE,
 	title VARCHAR(512),
-	description VARCHAR(1024)
+	description VARCHAR(1024),
+
+	request_form JSON
 );
 
 CREATE TYPE job_status_type AS ENUM('RUNNING', 'FINISHED', 'FAILED');
@@ -136,29 +142,33 @@ COMMIT;
 END;
 
 -- Database prefil with certain job types --
-INSERT INTO job_type (id, abbrevation, title, description)
+INSERT INTO job_type (id, abbrevation, title, description, request_form)
 	VALUES
 	(
 		1,
 		'STATPROC',
 		'Edgar exam question statistics processing',
-		'A job that calculates exam question statistics. This job is ran when a user wants to generate information on question statistics.'
+		'A job that calculates exam question statistics. This job is ran when a user wants to generate information on question statistics.',
+		NULL
 	),
 	(
 		2,
 		'PEERREV',
 		'Edgar Peer Assessment Analysis',
-		'A job that runs analysis on the Peer Assessment assignments.'
+		'A job that runs analysis on the Peer Assessment assignments.',
+		NULL
 	),
 	(
 		3,
 		'EXMRPT',
 		'Edgar exam statistics report',
-		'A job that generates statistics reports for certain exams selected by the user'
+		'A job that generates statistics reports for certain exams selected by the user',
+		NULL
 	),
 	(
 		4,
 		'OTHR',
 		'Other',
-		'A job type that declares that the job is of an unspecified type.'
+		'A job type that declares that the job is of an unspecified type.',
+		NULL
 	);
