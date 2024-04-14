@@ -122,6 +122,7 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
         const cicnsConfig: CheckIfCalculationNeededStepConfiguration = {
             calculationsValidFor,
             forceCalculation: statProcReq.forceCalculation,
+            databaseConnection: RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY,
         };
 
         const dpConfig: { databaseConnection?: string } = {

@@ -4,5 +4,6 @@ export class CheckIfCalculationNeededStepConfiguration {
     constructor(
         public readonly calculationsValidFor: ScanInterval,
         public readonly forceCalculation: boolean,
+        public readonly databaseConnection: string,
     ) {}
 }
