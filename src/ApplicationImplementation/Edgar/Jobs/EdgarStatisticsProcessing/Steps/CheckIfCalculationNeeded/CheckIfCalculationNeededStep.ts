@@ -65,9 +65,11 @@ export class CheckIfCalculationNeededStep
                     JOIN statistics_schema.question_param_calculation_academic_year
                         ON statistics_schema.question_param_calculation.id =
                             statistics_schema.question_param_calculation_academic_year.id_question_param_calculation
-                WHERE id_based_on_course = $1 AND
-                        id_academic_year BETWEEN (CAST($2 AS INT) - CAST($3 AS INT)) AND $2 AND
-                        created_on >= (CURRENT_TIMESTAMP - CAST('${this.createSQLIntervalFromConfig()}' AS INTERVAL))
+                WHERE id_based_on_course = $1
+                GROUP BY id_based_on_course, created_on
+                HAVING created_on >= (CURRENT_TIMESTAMP - CAST('${this.createSQLIntervalFromConfig()}' AS INTERVAL)) AND
+                        MIN(id_academic_year) = CAST($2 AS INT) - CAST($3 AS INT) + 1 AND
+                        MAX(id_academic_year) = CAST($2 AS INT)
 
             ) AS existance`,
             [
