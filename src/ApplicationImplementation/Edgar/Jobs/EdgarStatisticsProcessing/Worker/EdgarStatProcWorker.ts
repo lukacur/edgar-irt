@@ -8,6 +8,7 @@ import { DatabaseConnection } from "../../../../Database/DatabaseConnection.js";
 import { RegisterDelegateToRegistry } from "../../../../../ApplicationModel/Decorators/Registration.decorator.js";
 import { IJobConfiguration, JobWorkerConfig } from "../../../../../ApplicationModel/Jobs/IJobConfiguration.js";
 import { DatabaseConnectionRegistry } from "../../../../../PluginSupport/Registries/Implementation/DatabaseConnectionRegistry.js";
+import { FrameworkConfigurationProvider } from "../../../../../ApplicationModel/FrameworkConfiguration/FrameworkConfigurationProvider.js";
 
 type CalculationParams = {
     nBestParts: number | null,
@@ -27,7 +28,9 @@ export class EdgarStatProcWorker extends AbstractJobWorker<
     ) { super(); }
 
     protected override async initStepsToDB(jobConfig: IJobConfiguration): Promise<void> {
-        const transaction = await this.dbConn.beginTransaction("job_tracking_schema");
+        const transaction = await this.dbConn.beginTransaction(
+            FrameworkConfigurationProvider.instance.getJobSchemaName()
+        );
 
         try {
             await transaction.waitForReady();
@@ -111,7 +114,9 @@ export class EdgarStatProcWorker extends AbstractJobWorker<
     }
 
     protected override async startStepDB(jobStep: IJobStep): Promise<void> {
-        const transaction = await this.dbConn.beginTransaction("job_tracking_schema");
+        const transaction = await this.dbConn.beginTransaction(
+            FrameworkConfigurationProvider.instance.getJobSchemaName()
+        );
 
         try {
             await transaction.waitForReady();
@@ -149,7 +154,9 @@ export class EdgarStatProcWorker extends AbstractJobWorker<
         jobStep: IJobStep,
         stepResult: StepResult<IRCalculationResult> | null
     ): Promise<void> {
-        const transaction = await this.dbConn.beginTransaction("job_tracking_schema");
+        const transaction = await this.dbConn.beginTransaction(
+            FrameworkConfigurationProvider.instance.getJobSchemaName()
+        );
 
         try {
             await transaction.waitForReady();

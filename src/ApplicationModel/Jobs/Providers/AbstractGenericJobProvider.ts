@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { DatabaseConnection } from "../../../ApplicationImplementation/Database/DatabaseConnection.js";
 import { IJobConfiguration } from "../IJobConfiguration.js";
 import { IJobProvider } from "./IJobProvider.js";
+import { FrameworkConfigurationProvider } from "../../FrameworkConfiguration/FrameworkConfigurationProvider.js";
 
 abstract class DatabaseJobInfoStoringJobProvider<TJobConfiguration extends IJobConfiguration> implements IJobProvider {
     constructor(
@@ -14,8 +15,10 @@ abstract class DatabaseJobInfoStoringJobProvider<TJobConfiguration extends IJobC
         const job = await this.provideJobWithId(randomUUID());
 
         const queryResult = await this.dbConn.doQuery<{ id: number }>(
-            "SELECT id FROM job_tracking_schema.job_type WHERE abbrevation = $1",
-            [job.jobTypeAbbrevation]
+            `SELECT id FROM ${await this.dbConn.escapeIdentifier(FrameworkConfigurationProvider.instance.getJobSchemaName())}.job_type WHERE abbrevation = $1`,
+            [
+                job.jobTypeAbbrevation
+            ]
         );
 
         if (queryResult === null || queryResult.count === 0) {
@@ -28,7 +31,7 @@ abstract class DatabaseJobInfoStoringJobProvider<TJobConfiguration extends IJobC
         const jobTypeId = queryResult.rows[0].id;
 
         await this.dbConn.doQuery(
-            `INSERT INTO job_tracking_schema.job (
+            `INSERT INTO ${await this.dbConn.escapeIdentifier(FrameworkConfigurationProvider.instance.getJobSchemaName())}.job (
                 id,
                 id_job_type,
                 name,
@@ -57,7 +60,9 @@ abstract class DatabaseJobInfoStoringJobProvider<TJobConfiguration extends IJobC
     protected abstract doFinishJob(jobId: string): Promise<boolean>;
 
     public async finishJob(jobId: string): Promise<boolean> {
-        const transaction = await this.dbConn.beginTransaction("job_tracking_schema");
+        const transaction = await this.dbConn.beginTransaction(
+            FrameworkConfigurationProvider.instance.getJobSchemaName()
+        );
 
         let finishedJob: boolean = false;
         try {
@@ -95,7 +100,9 @@ abstract class DatabaseJobInfoStoringJobProvider<TJobConfiguration extends IJobC
         retryMode: "retry" | "no-retry" | { retryAfterMs: number },
         statusMessage?: string,
     ): Promise<boolean> {
-        const transaction = await this.dbConn.beginTransaction("job_tracking_schema");
+        const transaction = await this.dbConn.beginTransaction(
+            FrameworkConfigurationProvider.instance.getJobSchemaName()
+        );
 
         let failedJob: boolean = false;
         try {
