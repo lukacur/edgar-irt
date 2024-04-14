@@ -8,7 +8,8 @@ type ExtendedTestInstanceQuestion =
     TestInstanceQuestion &
     {
         manual_grade: number | null,
-        score_delta: number | null
+        score_delta: number | null,
+        max_score: number,
     }
 
 export class TestInstanceBasedBatch extends EdgarItemBatch<QuestionItem> {
@@ -41,10 +42,14 @@ export class TestInstanceBasedBatch extends EdgarItemBatch<QuestionItem> {
                 .doQuery<ExtendedTestInstanceQuestion>(
                     `SELECT test_instance_question.*,
                             test_instance_question_manual_grade.score AS manual_grade,
-                            test_correction.score_delta
+                            test_correction.score_delta,
+
+                            grading_model.correct_score AS max_score
                     FROM test_instance
                         JOIN test_instance_question
                             ON test_instance_question.id_test_instance = test_instance.id
+                        JOIN grading_model
+                            ON grading_model.id = test_instance_question.id_grading_model
                         LEFT JOIN test_correction
                             ON test_correction.id_test_instance_question = test_instance_question.id
                         LEFT JOIN test_instance_question_manual_grade
@@ -88,11 +93,9 @@ export class TestInstanceBasedBatch extends EdgarItemBatch<QuestionItem> {
                                     parseFloat(manGrade) : manGrade
                             ) :
                             score
-                        ) + scoreDelta,
+                        ) + scoreDelta, // TODO: confirm that this should be deleted and replaced with 'tiq.score'
 
-                        (!scorePerc) ?
-                            0 :
-                            ((score + scoreDelta) / scorePerc),
+                        tiq.max_score,
 
                         scorePerc,
                     );
