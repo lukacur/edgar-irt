@@ -118,16 +118,24 @@ export class EdgarStatProcWorkResultPersistor
                 count,
                 median,
                 sum,
-                part_of_total_sum
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                part_of_total_sum,
+                correct,
+                incorrect,
+                unanswered,
+                partial
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
             [
-                /* $1 */ idQparamCalc,
-                /* $2 */ testBasedInfo.mean,
-                /* $3 */ testBasedInfo.stdDev,
-                /* $4 */ testBasedInfo.count,
-                /* $5 */ testBasedInfo.median,
-                /* $6 */ testBasedInfo.sum,
-                /* $7 */ testBasedInfo.partOfTotalSum,
+                /*  $1 */ idQparamCalc,
+                /*  $2 */ testBasedInfo.mean,
+                /*  $3 */ testBasedInfo.stdDev,
+                /*  $4 */ testBasedInfo.count,
+                /*  $5 */ testBasedInfo.median,
+                /*  $6 */ testBasedInfo.sum,
+                /*  $7 */ testBasedInfo.partOfTotalSum,
+                /*  $8 */ testBasedInfo.correct,
+                /*  $9 */ testBasedInfo.incorrect,
+                /* $10 */ testBasedInfo.unanswered,
+                /* $11 */ testBasedInfo.partial,
             ]
         ))?.count ?? null;
 

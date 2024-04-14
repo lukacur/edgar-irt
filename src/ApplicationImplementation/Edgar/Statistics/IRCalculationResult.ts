@@ -20,6 +20,10 @@ export type TestBasedCalculation = {
     median: number;
     sum: number;
     partOfTotalSum: number;
+    correct: number;
+    incorrect: number;
+    unanswered: number;
+    partial: number;
 };
 
 type TestCalculationInfo = {
