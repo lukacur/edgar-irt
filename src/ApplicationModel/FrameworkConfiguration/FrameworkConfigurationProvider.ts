@@ -31,23 +31,35 @@ export class FrameworkConfigurationProvider {
         });
     }
 
-    public registerDefaultConnectionProvider() {
+    private connection: DatabaseConnection | null = null;
+
+    public async registerDefaultConnectionProvider() {
+        if (this.connection !== null) {
+            return;
+        }
+
+        if (this.configuration === null) {
+            throw new Error(`Configuration of the ${FrameworkConfigurationProvider.name} musn't be null`);
+        }
+
+        const dbConnect = this.configuration.databaseConnectivity;
+
+        if ("connectionString" in dbConnect && dbConnect.connectionString !== undefined) {
+            this.connection = await DatabaseConnection.fromConnectionString(dbConnect.connectionString);
+        } else if ("connectionConfiguration" in dbConnect) {
+            this.connection = await DatabaseConnection.fromConfig(dbConnect.connectionConfiguration);
+        } else {
+            throw new Error(`Invalid configuration passed to ${FrameworkConfigurationProvider.name} singleton`);
+        }
+        
         DatabaseConnectionRegistry.instance.registerItem(
             RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY,
             () => {
-                if (this.configuration === null) {
-                    throw new Error(`Configuration of the ${FrameworkConfigurationProvider.name} musn't be null`);
+                if (this.connection !== null) {
+                    return this.connection;
                 }
 
-                const dbConnect = this.configuration.databaseConnectivity;
-
-                if ("connectionString" in dbConnect) {
-                    return DatabaseConnection.fromConnectionString(dbConnect.connectionString);
-                } else if ("connectionConfiguration" in dbConnect) {
-                    return DatabaseConnection.fromConfig(dbConnect.connectionConfiguration);
-                }
-                
-                throw new Error(`Invalid configuration passed to ${FrameworkConfigurationProvider.name} singleton`);
+                throw new Error(`wasn't able to be configured through the ${FrameworkConfigurationProvider.name}`);
             }
         );
     }
