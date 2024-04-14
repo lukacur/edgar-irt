@@ -77,6 +77,16 @@ export class DatabaseConnection {
         return transaction;
     }
 
+    public async escapeIdentifier(identifier: string) {
+        const cli = await this.pool?.connect();
+        
+        if (!cli) {
+            throw new Error("Unable to acquire a new connection client");
+        }
+
+        return cli.escapeIdentifier(identifier);
+    }
+
     public async doQuery<TResult>(query: string, values?: any[]): Promise<QueryReturn<TResult> | null> {
         const cli = await this.pool?.connect();
 
