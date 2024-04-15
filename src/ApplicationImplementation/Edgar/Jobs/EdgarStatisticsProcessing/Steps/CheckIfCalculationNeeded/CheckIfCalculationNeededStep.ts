@@ -75,8 +75,10 @@ export class CheckIfCalculationNeededStep
             [
                 /* $1 */ validinputEl.id,
                 /* $2 */ validinputEl.idStartAcademicYear.toString(),
-                /* $3 */ validinputEl.numberOfIncludedPreviousYears.toString(),
-                /* $4 */ 
+
+                /* || */ (validinputEl.numberOfIncludedPreviousYears === 0) ?
+                /* $3 */     "1" :
+                /* || */     validinputEl.numberOfIncludedPreviousYears.toString(),
             ]
         );
         
