@@ -23,5 +23,11 @@
             "to": "edgaradmin@fer.hr",
             "subject": "Job automatization framework email message"
         }
+    },
+
+    "mailerConfiguration": {
+        "mailerType": "edgar-db-mailer",
+        "databaseConnection": "DEFAULT_CONNECTION",
+        "workingSchema": "public"
     }
 }

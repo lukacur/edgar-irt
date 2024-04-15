@@ -839,16 +839,22 @@ export class MainRunner {
             },
             smtpConfiguration: {
                 always: {},
-                credentials: {certificateBase64: ""},
+                credentials: { type: "cert", certificateBase64: "" },
                 defaults: {from: "foo", subject: "Foo", to: []},
                 host: "",
                 port: 0,
                 timeoutMs: 10000,
                 useTls: true,
+            },
+            mailerConfiguration: {
+                mailerType: "edgar-db-mailer",
+                databaseConnection: RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY,
+                workingSchema: "public",
             }
         });
 
         await FrameworkConfigurationProvider.instance.registerDefaultConnectionProvider();
+        await FrameworkConfigurationProvider.instance.registerConfiguredMailer();
 
         const conn = DatabaseConnectionRegistry.instance.getItem(
             RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY
