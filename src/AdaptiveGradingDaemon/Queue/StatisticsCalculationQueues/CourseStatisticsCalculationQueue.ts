@@ -9,6 +9,7 @@ export type CourseStatisticsProcessingRequest = {
     userRequested: number | null;
 
     forceCalculation: boolean;
+    periodical: boolean;
 }
 
 export class CourseStatisticsCalculationQueue implements IQueueSystemBase<IJobConfiguration> {

@@ -51,6 +51,7 @@ export interface IJobConfiguration/* <TInputExtractorConfig, TDataPersistorConfi
     readonly idUserStarted: number | null;
     readonly jobQueue: string | null;
     readonly jobTimeoutMs: number;
+    readonly periodical: boolean;
 
     readonly blockingConfig: BlockingConfig;
 

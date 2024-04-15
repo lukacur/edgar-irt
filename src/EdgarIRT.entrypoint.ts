@@ -240,6 +240,7 @@ export class MainRunner {
             idStartAcademicYear: 2022,
             numberOfIncludedPreviousYears: 0,
             userRequested: null,
+            periodical: true,
         });
 
         const prm = new DelayablePromise<void>();
@@ -473,6 +474,7 @@ export class MainRunner {
                 null,
                 "",
                 200000,
+                true,
                 {
                     type: "",
                     configContent: new CourseBasedBatch(
@@ -560,6 +562,7 @@ export class MainRunner {
                 null,
                 "",
                 200000,
+                true,
                 {
                     type: "",
                     configContent: new CourseBasedBatch(
@@ -709,6 +712,7 @@ export class MainRunner {
                     "idUserStarted": null,
                     "jobQueue": "edgar-question-statistics-processing",
                     "jobTimeoutMs": 250000,
+                    "periodical": true,
                 
                     "blockingConfig": {
                         "awaitDataExtraction": true,

@@ -22,6 +22,7 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
         public readonly idUserStarted: number | null,
         public readonly jobQueue: string | null,
         public readonly jobTimeoutMs: number,
+        public readonly periodical: boolean,
 
         public readonly inputExtractorConfig: InputExtractorConfig<CourseBasedBatch>,
 
@@ -74,6 +75,7 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
             config.idUserStarted,
             config.jobQueue,
             config.jobTimeoutMs,
+            config.periodical,
             <InputExtractorConfig<CourseBasedBatch>>config.inputExtractorConfig,
             config.jobWorkerConfig,
             config.dataPersistorConfig,
@@ -165,6 +167,7 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
                 jobId: undefined!,
                 jobName: jobName ?? `Edgar statistics processing job started @ ${new Date().toISOString()}`,
                 jobTypeAbbrevation: "STATPROC",
+                periodical: statProcReq.periodical,
 
                 idUserStarted: statProcReq.userRequested,
                 jobTimeoutMs,
