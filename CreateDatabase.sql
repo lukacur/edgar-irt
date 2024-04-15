@@ -87,6 +87,30 @@ CREATE TABLE IF NOT EXISTS question_param_test_level_calculation (
 		REFERENCES question_param_calculation(id)
 );
 
+CREATE TABLE IF NOT EXISTS question_irt_parameters (
+	id_course_based_info INT NOT NULL,
+	id_test_based_info INT[] NOT NULL,
+
+	id_question INT NOT NULL,
+
+	default_item_offset_parameter DOUBLE PRECISION,
+	level_of_item_knowledge DOUBLE PRECISION,
+	item_difficulty DOUBLE PRECISION,
+	item_guess_probability DOUBLE PRECISION,
+	item_mistake_probability DOUBLE PRECISION,
+
+	CONSTRAINT pk_qip
+		PRIMARY KEY (id_course_based_info, id_test_based_info),
+
+	CONSTRAINT fk_qip_qpclc
+		FOREIGN KEY (id_course_based_info)
+		REFERENCES question_param_course_level_calculation(id_question_param_calculation),
+
+	CONSTRAINT fk_qip_question
+		FOREIGN KEY (id_question)
+		REFERENCES public.question(id)
+);
+
 
 -- Job tracking related entries --
 CREATE SCHEMA IF NOT EXISTS job_tracking_schema;
