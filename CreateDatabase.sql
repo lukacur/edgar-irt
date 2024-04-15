@@ -115,6 +115,10 @@ CREATE TABLE IF NOT EXISTS job (
 	job_status_message TEXT,
 	finished_on TIMESTAMP,
 
+	periodical BOOLEAN DEFAULT FALSE,
+
+	rerun_requested BOOLEAN DEFAULT FALSE,
+
 	CONSTRAINT fk_job_app_user
 		FOREIGN KEY (id_user_started)
 		REFERENCES public.app_user(id),
