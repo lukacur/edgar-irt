@@ -6,7 +6,7 @@ import { JobPartsParser } from "./Util/JobPartsParser.js";
 
 import { MailerProvider } from "./Util/MailerProvider.js";
 
-type ErrorReport = { jobId: string, stage: string, message: string, status: string }
+type ErrorReport = { jobId: string, stage: string, message: string, status: string, userRequested: string }
 
 export class JobRunner {
     constructor(
@@ -51,7 +51,10 @@ Failure message:
 ${errorReport.message.split('\n').join('\n    ')}`,
                 }
             },
-            true
+            true,
+            {
+                userCreated: errorReport.userRequested,
+            }
         );
     }
 
@@ -93,7 +96,8 @@ ${errorReport.message.split('\n').join('\n    ')}`,
                         jobId: jobConfig.jobId,
                         stage: "Worker initial step",
                         message: "",
-                        status: "General failure"
+                        status: "General failure",
+                        userRequested: jobConfig.idUserStarted?.toString() ?? "JOB_RUNNING_SYSTEM",
                     };
 
                     await this.jobProvider.failJob(
@@ -119,7 +123,8 @@ ${errorReport.message.split('\n').join('\n    ')}`,
                         jobId: jobConfig.jobId,
                         stage: "Worker job step execution",
                         message: "",
-                        status: "General failure"
+                        status: "General failure",
+                        userRequested: jobConfig.idUserStarted?.toString() ?? "JOB_RUNNING_SYSTEM",
                     };
 
                     await this.jobProvider.failJob(
@@ -145,7 +150,8 @@ ${errorReport.message.split('\n').join('\n    ')}`,
                         jobId: jobConfig.jobId,
                         stage: "Worker explicit step",
                         message: "",
-                        status: status!
+                        status: status!,
+                        userRequested: jobConfig.idUserStarted?.toString() ?? "JOB_RUNNING_SYSTEM",
                     };
 
                     await this.jobProvider.failJob(
@@ -166,7 +172,8 @@ ${errorReport.message.split('\n').join('\n    ')}`,
                         jobId: jobConfig.jobId,
                         stage: "Result persistance step",
                         message: "",
-                        status: "General failure"
+                        status: "General failure",
+                        userRequested: jobConfig.idUserStarted?.toString() ?? "JOB_RUNNING_SYSTEM",
                     };
 
                     await this.jobProvider.failJob(
@@ -199,7 +206,8 @@ ${errorReport.message.split('\n').join('\n    ')}`,
                     jobId: jobConfig.jobId,
                     stage: "Job execution - general",
                     message: "",
-                    status: "Job fatal failure"
+                    status: "Job fatal failure",
+                    userRequested: jobConfig.idUserStarted?.toString() ?? "JOB_RUNNING_SYSTEM",
                 };
 
                 await this.jobProvider.failJob(
@@ -224,7 +232,7 @@ ${errorReport.message.split('\n').join('\n    ')}`,
         let errorReport: ErrorReport | null = null;
         while (!this.stopped) {
             if (errorReport !== null) {
-                this.sendErrorReportMessage(errorReport);
+                await this.sendErrorReportMessage(errorReport);
                 errorReport = null;
             }
 
@@ -246,7 +254,8 @@ ${errorReport.message.split('\n').join('\n    ')}`,
                         jobId: jobConfig.jobId,
                         stage: "Worker initial step",
                         message: "",
-                        status: "General failure"
+                        status: "General failure",
+                        userRequested: jobConfig.idUserStarted?.toString() ?? "JOB_RUNNING_SYSTEM",
                     };
 
                     await this.jobProvider.failJob(
@@ -272,7 +281,8 @@ ${errorReport.message.split('\n').join('\n    ')}`,
                         jobId: jobConfig.jobId,
                         stage: "Worker job step execution",
                         message: "",
-                        status: "General failure"
+                        status: "General failure",
+                        userRequested: jobConfig.idUserStarted?.toString() ?? "JOB_RUNNING_SYSTEM",
                     };
 
                     await this.jobProvider.failJob(
@@ -298,7 +308,8 @@ ${errorReport.message.split('\n').join('\n    ')}`,
                         jobId: jobConfig.jobId,
                         stage: "Worker explicit step",
                         message: "",
-                        status: status!
+                        status: status!,
+                        userRequested: jobConfig.idUserStarted?.toString() ?? "JOB_RUNNING_SYSTEM",
                     };
 
                     await this.jobProvider.failJob(
@@ -319,7 +330,8 @@ ${errorReport.message.split('\n').join('\n    ')}`,
                         jobId: jobConfig.jobId,
                         stage: "Result persistance step",
                         message: "",
-                        status: "General failure"
+                        status: "General failure",
+                        userRequested: jobConfig.idUserStarted?.toString() ?? "JOB_RUNNING_SYSTEM",
                     };
 
                     await this.jobProvider.failJob(
@@ -352,7 +364,8 @@ ${errorReport.message.split('\n').join('\n    ')}`,
                     jobId: jobConfig.jobId,
                     stage: "Job execution - general",
                     message: "",
-                    status: "Job fatal failure"
+                    status: "Job fatal failure",
+                    userRequested: jobConfig.idUserStarted?.toString() ?? "JOB_RUNNING_SYSTEM",
                 };
 
                 await this.jobProvider.failJob(

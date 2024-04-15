@@ -16,13 +16,16 @@ export type EmailBody =
 
 export type SmtpCredentials =
 {
+    type: "un-pass";
     username: string;
     password: string;
 } |
 {
+    type: "app-token";
     applicationToken: string;
 } |
 {
+    type: "cert";
     certificateBase64: string;
 };
 
