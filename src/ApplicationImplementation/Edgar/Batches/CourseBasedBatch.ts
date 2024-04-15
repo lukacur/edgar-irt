@@ -1,6 +1,7 @@
 import { AbstractBatch } from "../../../ApplicationModel/Batch/AbstractBatch.js";
 import { DatabaseConnection } from "../../Database/DatabaseConnection.js";
 import { Test } from "../../Models/Database/Test/Test.model.js";
+import { TestInstance } from "../../Models/Database/TestInstance/TestInstance.model.js";
 import { EdgarItemBatch } from "./EdgarBatch.js";
 import { TestBasedBatch } from "./TestBasedBatch.js";
 
@@ -64,7 +65,7 @@ export class CourseBasedBatch extends EdgarItemBatch<TestBasedBatch> {
         return this.items;
     }
 
-    async serializeInto(obj: any): Promise<void> {
+    override async serializeInto(obj: any): Promise<void> {
         obj.id = this.id;
         obj.type = "course";
         obj.idStartAcademicYear = this.idStartAcademicYear;
@@ -85,5 +86,11 @@ export class CourseBasedBatch extends EdgarItemBatch<TestBasedBatch> {
             await test.serializeInto(tstObj);
             testsArr.push(tstObj);
         }
+    }
+
+    override async getTestInstancesWithQuestion(questionId: number): Promise<TestInstance[]> {
+        return (await Promise.all(
+            this.items?.flatMap((tst) => tst.getTestInstancesWithQuestion(questionId)) ?? []
+        )).flatMap(e => e);
     }
 }

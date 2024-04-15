@@ -1,5 +1,6 @@
 import { AbstractBatch } from "../../../ApplicationModel/Batch/AbstractBatch.js";
 import { DatabaseConnection } from "../../Database/DatabaseConnection.js";
+import { TestInstance } from "../../Models/Database/TestInstance/TestInstance.model.js";
 import { TestInstanceQuestion } from "../../Models/Database/TestInstance/TestInstanceQuestion.model.js";
 import { QuestionItem } from "../Items/QuestionItem.js";
 import { EdgarItemBatch } from "./EdgarBatch.js";
@@ -116,7 +117,7 @@ export class TestInstanceBasedBatch extends EdgarItemBatch<QuestionItem> {
         return this.items;
     }
 
-    async serializeInto(obj: any): Promise<void> {
+    override async serializeInto(obj: any): Promise<void> {
         obj.id = this.id;
         obj.type = "test_instance";
         obj.idAcademicYear = this.idAcademicYear;
@@ -142,5 +143,21 @@ export class TestInstanceBasedBatch extends EdgarItemBatch<QuestionItem> {
             await questionItem.serializeInto(questionObj);
             questionsArr.push(questionObj);
         }
+    }
+
+    override async getTestInstancesWithQuestion(questionId: number): Promise<TestInstance[]> {
+        if ((this.items ?? []).find(it => it.getId() === questionId) === undefined) {
+            return [];
+        }
+
+        return [{
+            id: this.id,
+            id_student: this.idStudent,
+            id_student_navigation: null!,
+            id_test: this.idTest,
+            id_test_navigation: null!,
+            score: this.testMaxScore,
+            score_perc: this.studentScore / ((this.testMaxScore === 0) ? 1 : this.testMaxScore)
+        }];
     }
 }

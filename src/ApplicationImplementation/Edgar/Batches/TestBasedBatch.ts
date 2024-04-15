@@ -85,4 +85,10 @@ export class TestBasedBatch extends EdgarItemBatch<TestInstanceBasedBatch> {
             testInstancesArr.push(tstInstObj);
         }
     }
+
+    override async getTestInstancesWithQuestion(questionId: number): Promise<TestInstance[]> {
+        return (await Promise.all(
+            this.items?.map((ti) => ti.getTestInstancesWithQuestion(questionId)) ?? []
+        )).flatMap(e => e);
+    }
 }
