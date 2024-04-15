@@ -7,6 +7,7 @@ import { JobPartsParser } from "../../../../../Util/JobPartsParser.js";
 import { CourseBasedBatch } from "../../../Batches/CourseBasedBatch.js";
 import { EdgarStatsProcessingConstants } from "../../../EdgarStatsProcessing.constants.js";
 import { EdgarStatProcDataExtractorConfiguration } from "../DataExtractor/EdgarStatProcDataExtractorConfiguration.js";
+import { CheckIfCalculationNeededStep } from "../Steps/CheckIfCalculationNeeded/CheckIfCalculationNeededStep.js";
 import { CheckIfCalculationNeededStepConfiguration } from "../Steps/CheckIfCalculationNeeded/CheckIfCalculationNeededStepConfiguration.js";
 import { EdgarStatProcStepConfiguration } from "../Steps/StatisticsProcessing/EdgarStatProcStepConfiguration.js";
 
@@ -67,7 +68,8 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
     public static async fromGenericJobConfig(
         config: IJobConfiguration,
         jobIdProvider?: (currJobId: string) => string,
-        nameProvider?: (currentName: string) => string
+        nameProvider?: (currentName: string) => string,
+        forceCalculation = false,
     ): Promise<EdgarStatProcJobConfiguration> {
         const instance = new EdgarStatProcJobConfiguration(
             (jobIdProvider !== undefined) ? jobIdProvider(config.jobId) : config.jobId,
@@ -87,6 +89,11 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
         const parsedJobSteps = await JobPartsParser.with(config).parseJobStepDescriptors();
 
         instance.jobSteps.push(...parsedJobSteps);
+
+        const idx = instance.jobSteps.findIndex(js => js instanceof CheckIfCalculationNeededStep && forceCalculation);
+        if (idx !== -1) {
+            instance.jobSteps.splice(idx, 1);
+        }
 
         return instance;
     }
