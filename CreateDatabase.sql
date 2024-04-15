@@ -11,6 +11,8 @@ SET search_path TO statistics_schema;
 
 CREATE TABLE IF NOT EXISTS question_param_calculation (
 	id SERIAL PRIMARY KEY,
+	calculation_group VARCHAR(512),
+
 	id_based_on_course INT,
 	id_based_on_test INT,
 	
@@ -24,7 +26,11 @@ CREATE TABLE IF NOT EXISTS question_param_calculation (
 
 	CONSTRAINT fk_qpc_test
 		FOREIGN KEY (id_based_on_test)
-		REFERENCES public.test(id)
+		REFERENCES public.test(id),
+
+	CONSTRAINT fk_qpc_question
+		FOREIGN KEY (id_question)
+		REFERENCES public.question(id)
 );
 
 CREATE TABLE IF NOT EXISTS question_param_calculation_academic_year (
