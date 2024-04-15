@@ -39,6 +39,8 @@ export type QueueDescriptor =
 
 export interface DaemonConfig {
     scanInterval: ScanInterval;
+    calculationRefreshInterval: ScanInterval;
+    recalculationCheckInterval: ScanInterval;
 
     calculationConfig: {
         useJudge0: true,

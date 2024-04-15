@@ -3,6 +3,14 @@
         "seconds": 3
     },
 
+    "calculationRefreshInterval": {
+        "days": 30
+    },
+
+    "recalculationCheckInterval": {
+        "days": 1
+    },
+
     "calculationConfig": {
         "useJudge0": false,
         "scriptPath": "./test_script.r",

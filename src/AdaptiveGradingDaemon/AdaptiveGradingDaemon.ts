@@ -1,6 +1,6 @@
 import { Worker } from "worker_threads";
 import { DelayablePromise } from "../Util/DelayablePromise.js";
-import { DaemonConfig, DaemonOptions, QueueDescriptor } from "./DaemonConfig.model.js";
+import { DaemonConfig, DaemonOptions, QueueDescriptor, ScanInterval } from "./DaemonConfig.model.js";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import { IQueueSystemBase } from "./Queue/IQueueSystemBase.js";
@@ -17,6 +17,8 @@ import { RegistryDefaultConstants } from "../PluginSupport/RegistryDefault.const
 import { randomUUID } from "crypto";
 import { IJobConfiguration } from "../ApplicationModel/Jobs/IJobConfiguration.js";
 import { EdgarStatProcJobConfiguration } from "../ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Provider/EdgarStatProcJobConfiguration.js";
+import { DatabaseConnection } from "../ApplicationImplementation/Database/DatabaseConnection.js";
+import { FrameworkConfigurationProvider } from "../ApplicationModel/FrameworkConfiguration/FrameworkConfigurationProvider.js";
 
 type ForceShutdownHandler<TSource> = (source: TSource, reason?: string) => void;
 
@@ -128,16 +130,12 @@ export class AdaptiveGradingDaemon {
     private stopSignalProm = new DelayablePromise<DaemonShutdownType>();
     private runningProm: Promise<void> | null = null;
 
-    private getIntervalMillis(): number {
-        if (this.configuration === null) {
-            throw new Error("Daemon not correctly configured");
-        }
-
+    private static getIntervalMillis(scanInterval: ScanInterval): number {
         return (
-            (this.configuration.scanInterval.days ?? 0) * (24 * 3600 * 1000) +
-            (this.configuration.scanInterval.hours ?? 0) * (3600 * 1000) +
-            (this.configuration.scanInterval.minutes ?? 0) * (60 * 1000) +
-            (this.configuration.scanInterval.seconds ?? 0) * (1000)
+            (scanInterval.days ?? 0) * (24 * 3600 * 1000) +
+            (scanInterval.hours ?? 0) * (3600 * 1000) +
+            (scanInterval.minutes ?? 0) * (60 * 1000) +
+            (scanInterval.seconds ?? 0) * (1000)
         );
     }
 
@@ -167,11 +165,15 @@ export class AdaptiveGradingDaemon {
     private reportWorker: Worker | null = null;
 
     private startReportWorker(): void {
+        if ((this.configuration ?? null) === null) {
+            throw new Error("Daemon not properly configured");
+        }
+
         this.reportWorker = new Worker(
             path.join(fileURLToPath(import.meta.url), "..", "DaemonProgressReportWorker.js"),
             {
                 workerData: {
-                    intervalMillis: this.getIntervalMillis(),
+                    intervalMillis: AdaptiveGradingDaemon.getIntervalMillis(this.configuration!.scanInterval),
                     noReports: this.options.actionProgress.noReports,
                 }
             }
@@ -181,11 +183,15 @@ export class AdaptiveGradingDaemon {
     private intervalWorker: Worker | null = null;
 
     private startIntervalWorker(): void {
+        if ((this.configuration ?? null) === null) {
+            throw new Error("Daemon not properly configured");
+        }
+
         this.intervalWorker = new Worker(
             path.join(fileURLToPath(import.meta.url), "..", "DaemonIntervalWorker.js"),
             {
                 workerData: {
-                    intervalMillis: this.getIntervalMillis(),
+                    intervalMillis: AdaptiveGradingDaemon.getIntervalMillis(this.configuration!.scanInterval),
                 }
             }
         );
@@ -193,6 +199,183 @@ export class AdaptiveGradingDaemon {
 
     private static readonly defaultMaxJobTimeout = 200000;
     private backedJobService: IConfiguredJobService | null = null;
+
+    private async runRefreshCheck() {
+        const dbConn: DatabaseConnection = DatabaseConnectionRegistry.instance.getItem(
+            RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY
+        );
+
+        const escapedSchemaName =
+            await dbConn.escapeIdentifier(FrameworkConfigurationProvider.instance.getJobSchemaName());
+
+        const jobsToRefresh = await dbConn.doQuery<{ id: string, job_definition: IJobConfiguration }>(
+            `SELECT ${escapedSchemaName}.job.id,
+                    ${escapedSchemaName}.job.job_definition
+            FROM ${escapedSchemaName}.job
+                JOIN ${escapedSchemaName}.job_type
+                    ON ${escapedSchemaName}.job_type.id = job.id_job_type
+            WHERE ${escapedSchemaName}.job_type.abbrevation = 'STATPROC' AND
+                    periodical`,
+        );
+
+        for (const oldJob of (jobsToRefresh?.rows ?? [])) {
+            const newJobConfig: EdgarStatProcJobConfiguration = await EdgarStatProcJobConfiguration.fromGenericJobConfig(
+                oldJob.job_definition,
+                undefined,
+                () => `[JobPeriodicalRestart] - Periodical restart for job: (${oldJob.job_definition.jobId})
+    Previous name: ${oldJob.job_definition.jobName}`
+            );
+
+            this.backedJobService?.getJobRunner()
+                .addJobCompletionListener(
+                    newJobConfig.jobId,
+                    async (errored, error) => {
+                        if (errored) {
+                            return;
+                        }
+
+                        const transaction = await dbConn.beginTransaction(
+                            FrameworkConfigurationProvider.instance.getJobSchemaName()
+                        );
+
+                        try {
+                            await transaction.doQuery(
+                                `UPDATE ${escapedSchemaName}.job SET periodical = FALSE WHERE id = $1`,
+                                [oldJob.id]
+                            );
+    
+                            const acYear = await transaction.doQuery<{ id: number }>(
+                                `SELECT *
+                                FROM public.academic_year
+                                WHERE CURRENT_DATE BETWEEN date_start AND date_end`
+                            );
+    
+                            if (acYear === null || acYear.count === 0) {
+                                throw new Error("Could not determine current academic year");
+                            }
+    
+                            const recalculableYears = [acYear.rows[0].id, acYear.rows[0].id - 1];
+                            const newConfstartAcYear =
+                                newJobConfig.inputExtractorConfig.configContent.idStartAcademicYear;
+    
+                            await transaction.doQuery(
+                                `UPDATE ${escapedSchemaName}.job SET periodical = $1 WHERE id = $2`,
+                                [
+                                    /* $1 */ recalculableYears.includes(newConfstartAcYear),
+                                    /* $2 */ newJobConfig.jobId
+                                ],
+                            );
+
+                            await transaction.commit();
+                        } catch (err) {
+                            console.log(err);
+                            await transaction.rollback();
+                        } finally {
+                            if (!transaction.isFinished()) {
+                                transaction.rollback();
+                            }
+                        }
+                    }
+                );
+
+            this.usedWorkQueue?.enqueue(newJobConfig);
+        }
+    }
+
+    private async startRefreshCheckTracking(): Promise<void> {
+        const interval: NodeJS.Timeout = setInterval(
+            async () => {
+                if (this.stopSignalProm.isFinished()) {
+                    clearInterval(interval);
+                    return;
+                }
+                
+                await this.runRefreshCheck();
+            },
+            AdaptiveGradingDaemon.getIntervalMillis(this.configuration!.calculationRefreshInterval),
+        );
+    }
+
+    private async runRecalculationCheck() {
+        const dbConn: DatabaseConnection = DatabaseConnectionRegistry.instance.getItem(
+            RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY
+        );
+
+        const escapedSchemaName =
+            await dbConn.escapeIdentifier(FrameworkConfigurationProvider.instance.getJobSchemaName());
+
+        const jobsToRerun = await dbConn.doQuery<{ id: string, job_definition: IJobConfiguration }>(
+            `SELECT ${escapedSchemaName}.job.id,
+                    ${escapedSchemaName}.job.job_definition
+            FROM ${escapedSchemaName}.job
+                JOIN ${escapedSchemaName}.job_type
+                    ON ${escapedSchemaName}.job_type.id = job.id_job_type
+            WHERE ${escapedSchemaName}.job_type.abbrevation = 'STATPROC' AND
+                    rerun_requested`,
+        );
+
+        for (const oldJob of (jobsToRerun?.rows ?? [])) {
+            const newJobConfig: EdgarStatProcJobConfiguration = await EdgarStatProcJobConfiguration.fromGenericJobConfig(
+                oldJob.job_definition,
+                undefined,
+                () => `[JobRerunRestart] - Periodical restart for job: (${oldJob.job_definition.jobId})
+    Previous name: ${oldJob.job_definition.jobName}`,
+                true,
+            );
+            newJobConfig.jobWorkerConfig
+
+            this.backedJobService?.getJobRunner()
+                .addJobCompletionListener(
+                    newJobConfig.jobId,
+                    async (errored, error) => {
+                        if (errored) {
+                            return;
+                        }
+
+                        const transaction = await dbConn.beginTransaction(
+                            FrameworkConfigurationProvider.instance.getJobSchemaName()
+                        );
+
+                        try {
+                            await transaction.doQuery(
+                                `UPDATE ${escapedSchemaName}.job SET rerun_requested = FALSE WHERE id = $1`,
+                                [oldJob.id],
+                            );
+    
+                            await transaction.doQuery(
+                                `UPDATE ${escapedSchemaName}.job SET rerun_requested = FALSE WHERE id = $1`,
+                                [newJobConfig.jobId],
+                            );
+
+                            await transaction.commit();
+                        } catch (err) {
+                            console.log(err);
+                            await transaction.rollback();
+                        } finally {
+                            if (!transaction.isFinished()) {
+                                transaction.rollback();
+                            }
+                        }
+                    }
+                );
+
+            this.usedWorkQueue?.enqueue(newJobConfig);
+        }
+    }
+
+    private async startRecalculationCheckTracking(): Promise<void> {
+        const interval: NodeJS.Timeout = setInterval(
+            async () => {
+                if (this.stopSignalProm.isFinished()) {
+                    clearInterval(interval);
+                    return;
+                }
+                
+                await this.runRecalculationCheck();
+            },
+            AdaptiveGradingDaemon.getIntervalMillis(this.configuration!.calculationRefreshInterval),
+        );
+    }
 
     private async run(): Promise<void> {
         if (this.configuration === null || this.usedRequestQueue === null || this.usedWorkQueue === null) {
@@ -224,6 +407,9 @@ export class AdaptiveGradingDaemon {
 
 
         this.backedJobService.startJobService();
+
+        this.startRefreshCheckTracking();
+        this.startRecalculationCheckTracking();
 
         while (!this.stopSignalProm.isFinished()) {
             const req = await this.usedRequestQueue.dequeue();
