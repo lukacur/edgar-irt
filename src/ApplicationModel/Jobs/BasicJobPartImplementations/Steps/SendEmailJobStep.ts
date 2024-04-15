@@ -79,7 +79,10 @@ export class SendEmailJobStep extends AbstractGenericJobStep<SendEmailConfigurat
                     header: mailHeader,
                     body: stepEmailConfig.body
                 },
-                false
+                false,
+                {
+                    userCreated: "JOB_RUNNING_SYSTEM/SendEmail"
+                }
             );
 
             if (!success) {
