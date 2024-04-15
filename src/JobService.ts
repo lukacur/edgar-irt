@@ -20,6 +20,7 @@ export interface IConfiguredJobService {
     addShutdownHook(hook: ShutdownHook): ConfiguredJobService;
     startJobService(): ConfiguredJobService;
     shutdownJobService(): Promise<void>;
+    getJobRunner(): JobRunner;
 }
 
 class ConfiguredJobService implements IConfiguredJobService {
@@ -101,6 +102,13 @@ class ConfiguredJobService implements IConfiguredJobService {
         await Promise.all(this.shutdownHooks.map(sh => sh("POST_SHUTDOWN")));
 
         this.wasShutdown = true;
+    }
+
+    public getJobRunner(): JobRunner {
+        if ((this.jobRunner ?? null) === null) {
+            throw new Error("Service not properly configured");
+        }
+        return this.jobRunner!;
     }
 }
 

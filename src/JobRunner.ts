@@ -7,6 +7,7 @@ import { JobPartsParser } from "./Util/JobPartsParser.js";
 import { MailerProvider } from "./Util/MailerProvider.js";
 
 type ErrorReport = { jobId: string, stage: string, message: string, status: string, userRequested: string }
+type JobCompletionListener = (errored: boolean, error: ErrorReport | null) => Promise<void>;
 
 export class JobRunner {
     constructor(
@@ -18,6 +19,16 @@ export class JobRunner {
 
     private stopped: boolean = false;
     private runningPromise: Promise<void> | null = null;
+
+    private readonly jobCompletionListenersMap: Map<string, JobCompletionListener[]> = new Map();
+
+    public addJobCompletionListener(jobId: string, lst: JobCompletionListener) {
+        if (!this.jobCompletionListenersMap.has(jobId)) {
+            this.jobCompletionListenersMap.set(jobId, []);
+        }
+
+        this.jobCompletionListenersMap.get(jobId)!.push(lst);
+    }
 
     private errorMessageAdditionalInfoProvider(methodName: "runStrict" | "runGeneric"): string {
         return `
@@ -382,6 +393,10 @@ ${errorReport.message.split('\n').join('\n    ')}`,
                             ` +
                             this.errorMessageAdditionalInfoProvider("runGeneric")
                 );
+            } finally {
+                this.jobCompletionListenersMap.get(jobConfig.jobId)
+                    ?.forEach(lst => lst(errorReport !== null, errorReport));
+                this.jobCompletionListenersMap.delete(jobConfig.jobId);
             }
         }
     }
