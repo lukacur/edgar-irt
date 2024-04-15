@@ -1,7 +1,7 @@
 import { EmailInfo, SmtpCredentials } from "../ApplicationModel/Models/Email/EmailModels.model.js";
 
 export interface IMailer {
-    sendMail(info: EmailInfo, useDefaults: boolean): Promise<boolean>;
+    sendMail(info: EmailInfo, useDefaults: boolean, additionalParams: object): Promise<boolean>;
 
     /**
      * Clones the underlying mailer and sets the credentials to the ones passed as the argument.
