@@ -1,7 +1,9 @@
 import { DatabaseConnection } from "../../ApplicationImplementation/Database/DatabaseConnection.js";
+import { EdgarDatabaseMailer } from "../../ApplicationImplementation/Mailer/EdgarDatabaseMailer.js";
 import { DatabaseConnectionRegistry } from "../../PluginSupport/Registries/Implementation/DatabaseConnectionRegistry.js";
 import { RegistryDefaultConstants } from "../../PluginSupport/RegistryDefault.constants.js";
 import { MailerProvider } from "../../Util/MailerProvider.js";
+import { NodeMailerBackedMailer } from "../Mailer/NodeMailerBackedMailer.js";
 import { IJobAutomatizationFrameworkConfiguration } from "./IJobAutomatizationFrameworkConfiguration.js";
 
 export class FrameworkConfigurationProvider {
@@ -19,7 +21,7 @@ export class FrameworkConfigurationProvider {
         return this.configuration !== null;
     }
 
-    public registerDefaultMailer() {
+    public registerDevNullMailer() {
         MailerProvider.instance.registerMailer({
             async sendMail(info) {
                 return true;
@@ -29,6 +31,40 @@ export class FrameworkConfigurationProvider {
                 return this;
             },
         });
+    }
+
+    public registerConfiguredMailer() {
+        if (this.configuration === null) {
+            throw new Error("Configuration could not be read");
+        }
+
+        const mailerConfig = this.configuration?.mailerConfiguration ?? null;
+
+        switch (mailerConfig.mailerType) {
+            case "nodemailer": {
+                MailerProvider.instance.registerMailer(
+                    new NodeMailerBackedMailer(this.configuration.smtpConfiguration)
+                );
+
+                break;
+            }
+
+            case "edgar-db-mailer": {
+                MailerProvider.instance.registerMailer(
+                    new EdgarDatabaseMailer(
+                        DatabaseConnectionRegistry.instance.getItem(mailerConfig.databaseConnection),
+                        this.configuration.smtpConfiguration,
+                        mailerConfig.workingSchema,
+                    )
+                );
+
+                break;
+            }
+
+            default: {
+                throw new Error("Not implemented");
+            }
+        }
     }
 
     private connection: DatabaseConnection | null = null;

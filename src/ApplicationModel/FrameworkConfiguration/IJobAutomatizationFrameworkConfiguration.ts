@@ -33,7 +33,18 @@ export type SmtpConfiguration = {
     timeoutMs: number;
 };
 
+export type MailerConfiguration =
+{
+    mailerType: "edgar-db-mailer";
+    databaseConnection: string;
+    workingSchema: string;
+} |
+{
+    mailerType: "nodemailer";
+};
+
 export interface IJobAutomatizationFrameworkConfiguration {
     databaseConnectivity: DatabaseConnectivity;
     smtpConfiguration: SmtpConfiguration;
+    mailerConfiguration: MailerConfiguration;
 }
