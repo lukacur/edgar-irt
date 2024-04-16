@@ -9,6 +9,7 @@ import { StepResult } from "../../../../../../ApplicationModel/Jobs/IJobStep.js"
 import { RegisterDelegateToRegistry } from "../../../../../../ApplicationModel/Decorators/Registration.decorator.js";
 import { EdgarStatsProcessingConstants } from "../../../../EdgarStatsProcessing.constants.js";
 import { JobStepDescriptor } from "../../../../../../ApplicationModel/Jobs/IJobConfiguration.js";
+import { TimeoutUtil } from "../../../../../../Util/TimeoutUtil.js";
 
 export class EdgarStatProcJobStep
     extends AbstractGenericJobStep<EdgarStatProcStepConfiguration, object, IRCalculationResult> {
@@ -88,17 +89,20 @@ export class EdgarStatProcJobStep
             }
         );
 
-        const execTimeout = setTimeout(
+        const getExecTimeout = TimeoutUtil.doTimeout(
+            this.stepTimeoutMs,
             () => {
                 childProc.kill("SIGINT");
                 delProm.delayedReject("Calculation timed out");
             },
-            this.stepTimeoutMs
         );
 
+        let tid: NodeJS.Timeout | null;
         try {
             const calcResult = await delProm.getWrappedPromise();
-            clearTimeout(execTimeout);
+            if ((tid = getExecTimeout()) !== null) {
+                clearTimeout(tid);
+            }
     
             return {
                 status: "success",
@@ -107,7 +111,9 @@ export class EdgarStatProcJobStep
                 resultTTLSteps: this.resultTTL,
             };
         } catch (err: any) {
-            clearTimeout(execTimeout);
+            if ((tid = getExecTimeout()) !== null) {
+                clearTimeout(tid);
+            }
             console.log(err);
             return {
                 status: "failure",

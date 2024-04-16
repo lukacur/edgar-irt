@@ -6,9 +6,10 @@ import { EdgarStatProcJobConfiguration } from "./EdgarStatProcJobConfiguration.j
 import { IJobStep } from "../../../../../ApplicationModel/Jobs/IJobStep.js";
 import { IJobConfiguration } from "../../../../../ApplicationModel/Jobs/IJobConfiguration.js";
 import { DelayablePromise } from "../../../../../Util/DelayablePromise.js";
+import { TimeoutUtil } from "../../../../../Util/TimeoutUtil.js";
 
 type JobQueueInfoEntry = {
-    timeoutId: NodeJS.Timeout,
+    timeoutId: () => (NodeJS.Timeout | null),
     associatedQueueEntry: IJobConfiguration,
 };
 
@@ -42,7 +43,7 @@ export class EdgarStatProcJobProvider extends AbstractGenericJobProvider<EdgarSt
         try {
             const success = await this.calculationQueue.enqueue(queueInfo.associatedQueueEntry);
             if (!success) {
-                queueInfo.timeoutId = setTimeout(() => this.resetJob(jobId), 3000);
+                queueInfo.timeoutId = TimeoutUtil.doTimeout(3000, () => this.resetJob(jobId));
                 this.jobQueueInfo[jobId] = queueInfo;
 
                 return false;
@@ -52,7 +53,7 @@ export class EdgarStatProcJobProvider extends AbstractGenericJobProvider<EdgarSt
         } catch (err) {
             console.log(err);
 
-            queueInfo.timeoutId = setTimeout(() => this.resetJob(jobId), 3000);
+            queueInfo.timeoutId = TimeoutUtil.doTimeout(3000, () => this.resetJob(jobId));
             this.jobQueueInfo[jobId] = queueInfo;
         }
 
@@ -92,9 +93,9 @@ export class EdgarStatProcJobProvider extends AbstractGenericJobProvider<EdgarSt
 
         this.jobQueueInfo[jobId] = {
             associatedQueueEntry: queueEntry,
-            timeoutId: setTimeout(
-                () => this.resetJob(jobId),
+            timeoutId: TimeoutUtil.doTimeout(
                 this.expectedJobTimeout,
+                () => this.resetJob(jobId),
             )
         };
 
@@ -106,9 +107,12 @@ export class EdgarStatProcJobProvider extends AbstractGenericJobProvider<EdgarSt
             return "job-inactive";
         }
 
+        const tid: NodeJS.Timeout | null = this.jobQueueInfo[jobId].timeoutId();
         try {
-            clearTimeout(this.jobQueueInfo[jobId].timeoutId);
-            this.jobQueueInfo[jobId].timeoutId = setTimeout(() => this.resetJob(jobId), extendForMs);
+            if (tid !== null) {
+                clearTimeout(tid);
+            }
+            this.jobQueueInfo[jobId].timeoutId = TimeoutUtil.doTimeout(extendForMs, () => this.resetJob(jobId));
 
             return "success";
         } catch(err) {
@@ -123,8 +127,11 @@ export class EdgarStatProcJobProvider extends AbstractGenericJobProvider<EdgarSt
             return false;
         }
 
+        const tid: NodeJS.Timeout | null = this.jobQueueInfo[jobId].timeoutId();
         try {
-            clearTimeout(this.jobQueueInfo[jobId].timeoutId);
+            if (tid !== null) {
+                clearTimeout(tid);
+            }
             delete this.jobQueueInfo[jobId];
 
             return true;
@@ -156,7 +163,12 @@ export class EdgarStatProcJobProvider extends AbstractGenericJobProvider<EdgarSt
                 return await this.resetJob(jobId);
             } else {
                 const prm = new DelayablePromise<boolean>();
-                setTimeout(async () => prm.delayedResolve(await this.resetJob(jobId)), retryMode.retryAfterMs);
+
+                TimeoutUtil.doTimeout(
+                    retryMode.retryAfterMs,
+                    async () => prm.delayedResolve(await this.resetJob(jobId))
+                );
+
                 return prm.getWrappedPromise();
             }
         }

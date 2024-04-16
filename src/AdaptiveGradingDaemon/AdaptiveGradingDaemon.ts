@@ -19,6 +19,7 @@ import { IJobConfiguration } from "../ApplicationModel/Jobs/IJobConfiguration.js
 import { EdgarStatProcJobConfiguration } from "../ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Provider/EdgarStatProcJobConfiguration.js";
 import { DatabaseConnection } from "../ApplicationImplementation/Database/DatabaseConnection.js";
 import { FrameworkConfigurationProvider } from "../ApplicationModel/FrameworkConfiguration/FrameworkConfigurationProvider.js";
+import { TimeoutUtil } from "../Util/TimeoutUtil.js";
 
 type ForceShutdownHandler<TSource> = (source: TSource, reason?: string) => void;
 
@@ -283,16 +284,20 @@ export class AdaptiveGradingDaemon {
     }
 
     private async startRefreshCheckTracking(): Promise<void> {
-        const interval: NodeJS.Timeout = setInterval(
+        const getIntervalTimeoutId: () => (NodeJS.Timeout | null) = TimeoutUtil.doIntervalTimeout(
+            AdaptiveGradingDaemon.getIntervalMillis(this.configuration!.calculationRefreshInterval),
             async () => {
                 if (this.stopSignalProm.isFinished()) {
-                    clearInterval(interval);
+                    const tid = getIntervalTimeoutId();
+
+                    if (tid !== null) {
+                        clearTimeout(tid);
+                    }
                     return;
                 }
                 
                 await this.runRefreshCheck();
             },
-            AdaptiveGradingDaemon.getIntervalMillis(this.configuration!.calculationRefreshInterval),
         );
     }
 
@@ -364,16 +369,20 @@ export class AdaptiveGradingDaemon {
     }
 
     private async startRecalculationCheckTracking(): Promise<void> {
-        const interval: NodeJS.Timeout = setInterval(
+        const getIntervalTimeoutId: () => (NodeJS.Timeout | null) = TimeoutUtil.doIntervalTimeout(
+            AdaptiveGradingDaemon.getIntervalMillis(this.configuration!.calculationRefreshInterval),
             async () => {
                 if (this.stopSignalProm.isFinished()) {
-                    clearInterval(interval);
+                    const tid = getIntervalTimeoutId();
+
+                    if (tid !== null) {
+                        clearTimeout(tid);
+                    }
                     return;
                 }
                 
                 await this.runRecalculationCheck();
             },
-            AdaptiveGradingDaemon.getIntervalMillis(this.configuration!.calculationRefreshInterval),
         );
     }
 

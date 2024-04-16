@@ -7,6 +7,7 @@ import { StepResult } from "../../IJobStep.js";
 import { DelayablePromise } from "../../../../Util/DelayablePromise.js";
 import { readFile, unlink } from "fs/promises";
 import { ErrorUtil } from "../../../../Util/ErrorUtil.js";
+import { TimeoutUtil } from "../../../../Util/TimeoutUtil.js";
 
 type ProgramCallResultSource =
 {
@@ -154,7 +155,8 @@ export class RunFileJobStep extends AbstractGenericJobStep<RunFileConfiguration,
             }
         );
 
-        let execTimeout: NodeJS.Timeout | null = null;
+        let getExecTimeout: (() => (NodeJS.Timeout | null)) | null = null;
+        let tid: NodeJS.Timeout | null;
         try {
             if (!this.stepConfiguration.waitForExecution) {
                 return {
@@ -165,16 +167,18 @@ export class RunFileJobStep extends AbstractGenericJobStep<RunFileConfiguration,
                 };
             }
 
-            execTimeout = setTimeout(
+            getExecTimeout = TimeoutUtil.doTimeout(
+                Math.min(this.stepTimeoutMs, this.stepConfiguration.executionTimeoutMs ?? this.stepTimeoutMs),
                 () => {
                     childProc.kill("SIGINT");
                     delProm.delayedReject("Program or step timed out");
                 },
-                Math.min(this.stepTimeoutMs, this.stepConfiguration.executionTimeoutMs ?? this.stepTimeoutMs)
             );
 
             const calcResult = await delProm.getWrappedPromise();
-            clearTimeout(execTimeout);
+            if ((tid = getExecTimeout()) !== null) {
+                clearTimeout(tid);
+            }
     
             return {
                 status: "success",
@@ -186,8 +190,8 @@ export class RunFileJobStep extends AbstractGenericJobStep<RunFileConfiguration,
                 resultTTLSteps: this.resultTTL,
             };
         } catch (err: any) {
-            if (execTimeout !== null) {
-                clearTimeout(execTimeout);
+            if (getExecTimeout !== null && (tid = getExecTimeout()) !== null) {
+                clearTimeout(tid);
             }
 
             console.log(err);

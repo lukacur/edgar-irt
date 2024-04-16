@@ -1,25 +1,30 @@
 import { parentPort, workerData } from "worker_threads";
+import { TimeoutUtil } from "../Util/TimeoutUtil.js";
 
 const data: {
     intervalMillis: number,
 } = workerData;
 
-const int = setInterval(
+const getIntTimeoutId: () => (NodeJS.Timeout | null) = TimeoutUtil.doIntervalTimeout(
+    data.intervalMillis,
     () => {
         parentPort?.postMessage("doAction");
     },
-    data.intervalMillis
 );
 
 parentPort?.on("message", (msg: "refresh" | "terminate") => {
     switch (msg) {
         case "refresh": {
-            int.refresh();
+            getIntTimeoutId()?.refresh();
             break;
         }
 
         case "terminate": {
-            clearInterval(int);
+            const tid = getIntTimeoutId();
+
+            if (tid !== null) {
+                clearInterval(tid);
+            }
             break;
         }
 
@@ -30,5 +35,9 @@ parentPort?.on("message", (msg: "refresh" | "terminate") => {
 });
 
 parentPort?.on("close", () => {
-    clearInterval(int);
+    const tid = getIntTimeoutId();
+
+    if (tid !== null) {
+        clearInterval(tid);
+    }
 });

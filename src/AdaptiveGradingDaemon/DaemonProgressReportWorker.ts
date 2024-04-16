@@ -1,4 +1,5 @@
 import { parentPort, workerData } from "worker_threads";
+import { TimeoutUtil } from "../Util/TimeoutUtil.js";
 
 const data: {
     intervalMillis: number,
@@ -6,7 +7,8 @@ const data: {
 } = workerData;
 
 let currReport = 0;
-const interval = setInterval(
+const getIntervalTimeoutId: () => (NodeJS.Timeout | null) = TimeoutUtil.doIntervalTimeout(
+    Math.round(data.intervalMillis / (data.noReports + 1)),
     () => {
         process.stdout.write("\r\x1b[K");
         currReport = (currReport + 1) % data.noReports; 
@@ -17,18 +19,21 @@ const interval = setInterval(
             `[${"=".repeat(rep)}${(rep === 10) ? "" : ">"}${" ".repeat(10 - rep)}] (${(currReport / data.noReports) * 100}%)`
         )
     },
-    Math.round(data.intervalMillis / (data.noReports + 1))
 );
 
 parentPort?.addListener("message", (msg: "refresh" | "terminate") => {
     switch (msg) {
         case "refresh": {
-            interval.refresh();
+            getIntervalTimeoutId()?.refresh();
             break;
         }
 
         case "terminate": {
-            clearInterval(interval);
+            const tid = getIntervalTimeoutId();
+
+            if (tid !== null) {
+                clearInterval(tid);
+            }
             break;
         }
 
@@ -39,5 +44,9 @@ parentPort?.addListener("message", (msg: "refresh" | "terminate") => {
 });
 
 parentPort?.addListener("close", () => {
-    clearInterval(interval);
+    const tid = getIntervalTimeoutId();
+
+    if (tid !== null) {
+        clearInterval(tid);
+    }
 });

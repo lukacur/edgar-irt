@@ -24,7 +24,6 @@ import { CheckIfCalculationNeededStepConfiguration } from "./ApplicationImplemen
 import { randomUUID } from "crypto";
 import { EdgarStatProcJobConfiguration } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Provider/EdgarStatProcJobConfiguration.js";
 import { EdgarStatsProcessingConstants } from "./ApplicationImplementation/Edgar/EdgarStatsProcessing.constants.js";
-import { RegisterDelegateToRegistry } from "./ApplicationModel/Decorators/Registration.decorator.js";
 import { DatabaseConnectionRegistry } from "./PluginSupport/Registries/Implementation/DatabaseConnectionRegistry.js";
 import { RegistryDefaultConstants } from "./PluginSupport/RegistryDefault.constants.js";
 import { DynamicScriptImporter } from "./PluginSupport/DynamicScriptImporter.js";
@@ -33,6 +32,7 @@ import path from "path";
 import { AbstractTypedWorkResultPersistor } from "./ApplicationModel/Jobs/WorkResultPersistors/AbstractTypedWorkResultPersistor.js";
 import { fileURLToPath } from "url";
 import { FrameworkConfigurationProvider } from "./ApplicationModel/FrameworkConfiguration/FrameworkConfigurationProvider.js";
+import { TimeoutUtil } from "./Util/TimeoutUtil.js";
 
 type AvailableTests =
     "db" |
@@ -72,21 +72,27 @@ export class MainRunner {
             }
         );
 
-        const execTimeout = setTimeout(
+        const fetchTimeoutId = TimeoutUtil.doTimeout(
+            MainRunner.DEFAULT_TIMEOUT_MS,
             () => {
                 childProc.kill("SIGINT");
                 delProm.delayedReject("Calculation timed out");
             },
-            MainRunner.DEFAULT_TIMEOUT_MS
         );
 
+        let tid: NodeJS.Timeout | null;
         try {
             const calcResult = await delProm.getWrappedPromise();
-            clearTimeout(execTimeout);
+            if ((tid = fetchTimeoutId()) !== null) {
+                clearTimeout(tid);
+            }
     
             console.log(calcResult);
         } catch (err) {
-            clearTimeout(execTimeout);
+            if ((tid = fetchTimeoutId()) !== null) {
+                clearTimeout(tid);
+            }
+
             console.log(err);
         }
     }
@@ -215,7 +221,7 @@ export class MainRunner {
 
             /*const prm = new DelayablePromise<void>();
 
-            setTimeout(() => prm.delayedResolve(), 10000);
+            TimeoutUtil.doTimeout(10000, () => prm.delayedResolve());
 
             await prm.getWrappedPromise();
 
@@ -245,13 +251,13 @@ export class MainRunner {
 
         const prm = new DelayablePromise<void>();
 
-        setTimeout(
+        /*TimeoutUtil.doTimeout(
+            200000,
             async () => {
                 await daemon.shutdown();
                 await prm.delayedResolve();
             },
-            200000
-        );
+        );*/
 
         process.on("SIGTERM", (sig) => {
             terminated = true;
@@ -284,10 +290,13 @@ export class MainRunner {
         const delayedPromise: DelayablePromise<boolean> = new DelayablePromise();
         MainRunner.delayableAwaiter(delayedPromise);
 
-        setTimeout(() => {
+        TimeoutUtil.doTimeout(
+            2000,
+            () => {
             console.log("Timeout");
             delayedPromise.delayedResolve(true);
-        }, 2000);
+            }
+        );
 
         delayedPromise.getWrappedPromise().then(() => {
             console.log("Main");
@@ -319,7 +328,7 @@ export class MainRunner {
                 );
         service.startIRTService();
 
-        setTimeout(async () => await service.shutdownIRTService(), 3000);
+        TimeoutUtil.doTimeout(3000, async () => await service.shutdownIRTService());
     }*/
 
     private static async doQueueTests() {
@@ -411,9 +420,9 @@ export class MainRunner {
 
         let cnt = 0;
         for (const queue of queues) {
-            setTimeout(
+            TimeoutUtil.doTimeout(
+                2500 * (++cnt),
                 () => queue.enqueue(queueData),
-                2500 * (++cnt)
             );
         }
 
@@ -766,7 +775,8 @@ export class MainRunner {
                         "type": "${EdgarStatsProcessingConstants.DATA_PERSISTOR_REGISTRY_ENTRY}",
                         "persistanceTimeoutMs": 100000,
                         "configContent": {
-                            "databaseConnection": "${RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY}"
+                            "databaseConnection": "${RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY}",
+                            "defaultIRTOffsetParam": 1.85
                         }
                     }
                 }`
