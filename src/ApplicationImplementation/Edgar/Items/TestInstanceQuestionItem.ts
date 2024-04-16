@@ -1,7 +1,7 @@
 import { StudentParticipant } from "../Participants/StudentParticipant.js";
 import { EdgarItem } from "./EdgarItem.js";
 
-export class QuestionItem extends EdgarItem {
+export class TestInstanceQuestionItem extends EdgarItem {
     // questionId
     // score
     // maxScore
@@ -11,7 +11,7 @@ export class QuestionItem extends EdgarItem {
     constructor(
         id: number,
 
-        private readonly idQuestion: number,
+        public readonly idQuestion: number,
 
         private readonly idStudent: number,
 
@@ -22,7 +22,7 @@ export class QuestionItem extends EdgarItem {
         private readonly isUnanswered: boolean,
         private readonly isPartial: boolean,
 
-        private readonly score: number,
+        public readonly score: number,
         maxScore: number,
         private readonly scorePercentage: number,
     ) {

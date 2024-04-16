@@ -1,8 +1,7 @@
 import { AbstractBatch } from "../../../ApplicationModel/Batch/AbstractBatch.js";
 import { DatabaseConnection } from "../../Database/DatabaseConnection.js";
-import { TestInstance } from "../../Models/Database/TestInstance/TestInstance.model.js";
 import { TestInstanceQuestion } from "../../Models/Database/TestInstance/TestInstanceQuestion.model.js";
-import { QuestionItem } from "../Items/QuestionItem.js";
+import { TestInstanceQuestionItem } from "../Items/TestInstanceQuestionItem.js";
 import { EdgarItemBatch } from "./EdgarBatch.js";
 
 type ExtendedTestInstanceQuestion =
@@ -13,7 +12,7 @@ type ExtendedTestInstanceQuestion =
         max_score: number,
     }
 
-export class TestInstanceBasedBatch extends EdgarItemBatch<QuestionItem> {
+export class TestInstanceBasedBatch extends EdgarItemBatch<TestInstanceQuestionItem> {
     // testId
     // academicYear
     // QuestionItem[]
@@ -37,7 +36,7 @@ export class TestInstanceBasedBatch extends EdgarItemBatch<QuestionItem> {
         super();
     }
 
-    async loadItems(): Promise<QuestionItem[]> {
+    async loadItems(): Promise<TestInstanceQuestionItem[]> {
         const queryResult =
             await this.databaseConnection
                 .doQuery<ExtendedTestInstanceQuestion>(
@@ -76,7 +75,7 @@ export class TestInstanceBasedBatch extends EdgarItemBatch<QuestionItem> {
                         );
                     const maxScore = (typeof(tiq.max_score) === "string") ? parseFloat(tiq.max_score) : tiq.max_score;
 
-                    const qi = new QuestionItem(
+                    const qi = new TestInstanceQuestionItem(
                         tiq.id,
 
                         tiq.id_question,
@@ -109,11 +108,11 @@ export class TestInstanceBasedBatch extends EdgarItemBatch<QuestionItem> {
         return this.items;
     }
 
-    addItemToBatch(item: QuestionItem): Promise<AbstractBatch<QuestionItem>> {
+    addItemToBatch(item: TestInstanceQuestionItem): Promise<AbstractBatch<TestInstanceQuestionItem>> {
         throw new Error("Method not allowed.");
     }
 
-    getLoadedItems(): QuestionItem[] | null {
+    getLoadedItems(): TestInstanceQuestionItem[] | null {
         return this.items;
     }
 
