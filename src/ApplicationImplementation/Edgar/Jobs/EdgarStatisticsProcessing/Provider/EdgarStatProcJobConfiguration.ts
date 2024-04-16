@@ -119,7 +119,7 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
         stalenessCheckTimeoutMs: number = 5000,
         statProcessingTimeoutMs: number = 150000,
     ) {
-        let remainingJobTime: number = jobTimeoutMs;
+        let remainingJobTime: number = statProcReq.maxTimeoutMs ?? jobTimeoutMs;
 
         const ieConfig: EdgarStatProcDataExtractorConfiguration = {
             databaseConnection: RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY,

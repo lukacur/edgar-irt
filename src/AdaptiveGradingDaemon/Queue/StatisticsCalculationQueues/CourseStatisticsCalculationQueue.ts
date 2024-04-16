@@ -10,6 +10,8 @@ export type CourseStatisticsProcessingRequest = {
 
     forceCalculation: boolean;
     periodical: boolean;
+
+    maxTimeoutMs?: number;
 }
 
 export class CourseStatisticsCalculationQueue implements IQueueSystemBase<IJobConfiguration> {

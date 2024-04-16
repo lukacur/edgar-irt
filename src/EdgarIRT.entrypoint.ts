@@ -247,6 +247,7 @@ export class MainRunner {
             numberOfIncludedPreviousYears: 0,
             userRequested: null,
             periodical: true,
+            maxTimeoutMs: 350000,
         });
 
         const prm = new DelayablePromise<void>();
