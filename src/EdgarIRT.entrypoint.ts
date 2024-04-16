@@ -262,12 +262,16 @@ export class MainRunner {
 
         process.on("SIGTERM", (sig) => {
             terminated = true;
-            daemon.forceShutdown("Terminated by user");
-            process.exit(0);
+            console.log("Force shutdown requested (user sent SIGTERM)");
+            daemon.forceShutdown("Terminated by user")
+                .then(() => {
+                    process.exit(0);
+                });
         });
 
         process.on("SIGINT", async (sig) => {
             terminated = true;
+            let exitCode = 0;
 
             try {
                 await daemon.shutdown();
@@ -275,8 +279,9 @@ export class MainRunner {
             } catch (err) {
                 console.log("Unable to shutdown adaptive grading daemon. Reason:");
                 console.log(err);
+                exitCode = 1384;
             } finally {
-                process.exit(0);
+                process.exit(exitCode);
             }
         });
 
@@ -294,8 +299,8 @@ export class MainRunner {
         TimeoutUtil.doTimeout(
             2000,
             () => {
-            console.log("Timeout");
-            delayedPromise.delayedResolve(true);
+                console.log("Timeout");
+                delayedPromise.delayedResolve(true);
             }
         );
 

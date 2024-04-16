@@ -105,8 +105,15 @@ export class AdaptiveGradingDaemon {
             throw new Error(`Unable to parse given configuration file at: ${configFilePath}`);
         }
 
+        console.log("[INFO] Daemon: Setting up request queue...");
         this.usedRequestQueue = AdaptiveGradingDaemon.setupQueue(configuration.incomingWorkRequestQueue);
+        console.log("[INFO] Daemon: Done");
+        
+        console.log("[INFO] Daemon: Setting up work queue...");
         this.usedWorkQueue = AdaptiveGradingDaemon.setupQueue(configuration.jobRunnerWorkingQueue);
+        console.log("[INFO] Daemon: Done");
+
+        console.log(`[INFO] Daemon: Set up following queues: request: ${this.usedRequestQueue?.queueName}; work: ${this.usedWorkQueue?.queueName}`);
 
         if (
             this.usedRequestQueue === null || this.usedWorkQueue === null ||
@@ -420,21 +427,40 @@ export class AdaptiveGradingDaemon {
         this.startRefreshCheckTracking();
         this.startRecalculationCheckTracking();
 
+        console.log("[INFO] Daemon: Statistics processing daemon booted up and waiting for requests");
         while (!this.stopSignalProm.isFinished()) {
             const req = await this.usedRequestQueue.dequeue();
+            console.log("[INFO] Daemon: Incoming statistics processing request:", req);
 
-            await this.usedWorkQueue.enqueue(
-                await EdgarStatProcJobConfiguration.fromStatisticsProcessingRequest(
-                    req,
-                    this.configuration.scanInterval,
-                    this.configuration.calculationConfig,
-                    this.usedWorkQueue.queueName,
-                    `Statistics calculation job for course with ID '${req.idCourse}' ` +
-                        `started @ '${new Date().toISOString()}'`,
-                    this.configuration.maxJobTimeoutMs ?? AdaptiveGradingDaemon.defaultMaxJobTimeout,
-                )
+            const newJobConfig = await EdgarStatProcJobConfiguration.fromStatisticsProcessingRequest(
+                req,
+                this.configuration.scanInterval,
+                this.configuration.calculationConfig,
+                this.usedWorkQueue.queueName,
+                `Statistics calculation job for course with ID '${req.idCourse}' ` +
+                    `started @ '${new Date().toISOString()}'`,
+                this.configuration.maxJobTimeoutMs ?? AdaptiveGradingDaemon.defaultMaxJobTimeout,
             );
+
+            this.backedJobService.getJobRunner()
+                .addJobCompletionListener(
+                    newJobConfig.jobId,
+                    async (errored, error) => {
+                        if (errored) {
+                            console.log(`[ERROR] Daemon: Job ${newJobConfig.jobId} finished in error`);
+                            return;
+                        }
+
+                        console.log(`[INFO] Daemon: Job ${newJobConfig.jobId} successfully finished execution`);
+                    }
+                );
+
+            await this.usedWorkQueue.enqueue(newJobConfig);
+            console.log(`[INFO] Daemon: Request enqueued @ ${new Date().toISOString()}`);
         }
+
+        console.log("[INFO] Daemon: Statistics processing daemon detected a stop signal");
+        console.log("[INFO] Daemon: Cleaning run context...");
 
         /*if (this.options.actionProgress.reportActionProgress) {
             this.startReportWorker();
@@ -462,6 +488,7 @@ export class AdaptiveGradingDaemon {
         }*/
 
         runDelProm.delayedResolve();
+        console.log("[INFO] Daemon: Run context clean, stopping...");
     }
     //#endregion
 
@@ -470,6 +497,8 @@ export class AdaptiveGradingDaemon {
         if (this.runningProm !== null) {
             throw new Error("Unable to start: daemon already running");
         }
+
+        console.log("[INFO] Daemon: Statistics processing daemon is booting up...");
 
         // TODO: Eventually throw a typed UnableToStartDaemonException or something similar...
         await this.readConfiguration(this.configFilePath);
@@ -484,8 +513,11 @@ export class AdaptiveGradingDaemon {
             throw new Error("Unable to shutdown: daemon not started");
         }
 
+        console.log("[INFO] Daemon: Received daemon shutdown request");
         await this.stopSignalProm.delayedResolve(sdType);
+        console.log("[INFO] Daemon: Daemon shutting down...");
         await this.runningProm;
+        console.log("[INFO] Daemon: Daemon shutdown successful");
     }
 
     public async shutdown(): Promise<void> {
