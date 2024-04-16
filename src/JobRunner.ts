@@ -235,6 +235,10 @@ ${errorReport.message.split('\n').join('\n    ')}`,
                             ` +
                             this.errorMessageAdditionalInfoProvider("runStrict")
                 );
+            } finally {
+                this.jobCompletionListenersMap.get(jobConfig.jobId)
+                    ?.forEach(lst => lst(errorReport !== null, errorReport));
+                this.jobCompletionListenersMap.delete(jobConfig.jobId);
             }
         }
     }
