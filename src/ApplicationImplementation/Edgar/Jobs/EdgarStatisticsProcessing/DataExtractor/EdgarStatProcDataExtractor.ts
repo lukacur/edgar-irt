@@ -6,6 +6,7 @@ import { DatabaseConnectionRegistry } from "../../../../../PluginSupport/Registr
 import { CourseBasedBatch } from "../../../Batches/CourseBasedBatch.js";
 import { EdgarStatsProcessingConstants } from "../../../EdgarStatsProcessing.constants.js";
 import { EdgarStatProcJobConfiguration } from "../Provider/EdgarStatProcJobConfiguration.js";
+import { StatProcessingJobBatchCache } from "../StatProcessingJobBatchCache.js";
 import { EdgarStatProcDataExtractorConfiguration } from "./EdgarStatProcDataExtractorConfiguration.js";
 
 @RegisterFactoryToRegistry(
@@ -20,6 +21,10 @@ export class EdgarStatProcDataExtractor
         const serObj = {};
 
         await jobConfiguration.inputExtractorConfig.configContent.serializeInto(serObj);
+        StatProcessingJobBatchCache.instance.cacheJobBatch(
+            jobConfiguration.jobId,
+            jobConfiguration.inputExtractorConfig.configContent
+        );
 
         return serObj;
     }
@@ -27,9 +32,9 @@ export class EdgarStatProcDataExtractor
     public create(...args: any[]): object {
         return new class extends AbstractGenericInputDataExtractor<IJobConfiguration, any> {
             protected async formatJobInputTyped(jobConfiguration: IJobConfiguration): Promise<any> {
-                const extractorConfiguration =
-                    (<InputExtractorConfig<EdgarStatProcDataExtractorConfiguration>>
-                        jobConfiguration.inputExtractorConfig);
+                const extractorConfiguration = 
+                    jobConfiguration.inputExtractorConfig as
+                        InputExtractorConfig<EdgarStatProcDataExtractorConfiguration>;
 
                 if (extractorConfiguration.type !== EdgarStatsProcessingConstants.DATA_EXTRACTOR_REGISTRY_ENTRY) {
                     throw new Error(
@@ -42,14 +47,15 @@ export class EdgarStatProcDataExtractor
                 const configContent = extractorConfiguration.configContent;
                 const serObj = {};
 
-                await (
-                    new CourseBasedBatch(
-                        DatabaseConnectionRegistry.instance.getItem(configContent.databaseConnection),
-                        configContent.idCourse,
-                        configContent.idStartAcademicYear,
-                        configContent.numberOfIncludedPreviousYears,
-                    ).serializeInto(serObj)
+                const batch = new CourseBasedBatch(
+                    DatabaseConnectionRegistry.instance.getItem(configContent.databaseConnection),
+                    configContent.idCourse,
+                    configContent.idStartAcademicYear,
+                    configContent.numberOfIncludedPreviousYears,
                 );
+
+                await batch.serializeInto(serObj);
+                StatProcessingJobBatchCache.instance.cacheJobBatch(jobConfiguration.jobId, batch);
 
                 return serObj;
             }
