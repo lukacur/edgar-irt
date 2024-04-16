@@ -2,7 +2,7 @@ import { AbstractBatch } from "../../../ApplicationModel/Batch/AbstractBatch.js"
 import { DatabaseConnection } from "../../Database/DatabaseConnection.js";
 import { TestInstanceQuestion } from "../../Models/Database/TestInstance/TestInstanceQuestion.model.js";
 import { TestInstanceQuestionItem } from "../Items/TestInstanceQuestionItem.js";
-import { EdgarItemBatch } from "./EdgarBatch.js";
+import { EdgarItemBatch, TestInstanceAdditionalInfo } from "./EdgarBatch.js";
 
 type ExtendedTestInstanceQuestion =
     TestInstanceQuestion &
@@ -144,8 +144,14 @@ export class TestInstanceBasedBatch extends EdgarItemBatch<TestInstanceQuestionI
         }
     }
 
-    override async getTestInstancesWithQuestion(questionId: number): Promise<TestInstance[]> {
-        if ((this.items ?? []).find(it => it.getId() === questionId) === undefined) {
+    override async getTestInstancesWithQuestion(questionId: number): Promise<TestInstanceAdditionalInfo[]> {
+        if (this.getLoadedItems() === null) {
+            await this.loadItems();
+        }
+
+        let question: TestInstanceQuestionItem | undefined;
+
+        if ((question = (this.getLoadedItems() ?? []).find(it => it.idQuestion === questionId)) === undefined) {
             return [];
         }
 
@@ -156,7 +162,11 @@ export class TestInstanceBasedBatch extends EdgarItemBatch<TestInstanceQuestionI
             id_test: this.idTest,
             id_test_navigation: null!,
             score: this.testMaxScore,
-            score_perc: this.studentScore / ((this.testMaxScore === 0) ? 1 : this.testMaxScore)
+            score_perc: this.solutionPercentage,
+
+            testMaxScore: this.testMaxScore,
+            scoredOnQuestion: question.score,
+            questionMaxScore: await question.getMaxScore(),
         }];
     }
 }

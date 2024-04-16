@@ -1,8 +1,7 @@
 import { AbstractBatch } from "../../../ApplicationModel/Batch/AbstractBatch.js";
 import { DatabaseConnection } from "../../Database/DatabaseConnection.js";
 import { Test } from "../../Models/Database/Test/Test.model.js";
-import { TestInstance } from "../../Models/Database/TestInstance/TestInstance.model.js";
-import { EdgarItemBatch } from "./EdgarBatch.js";
+import { EdgarItemBatch, TestInstanceAdditionalInfo } from "./EdgarBatch.js";
 import { TestBasedBatch } from "./TestBasedBatch.js";
 
 export class CourseBasedBatch extends EdgarItemBatch<TestBasedBatch> {
@@ -88,9 +87,13 @@ export class CourseBasedBatch extends EdgarItemBatch<TestBasedBatch> {
         }
     }
 
-    override async getTestInstancesWithQuestion(questionId: number): Promise<TestInstance[]> {
+    override async getTestInstancesWithQuestion(questionId: number): Promise<TestInstanceAdditionalInfo[]> {
+        if (this.getLoadedItems() === null) {
+            await this.loadItems();
+        }
+
         return (await Promise.all(
-            this.items?.flatMap((tst) => tst.getTestInstancesWithQuestion(questionId)) ?? []
+            this.getLoadedItems()?.flatMap((tst) => tst.getTestInstancesWithQuestion(questionId)) ?? []
         )).flatMap(e => e);
     }
 }

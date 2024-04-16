@@ -1,7 +1,7 @@
 import { AbstractBatch } from "../../../ApplicationModel/Batch/AbstractBatch.js";
 import { DatabaseConnection } from "../../Database/DatabaseConnection.js";
 import { TestInstance } from "../../Models/Database/TestInstance/TestInstance.model.js";
-import { EdgarItemBatch } from "./EdgarBatch.js";
+import { EdgarItemBatch, TestInstanceAdditionalInfo } from "./EdgarBatch.js";
 import { TestInstanceBasedBatch } from "./TestInstanceBasedBatch.js";
 
 export class TestBasedBatch extends EdgarItemBatch<TestInstanceBasedBatch> {
@@ -57,7 +57,7 @@ export class TestBasedBatch extends EdgarItemBatch<TestInstanceBasedBatch> {
         throw new Error("Method not implemented.");
     }
     getLoadedItems(): TestInstanceBasedBatch[] | null {
-        throw new Error("Method not implemented.");
+        return this.items;
     }
     
     async serializeInto(obj: any): Promise<void> {
@@ -86,9 +86,13 @@ export class TestBasedBatch extends EdgarItemBatch<TestInstanceBasedBatch> {
         }
     }
 
-    override async getTestInstancesWithQuestion(questionId: number): Promise<TestInstance[]> {
+    override async getTestInstancesWithQuestion(questionId: number): Promise<TestInstanceAdditionalInfo[]> {
+        if (this.getLoadedItems() === null) {
+            await this.loadItems();
+        }
+
         return (await Promise.all(
-            this.items?.map((ti) => ti.getTestInstancesWithQuestion(questionId)) ?? []
+            this.getLoadedItems()?.map((ti) => ti.getTestInstancesWithQuestion(questionId)) ?? []
         )).flatMap(e => e);
     }
 }
