@@ -5,7 +5,7 @@ import { IDatabaseConfig } from "../../../ApplicationImplementation/Models/Confi
 
 // In the database that this class uses command 'CREATE EXTENSION pgcrypto;' must be ran before using PgBoss
 export class PgBossQueueSystem<TQueueData extends object> implements IQueueSystemBase<TQueueData> {
-    private readonly bossCon: PgBoss;
+    private bossCon: PgBoss | null = null;
 
     private startProm: Promise<PgBoss> | null = null;
 
@@ -27,12 +27,16 @@ export class PgBossQueueSystem<TQueueData extends object> implements IQueueSyste
                 //max: this.pgBossConnStringOrConfig.maxConnections,
             });
         }
-        this.startProm = this.bossCon.start().then(b => { this.startProm = null; return b; });
+        this.startProm = this.bossCon.start().then(b => { this.startProm = null; return this.bossCon = b; });
     }
 
     public async enqueue(data: TQueueData): Promise<boolean> {
         if (this.startProm !== null) {
             await this.startProm;
+        }
+
+        if (this.bossCon === null) {
+            throw new Error("PgBoss connection was not correctly setup or was unable to be set up");
         }
 
         const jobId = await this.bossCon.send(this.queueName, data);
@@ -45,11 +49,15 @@ export class PgBossQueueSystem<TQueueData extends object> implements IQueueSyste
             await this.startProm;
         }
 
+        if (this.bossCon === null) {
+            throw new Error("PgBoss connection was not correctly setup or was unable to be set up");
+        }
+
         const delProm = new DelayablePromise<TQueueData>();
 
         await this.bossCon.work<TQueueData>(
             this.queueName,
-            { newJobCheckInterval: 100 },
+            { newJobCheckInterval: 1000 },
             async (job) => {
                 await delProm.delayedResolve(job.data);
             }
@@ -59,6 +67,14 @@ export class PgBossQueueSystem<TQueueData extends object> implements IQueueSyste
     }
 
     public async peek(): Promise<TQueueData | null> {
+        if (this.startProm !== null) {
+            await this.startProm;
+        }
+
+        if (this.bossCon === null) {
+            throw new Error("PgBoss connection was not correctly setup or was unable to be set up");
+        }
+
         if ((await this.bossCon.getQueueSize(this.queueName)) === 0) {
             return null;
         }
@@ -85,6 +101,10 @@ export class PgBossQueueSystem<TQueueData extends object> implements IQueueSyste
             await this.startProm;
         }
 
+        if (this.bossCon === null) {
+            throw new Error("PgBoss connection was not correctly setup or was unable to be set up");
+        }
+
         await this.bossCon.deleteQueue(this.queueName);
 
         return true;
@@ -92,6 +112,10 @@ export class PgBossQueueSystem<TQueueData extends object> implements IQueueSyste
 
 
     public async close(): Promise<void> {
+        if (this.bossCon === null) {
+            throw new Error("PgBoss connection was not correctly setup or was unable to be set up");
+        }
+
         await this.bossCon.stop({ destroy: true, graceful: true });
     }
 }
