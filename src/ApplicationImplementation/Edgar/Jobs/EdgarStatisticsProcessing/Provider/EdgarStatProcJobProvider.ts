@@ -32,6 +32,10 @@ export class EdgarStatProcJobProvider extends AbstractGenericJobProvider<EdgarSt
     }
 
     private async resetJob(jobId: string): Promise<boolean> {
+        if (!this.jobActive(jobId)) {
+            return false;
+        }
+
         const queueInfo = this.jobQueueInfo[jobId];
         delete this.jobQueueInfo[jobId];
 
