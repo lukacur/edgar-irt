@@ -4,12 +4,28 @@ import { AbstractTypedWorkResultPersistor } from "../../../../../ApplicationMode
 import { DatabaseConnectionRegistry } from "../../../../../PluginSupport/Registries/Implementation/DatabaseConnectionRegistry.js";
 import { DatabaseConnection } from "../../../../Database/DatabaseConnection.js";
 import { TransactionContext } from "../../../../Database/TransactionContext.js";
+import { TestInstance } from "../../../../Models/Database/TestInstance/TestInstance.model.js";
 import { EdgarStatsProcessingConstants } from "../../../EdgarStatsProcessing.constants.js";
 import { CourseBasedCalculation, IRCalculationResult, TestBasedCalculation } from "../../../Statistics/IRCalculationResult.js";
 import { EdgarStatProcJobConfiguration } from "../Provider/EdgarStatProcJobConfiguration.js";
+import { StatProcessingJobBatchCache } from "../StatProcessingJobBatchCache.js";
 
 const requiredStructrue = {
     workingSchema: "statistics_schema"
+};
+
+type QuestionCalcultionInfo = {
+    jobId: string;
+    courseBasedCalc: CourseBasedCalculation & { id: number };
+    testBasedCalc: (TestBasedCalculation & { id: number })[];
+    relatedTestInstances: TestInstance[];
+};
+
+interface IIRTParameterCalculator {
+    calculateLevelOfItemKnowledge: (qCalcInfo: QuestionCalcultionInfo) => number,
+    calculateItemDifficulty: (qCalcInfo: QuestionCalcultionInfo) => number,
+    calculateItemGuessProbability: (qCalcInfo: QuestionCalcultionInfo) => number,
+    calculateItemMistakeProbability: (qCalcInfo: QuestionCalcultionInfo) => number,
 }
 
 export class EdgarStatProcWorkResultPersistor
@@ -17,6 +33,7 @@ export class EdgarStatProcWorkResultPersistor
 
     constructor(
         private readonly dbConn: DatabaseConnection,
+        private readonly defaultIRTOffsetParam: number = 1.0,
     ) { super(); }
 
     private async databaseStructureValid(): Promise<boolean> {
@@ -34,14 +51,19 @@ export class EdgarStatProcWorkResultPersistor
 
     private async createParamCalculationEntry(
         transactionCtx: TransactionContext,
+        calculationGroup: string,
         courseId: number,
         idQuestion: number,
         idTest?: number,
     ): Promise<number | null> {
         const qResult = (await transactionCtx.doQuery<{ id: number }>(
-            `INSERT INTO question_param_calculation(id_based_on_course, id_question, id_based_on_test)
-                VALUES ($1, $2, $3) RETURNING id`,
-            [courseId, idQuestion, (idTest === undefined) ? null : idTest]
+            `INSERT INTO question_param_calculation(
+                calculation_group,
+                id_based_on_course,
+                id_question,
+                id_based_on_test
+            ) VALUES ($1, $2, $3, $4) RETURNING id`,
+            [calculationGroup, courseId, idQuestion, (idTest === undefined) ? null : idTest]
         ));
 
         return (qResult === null || qResult.count === 0) ? null : qResult.rows[0].id;
@@ -141,6 +163,90 @@ export class EdgarStatProcWorkResultPersistor
 
         return (count !== null && count !== 0);
     }
+
+    private static readonly IRTCalculationConfiguration: IIRTParameterCalculator = {
+        calculateLevelOfItemKnowledge: (qCalcInfo: QuestionCalcultionInfo) => {
+            const courseBased = qCalcInfo.courseBasedCalc;
+            const testBased = qCalcInfo.testBasedCalc;
+
+            return (courseBased.incorrect / courseBased.correct) *
+                (testBased.reduce((acc, e) => acc + e.partOfTotalSum, 0) / (testBased.length + 1)) * 10;
+        },
+
+        calculateItemDifficulty: (qCalcInfo: QuestionCalcultionInfo) => {
+            const courseBased = qCalcInfo.courseBasedCalc;
+            const testBased = qCalcInfo.testBasedCalc;
+
+            return (courseBased.totalAchieved / courseBased.totalAchievable) *
+                (courseBased.incorrect / courseBased.correct) *
+                (testBased.reduce((acc, e) => acc + e.median, 0) / (testBased.length + 1));
+        },
+
+        calculateItemGuessProbability: (qCalcInfo: QuestionCalcultionInfo) => {
+            const courseBased = qCalcInfo.courseBasedCalc;
+            const testBased = qCalcInfo.testBasedCalc;
+
+            return courseBased.correct / courseBased.answersCount;
+        },
+
+        calculateItemMistakeProbability: (qCalcInfo: QuestionCalcultionInfo) => {
+            const courseBased = qCalcInfo.courseBasedCalc;
+            const testBased = qCalcInfo.testBasedCalc;
+
+            return courseBased.incorrect / courseBased.answersCount;
+        }
+    };
+
+    private async createIRTParams(
+        transactionCtx: TransactionContext,
+        questionToCalculationsMap: Map<number, QuestionCalcultionInfo>
+    ): Promise<boolean> {
+        for (const entry of questionToCalculationsMap.entries()) {
+            const count = (await transactionCtx.doQuery<{ id: number }>(
+                `INSERT INTO question_irt_parameters (
+                    id_course_based_info,
+                    id_test_based_info,
+
+                    id_question,
+
+                    default_item_offset_parameter,
+                    level_of_item_knowledge,
+                    item_difficulty,
+                    item_guess_probability,
+                    item_mistake_probability
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+                [
+                    /* $1 */ entry[1].courseBasedCalc.id,
+                    /* $2 */ JSON.stringify(entry[1].testBasedCalc.map(e => e.id)).replace("[", "{").replace("]", "}"),
+                    /* $3 */ entry[0],
+
+                    /* $4 */ this.defaultIRTOffsetParam ?? null,
+
+                    /* $5 */
+                    EdgarStatProcWorkResultPersistor.IRTCalculationConfiguration
+                        .calculateLevelOfItemKnowledge(entry[1]),
+
+                    /* $6 */
+                    EdgarStatProcWorkResultPersistor.IRTCalculationConfiguration
+                        .calculateItemDifficulty(entry[1]),
+
+                    /* $7 */
+                    EdgarStatProcWorkResultPersistor.IRTCalculationConfiguration
+                        .calculateItemGuessProbability(entry[1]),
+
+                    /* $8 */
+                    EdgarStatProcWorkResultPersistor.IRTCalculationConfiguration
+                        .calculateItemMistakeProbability(entry[1]),
+                ]
+            ))?.count ?? null;
+            
+            if (count === null || count === 0) {
+                return false;
+            }
+        }
+
+        return true;
+    }
     
     protected async persistResultTyped(
         jobResult: IRCalculationResult,
@@ -151,14 +257,18 @@ export class EdgarStatProcWorkResultPersistor
         }
 
         const transaction = await this.dbConn.beginTransaction(requiredStructrue.workingSchema);
+        const jobId = jobConfig.jobId;
 
         try {
             const courseId = jobResult.courseId;
             const academicYearIds = jobResult.academicYearIds;
 
+            const questionToCalculationsMap: Map<number, QuestionCalcultionInfo> = new Map();
+
             for (const courseBasedInfo of jobResult.courseBased) {
                 const idQparamCalc = await this.createParamCalculationEntry(
                     transaction,
+                    jobConfig.jobId,
                     courseId,
                     courseBasedInfo.idQuestion
                 );
@@ -177,6 +287,20 @@ export class EdgarStatProcWorkResultPersistor
                     await transaction.rollback();
                     return false;
                 }
+
+                questionToCalculationsMap.set(
+                    courseBasedInfo.idQuestion,
+                    {
+                        jobId,
+                        courseBasedCalc: {
+                            ...courseBasedInfo,
+                            id: idQparamCalc
+                        },
+                        testBasedCalc: [],
+                        relatedTestInstances: await StatProcessingJobBatchCache.instance.getCachedJobBatch(jobId)
+                            ?.getTestInstancesWithQuestion(courseBasedInfo.idQuestion) ?? [],
+                    }
+                );
             }
 
             for (const testBasedInfo of jobResult.testBased) {
@@ -185,6 +309,7 @@ export class EdgarStatProcWorkResultPersistor
                 for (const qInfo of testBasedInfo.testData) {
                     const idQparamCalc = await this.createParamCalculationEntry(
                         transaction,
+                        jobConfig.jobId,
                         courseId,
                         qInfo.idQuestion,
                         idTest,
@@ -204,7 +329,21 @@ export class EdgarStatProcWorkResultPersistor
                         await transaction.rollback();
                         return false;
                     }
+
+                    if (questionToCalculationsMap.has(qInfo.idQuestion)) {
+                        questionToCalculationsMap.get(qInfo.idQuestion)!.testBasedCalc.push(
+                            {
+                                ...qInfo,
+                                id: idQparamCalc,
+                            }
+                        );
+                    }
                 }
+            }
+
+            if (!(await this.createIRTParams(transaction, questionToCalculationsMap))) {
+                await transaction.rollback();
+                return false;
             }
 
             return true;
@@ -225,7 +364,7 @@ export class EdgarStatProcWorkResultPersistor
         EdgarStatsProcessingConstants.DATA_PERSISTOR_REGISTRY_ENTRY,
     )
     public createGeneric(
-        persistorConfig: DataPersistorConfig<{ databaseConnection?: string }>,
+        persistorConfig: DataPersistorConfig<{ databaseConnection?: string, defaultIRTOffsetParam?: number }>,
         ...args: any[]
     ): object {
         const configEntry = persistorConfig.configContent;
@@ -236,6 +375,7 @@ export class EdgarStatProcWorkResultPersistor
 
         return new EdgarStatProcWorkResultPersistor(
             DatabaseConnectionRegistry.instance.getItem(configEntry.databaseConnection),
+            configEntry.defaultIRTOffsetParam,
         );
     }
 }
