@@ -157,7 +157,6 @@ CREATE TYPE job_step_status_type
 
 CREATE TABLE IF NOT EXISTS job_step (
 	id VARCHAR(512) PRIMARY KEY,
-	config JSON,
 	started_on TIMESTAMP,
 	finished_on TIMESTAMP,
 
