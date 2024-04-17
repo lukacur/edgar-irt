@@ -3,6 +3,7 @@ import { IQueueSystemBase } from "../IQueueSystemBase.js";
 import { existsSync, lstatSync } from "fs";
 import { DelayablePromise } from "../../../Util/DelayablePromise.js";
 import { AsyncMutex } from "../../Mutex/AsyncMutex.js";
+import { QueueClosedException } from "../../Exceptions/QueueClosedException.js";
 
 export class FileQueueSystem<TQueueData> implements IQueueSystemBase<TQueueData> {
     private readonly dequeueRequests: DelayablePromise<TQueueData>[] = [];
@@ -114,7 +115,9 @@ export class FileQueueSystem<TQueueData> implements IQueueSystemBase<TQueueData>
 
 
     public async close(): Promise<void> {
-        this.dequeueRequests.forEach(dr => dr.delayedReject("Queue closed"));
+        for (const dp of this.dequeueRequests) {
+            dp.delayedReject(new QueueClosedException("The queue was closed"));
+        }
         this.dequeueRequests.splice(0, this.dequeueRequests.length);
     }
 }

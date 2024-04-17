@@ -20,6 +20,7 @@ import { EdgarStatProcJobConfiguration } from "../ApplicationImplementation/Edga
 import { DatabaseConnection } from "../ApplicationImplementation/Database/DatabaseConnection.js";
 import { FrameworkConfigurationProvider } from "../ApplicationModel/FrameworkConfiguration/FrameworkConfigurationProvider.js";
 import { TimeoutUtil } from "../Util/TimeoutUtil.js";
+import { QueueClosedException } from "./Exceptions/QueueClosedException.js";
 
 type ForceShutdownHandler<TSource> = (source: TSource, reason?: string) => void;
 
@@ -290,6 +291,8 @@ export class AdaptiveGradingDaemon {
         }
     }
 
+    private readonly registeredTimeoutIdFetchFunctions: (() => (NodeJS.Timeout | null))[] = [];
+
     private async startRefreshCheckTracking(): Promise<void> {
         const getIntervalTimeoutId: () => (NodeJS.Timeout | null) = TimeoutUtil.doIntervalTimeout(
             AdaptiveGradingDaemon.getIntervalMillis(this.configuration!.calculationRefreshInterval),
@@ -306,6 +309,8 @@ export class AdaptiveGradingDaemon {
                 await this.runRefreshCheck();
             },
         );
+
+        this.registeredTimeoutIdFetchFunctions.push(getIntervalTimeoutId);
     }
 
     private async runRecalculationCheck() {
@@ -391,6 +396,8 @@ export class AdaptiveGradingDaemon {
                 await this.runRecalculationCheck();
             },
         );
+
+        this.registeredTimeoutIdFetchFunctions.push(getIntervalTimeoutId);
     }
 
     private async run(): Promise<void> {
@@ -429,7 +436,16 @@ export class AdaptiveGradingDaemon {
 
         console.log("[INFO] Daemon: Statistics processing daemon booted up and waiting for requests");
         while (!this.stopSignalProm.isFinished()) {
-            const req = await this.usedRequestQueue.dequeue();
+            let req: CourseStatisticsProcessingRequest = null!;
+            try {
+                req = await this.usedRequestQueue.dequeue();
+            } catch (err) {
+                if (err instanceof QueueClosedException) {
+                    console.log("[INFO] Daemon: the request queue was closed while waiting for incoming request");
+                    break;
+                }
+            }
+
             console.log("[INFO] Daemon: Incoming statistics processing request:", req);
 
             const newJobConfig = await EdgarStatProcJobConfiguration.fromStatisticsProcessingRequest(
@@ -518,6 +534,18 @@ export class AdaptiveGradingDaemon {
         console.log("[INFO] Daemon: Daemon shutting down...");
         await this.runningProm;
         console.log("[INFO] Daemon: Daemon shutdown successful");
+
+        await this.usedWorkQueue?.close();
+        await this.usedRequestQueue?.close();
+        await this.backedJobService?.shutdownJobService();
+
+        for (const tidFetcher of this.registeredTimeoutIdFetchFunctions) {
+            const tid = tidFetcher();
+            if (tid !== null) {
+                clearTimeout(tid);
+            }
+        }
+        this.registeredTimeoutIdFetchFunctions.splice(0, this.registeredTimeoutIdFetchFunctions.length);
     }
 
     public async shutdown(): Promise<void> {

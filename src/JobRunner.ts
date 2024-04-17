@@ -1,4 +1,6 @@
+import { QueueClosedException } from "./AdaptiveGradingDaemon/Exceptions/QueueClosedException.js";
 import { IInputDataExtractor } from "./ApplicationModel/Jobs/DataExtractors/IInputDataExtractor.js";
+import { IJobConfiguration } from "./ApplicationModel/Jobs/IJobConfiguration.js";
 import { IJobProvider } from "./ApplicationModel/Jobs/Providers/IJobProvider.js";
 import { IWorkResultPersistor } from "./ApplicationModel/Jobs/WorkResultPersistors/IWorkResultPersistor.js";
 import { IJobWorker } from "./ApplicationModel/Jobs/Workers/IJobWorker.js";
@@ -94,8 +96,25 @@ ${errorReport.message.split('\n').join('\n    ')}`,
                 this.sendErrorReportMessage(errorReport);
                 errorReport = null;
             }
-            const jobConfig = await this.jobProvider.provideJob();
 
+            let jobConfig: IJobConfiguration = null!;
+            try {
+                jobConfig = await this.jobProvider.provideJob();
+            } catch (err) {
+                if (err instanceof QueueClosedException) {
+                    console.log(
+                        "[INFO] JobRunner: The job provider used an underlying queue which was closed. " +
+                        "Stopping the runner..."
+                    );
+                } else {
+                    console.log(
+                        "[ERROR] JobRunner: The job provider failed in providing a job configuration. " +
+                        "Terminating the runner...");
+                }
+                this.stopped = true;
+                break;
+            }
+            
             try {
                 const jobInput = await this.dataExtractor.formatJobInput(jobConfig);
 
@@ -251,7 +270,23 @@ ${errorReport.message.split('\n').join('\n    ')}`,
                 errorReport = null;
             }
 
-            const jobConfig = await this.jobProvider.provideJob();
+            let jobConfig: IJobConfiguration = null!;
+            try {
+                jobConfig = await this.jobProvider.provideJob();
+            } catch (err) {
+                if (err instanceof QueueClosedException) {
+                    console.log(
+                        "[INFO] JobRunner: The job provider used an underlying queue which was closed. " +
+                        "Stopping the runner..."
+                    );
+                } else {
+                    console.log(
+                        "[ERROR] JobRunner: The job provider failed in providing a job configuration. " +
+                        "Terminating the runner...");
+                }
+                this.stopped = true;
+                break;
+            }
 
             try {
                 const parser = JobPartsParser.with(jobConfig);

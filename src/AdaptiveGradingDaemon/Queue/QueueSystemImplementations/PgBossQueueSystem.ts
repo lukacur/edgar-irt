@@ -2,6 +2,7 @@ import PgBoss from "pg-boss";
 import { IQueueSystemBase } from "../IQueueSystemBase.js";
 import { DelayablePromise } from "../../../Util/DelayablePromise.js";
 import { IDatabaseConfig } from "../../../ApplicationImplementation/Models/Config/DatabaseConfig.model.js";
+import { QueueClosedException } from "../../Exceptions/QueueClosedException.js";
 
 // In the database that this class uses command 'CREATE EXTENSION pgcrypto;' must be ran before using PgBoss
 export class PgBossQueueSystem<TQueueData extends object> implements IQueueSystemBase<TQueueData> {
@@ -44,6 +45,7 @@ export class PgBossQueueSystem<TQueueData extends object> implements IQueueSyste
         return jobId !== null
     }
 
+    private readonly dequeueRequests: DelayablePromise<TQueueData>[] = [];
     public async dequeue(): Promise<TQueueData> {
         if (this.startProm !== null) {
             await this.startProm;
@@ -54,12 +56,18 @@ export class PgBossQueueSystem<TQueueData extends object> implements IQueueSyste
         }
 
         const delProm = new DelayablePromise<TQueueData>();
+        this.dequeueRequests.push(delProm);
 
         await this.bossCon.work<TQueueData>(
             this.queueName,
             { newJobCheckInterval: 1000 },
             async (job) => {
                 await delProm.delayedResolve(job.data);
+                
+                const idx = this.dequeueRequests.indexOf(delProm);
+                if (idx !== -1) {
+                    this.dequeueRequests.splice(idx, 1);
+                }
             }
         );
         
@@ -114,6 +122,10 @@ export class PgBossQueueSystem<TQueueData extends object> implements IQueueSyste
     public async close(): Promise<void> {
         if (this.bossCon === null) {
             throw new Error("PgBoss connection was not correctly setup or was unable to be set up");
+        }
+
+        for (const deqReq of this.dequeueRequests) {
+            deqReq.delayedReject(new QueueClosedException("The queue was closed"));
         }
 
         await this.bossCon.stop({ destroy: true, graceful: true });
