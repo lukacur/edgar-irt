@@ -48,6 +48,7 @@ export interface IJobConfiguration/* <TInputExtractorConfig, TDataPersistorConfi
     readonly jobId: string;
     readonly jobTypeAbbrevation: string;
     readonly jobName: string;
+    readonly userNote: string | null;
     readonly idUserStarted: number | null;
     readonly jobQueue: string | null;
     readonly jobTimeoutMs: number;

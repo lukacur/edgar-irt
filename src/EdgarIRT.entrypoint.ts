@@ -493,6 +493,7 @@ export class MainRunner {
                 randomUUID(),
                 "Test job - total job test",
                 null,
+                null,
                 "",
                 200000,
                 true,
@@ -580,6 +581,7 @@ export class MainRunner {
             new EdgarStatProcJobConfiguration(
                 randomUUID(),
                 "Test job - total job test",
+                null,
                 null,
                 "",
                 200000,

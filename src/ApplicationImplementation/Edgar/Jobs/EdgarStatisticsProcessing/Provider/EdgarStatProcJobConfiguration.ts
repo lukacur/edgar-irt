@@ -21,6 +21,7 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
     constructor(
         public readonly jobId: string,
         public readonly jobName: string,
+        public readonly userNote: string | null,
         public readonly idUserStarted: number | null,
         public readonly jobQueue: string | null,
         public readonly jobTimeoutMs: number,
@@ -75,6 +76,7 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
         const instance = new EdgarStatProcJobConfiguration(
             (jobIdProvider !== undefined) ? jobIdProvider(config.jobId) : config.jobId,
             (nameProvider !== undefined) ? nameProvider(config.jobName) : config.jobName,
+            config.userNote,
             config.idUserStarted,
             config.jobQueue,
             config.jobTimeoutMs,
@@ -179,6 +181,7 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
                 jobTypeAbbrevation: "STATPROC",
                 periodical: startJobReq.periodical,
 
+                userNote: startJobReq.userNote ?? null,
                 idUserStarted: startJobReq.idUserRequested ?? null,
                 jobTimeoutMs,
                 jobQueue,
