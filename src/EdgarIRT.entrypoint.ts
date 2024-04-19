@@ -33,6 +33,7 @@ import { AbstractTypedWorkResultPersistor } from "./ApplicationModel/Jobs/WorkRe
 import { fileURLToPath } from "url";
 import { FrameworkConfigurationProvider } from "./ApplicationModel/FrameworkConfiguration/FrameworkConfigurationProvider.js";
 import { TimeoutUtil } from "./Util/TimeoutUtil.js";
+import { IStartJobRequest } from "./ApplicationModel/Models/IStartJobRequest.js";
 
 type AvailableTests =
     "db" |
@@ -158,7 +159,7 @@ export class MainRunner {
         );
     }
 
-    private static daemonQueue: IQueueSystemBase<CourseStatisticsProcessingRequest> =
+    private static daemonQueue: IQueueSystemBase<IStartJobRequest<CourseStatisticsProcessingRequest>> =
         new FileQueueSystem("FOO-QUEUE", "./queues/daemon/daemon-file-q.json")
         /*new class implements IQueueSystemBase<CourseStatisticsProcessingRequest> {
             queueName: string = "FOO-QUEUE";
@@ -241,13 +242,18 @@ export class MainRunner {
         })();
 
         await MainRunner.daemonQueue.enqueue({
-            forceCalculation: false,
-            idCourse: 2006,
-            idStartAcademicYear: 2022,
-            numberOfIncludedPreviousYears: 0,
-            userRequested: null,
+            idJobType: 1,
+            jobName: undefined || null || "Foo test job",
+            userNote: undefined || null || "Note",
+            idUserRequested: null,
+            request: {
+                forceCalculation: false,
+                idCourse: 2006,
+                idStartAcademicYear: 2022,
+                numberOfIncludedPreviousYears: 0,
+            },
+            jobMaxTimeoutMs: undefined || 350000,
             periodical: true,
-            maxTimeoutMs: 350000,
         });
 
         const prm = new DelayablePromise<void>();

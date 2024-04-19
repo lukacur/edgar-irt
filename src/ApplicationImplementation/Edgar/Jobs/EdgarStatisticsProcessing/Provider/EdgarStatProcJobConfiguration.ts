@@ -2,6 +2,7 @@ import { ScanInterval } from "../../../../../AdaptiveGradingDaemon/DaemonConfig.
 import { CourseStatisticsProcessingRequest } from "../../../../../AdaptiveGradingDaemon/Queue/StatisticsCalculationQueues/CourseStatisticsCalculationQueue.js";
 import { BlockingConfig, DataPersistorConfig, IJobConfiguration, InputExtractorConfig, JobStepDescriptor, JobWorkerConfig } from "../../../../../ApplicationModel/Jobs/IJobConfiguration.js";
 import { IJobStep } from "../../../../../ApplicationModel/Jobs/IJobStep.js";
+import { IStartJobRequest } from "../../../../../ApplicationModel/Models/IStartJobRequest.js";
 import { RegistryDefaultConstants } from "../../../../../PluginSupport/RegistryDefault.constants.js";
 import { JobPartsParser } from "../../../../../Util/JobPartsParser.js";
 import { CourseBasedBatch } from "../../../Batches/CourseBasedBatch.js";
@@ -99,7 +100,7 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
     }
 
     public static async fromStatisticsProcessingRequest(
-        statProcReq: CourseStatisticsProcessingRequest,
+        startJobReq: IStartJobRequest<CourseStatisticsProcessingRequest>,
         calculationsValidFor: ScanInterval,
 
         calculationConfig: {
@@ -119,7 +120,9 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
         stalenessCheckTimeoutMs: number = 5000,
         statProcessingTimeoutMs: number = 150000,
     ) {
-        let remainingJobTime: number = statProcReq.maxTimeoutMs ?? jobTimeoutMs;
+        const statProcReq = startJobReq.request;
+
+        let remainingJobTime: number = startJobReq.jobMaxTimeoutMs ?? jobTimeoutMs;
 
         const ieConfig: EdgarStatProcDataExtractorConfiguration = {
             databaseConnection: RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY,
@@ -174,9 +177,9 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
                 jobId: undefined!,
                 jobName: jobName ?? `Edgar statistics processing job started @ ${new Date().toISOString()}`,
                 jobTypeAbbrevation: "STATPROC",
-                periodical: statProcReq.periodical,
+                periodical: startJobReq.periodical,
 
-                idUserStarted: statProcReq.userRequested,
+                idUserStarted: startJobReq.idUserRequested ?? null,
                 jobTimeoutMs,
                 jobQueue,
 

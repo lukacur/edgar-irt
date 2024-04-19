@@ -21,6 +21,7 @@ import { DatabaseConnection } from "../ApplicationImplementation/Database/Databa
 import { FrameworkConfigurationProvider } from "../ApplicationModel/FrameworkConfiguration/FrameworkConfigurationProvider.js";
 import { TimeoutUtil } from "../Util/TimeoutUtil.js";
 import { QueueClosedException } from "./Exceptions/QueueClosedException.js";
+import { IStartJobRequest } from "../ApplicationModel/Models/IStartJobRequest.js";
 
 type ForceShutdownHandler<TSource> = (source: TSource, reason?: string) => void;
 
@@ -34,7 +35,7 @@ export class AdaptiveGradingDaemon {
 
     private configuration: DaemonConfig | null = null;
 
-    private usedRequestQueue: IQueueSystemBase<CourseStatisticsProcessingRequest> | null = null;
+    private usedRequestQueue: IQueueSystemBase<IStartJobRequest<CourseStatisticsProcessingRequest>> | null = null;
     private usedWorkQueue: IQueueSystemBase<IJobConfiguration> | null = null;
 
     private static setupQueue<TQueueItem extends object>(
@@ -436,7 +437,7 @@ export class AdaptiveGradingDaemon {
 
         console.log("[INFO] Daemon: Statistics processing daemon booted up and waiting for requests");
         while (!this.stopSignalProm.isFinished()) {
-            let req: CourseStatisticsProcessingRequest = null!;
+            let req: IStartJobRequest<CourseStatisticsProcessingRequest> = null!;
             try {
                 req = await this.usedRequestQueue.dequeue();
             } catch (err) {
@@ -453,7 +454,7 @@ export class AdaptiveGradingDaemon {
                 this.configuration.scanInterval,
                 this.configuration.calculationConfig,
                 this.usedWorkQueue.queueName,
-                `Statistics calculation job for course with ID '${req.idCourse}' ` +
+                `Statistics calculation job for course with ID '${req.request.idCourse}' ` +
                     `started @ '${new Date().toISOString()}'`,
                 this.configuration.maxJobTimeoutMs ?? AdaptiveGradingDaemon.defaultMaxJobTimeout,
             );
