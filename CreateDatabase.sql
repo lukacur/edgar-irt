@@ -132,6 +132,7 @@ CREATE TABLE IF NOT EXISTS job (
 	id VARCHAR(512) PRIMARY KEY,
 	id_job_type INT NOT NULL,
 	name VARCHAR(2048) NOT NULL,
+	user_note TEXT,
 	id_user_started INT,
 	job_definition JSON,
 	started_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
