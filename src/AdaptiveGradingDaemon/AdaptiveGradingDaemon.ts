@@ -22,6 +22,7 @@ import { FrameworkConfigurationProvider } from "../ApplicationModel/FrameworkCon
 import { TimeoutUtil } from "../Util/TimeoutUtil.js";
 import { QueueClosedException } from "./Exceptions/QueueClosedException.js";
 import { IStartJobRequest } from "../ApplicationModel/Models/IStartJobRequest.js";
+import { FrameworkLogger } from "../Logger/FrameworkLogger.js";
 
 type ForceShutdownHandler<TSource> = (source: TSource, reason?: string) => void;
 
@@ -211,6 +212,8 @@ export class AdaptiveGradingDaemon {
     private backedJobService: IConfiguredJobService | null = null;
 
     private async runRefreshCheck() {
+        FrameworkLogger.info(AdaptiveGradingDaemon, "Running scheduled refresh check...");
+
         const dbConn: DatabaseConnection = DatabaseConnectionRegistry.instance.getItem(
             RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY
         );
@@ -290,11 +293,15 @@ export class AdaptiveGradingDaemon {
 
             this.usedWorkQueue?.enqueue(newJobConfig);
         }
+
+        FrameworkLogger.info(AdaptiveGradingDaemon, "Scheduled refresh check done");
     }
 
     private readonly registeredTimeoutIdFetchFunctions: (() => (NodeJS.Timeout | null))[] = [];
 
     private async startRefreshCheckTracking(): Promise<void> {
+        FrameworkLogger.info(AdaptiveGradingDaemon, "Result staleness check interval found, configuring...");
+
         const getIntervalTimeoutId: () => (NodeJS.Timeout | null) = TimeoutUtil.doIntervalTimeout(
             AdaptiveGradingDaemon.getIntervalMillis(this.configuration!.calculationRefreshInterval),
             async () => {
@@ -315,6 +322,8 @@ export class AdaptiveGradingDaemon {
     }
 
     private async runRecalculationCheck() {
+        FrameworkLogger.info(AdaptiveGradingDaemon, "Running scheduled recalculation check...");
+
         const dbConn: DatabaseConnection = DatabaseConnectionRegistry.instance.getItem(
             RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY
         );
@@ -379,9 +388,13 @@ export class AdaptiveGradingDaemon {
 
             this.usedWorkQueue?.enqueue(newJobConfig);
         }
+
+        FrameworkLogger.info(AdaptiveGradingDaemon, "Scheduled recalculation check done");
     }
 
     private async startRecalculationCheckTracking(): Promise<void> {
+        FrameworkLogger.info(AdaptiveGradingDaemon, "Recalculation check interval found, configuring...");
+
         const getIntervalTimeoutId: () => (NodeJS.Timeout | null) = TimeoutUtil.doIntervalTimeout(
             AdaptiveGradingDaemon.getIntervalMillis(this.configuration!.calculationRefreshInterval),
             async () => {
@@ -402,6 +415,8 @@ export class AdaptiveGradingDaemon {
     }
 
     private async runAutoJobStart() {
+        FrameworkLogger.info(AdaptiveGradingDaemon, "Running scheduled auto job start...");
+
         const dbConn: DatabaseConnection = DatabaseConnectionRegistry.instance.getItem(
             RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY
         );
@@ -430,10 +445,14 @@ export class AdaptiveGradingDaemon {
         request.request.idCourse = idCourseObj.id;
 
         this.usedRequestQueue?.enqueue(request);
+
+        FrameworkLogger.info(AdaptiveGradingDaemon, "Scheduled auto job start executed. Executed job: ", request);
     }
 
     private async startAutoJobStartTracking(): Promise<void> {
         // TODO: Restart interval if new job requested by user applications
+        FrameworkLogger.info(AdaptiveGradingDaemon, "Auto job start configuration found, configuring...");
+
         const getIntervalTimeoutId: () => (NodeJS.Timeout | null) = TimeoutUtil.doIntervalTimeout(
             AdaptiveGradingDaemon.getIntervalMillis(this.configuration!.autoJobStartInfo.interval),
             async () => {
@@ -484,9 +503,23 @@ export class AdaptiveGradingDaemon {
 
         this.backedJobService.startJobService();
 
-        this.startRefreshCheckTracking();
-        this.startRecalculationCheckTracking();
+        if (this.configuration.resultStalenessInterval) {
+            this.startRefreshCheckTracking();
+        } else {
+            FrameworkLogger.info(AdaptiveGradingDaemon, "Result staleness check interval not defined, skipping...");
+        }
+        
+        if (this.configuration.recalculationCheckInterval) {
+            this.startRecalculationCheckTracking();
+        } else {
+            FrameworkLogger.info(AdaptiveGradingDaemon, "Recalculation check interval not defined, skipping...");
+        }
+
+        if (this.configuration.autoJobStartInfo) {
             this.startAutoJobStartTracking();
+        } else {
+            FrameworkLogger.info(AdaptiveGradingDaemon, "Auto job start configuration not defined, skipping...");
+        }
 
         console.log("[INFO] Daemon: Statistics processing daemon booted up and waiting for requests");
         while (!this.stopSignalProm.isFinished()) {

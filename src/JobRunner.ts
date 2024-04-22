@@ -273,6 +273,7 @@ ${errorReport.message.split('\n').join('\n    ')}`,
             let jobConfig: IJobConfiguration = null!;
             try {
                 jobConfig = await this.jobProvider.provideJob();
+                console.log("[INFO] JobRunner: Received job from the job provider");
             } catch (err) {
                 if (err instanceof QueueClosedException) {
                     console.log(
