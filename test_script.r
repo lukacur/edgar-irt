@@ -14,17 +14,15 @@ fun_calculateTestBasedQuestionStats <- function(param_course) {
   testFrame <- var_testFrames[[1]]
   
   var_tfTis <- testFrame$testInstances
-  var_nesto <- aggregate(
-    studentScore ~ idTest,
-    var_tfTis[[1]],
-    sum
-  )[[2]]
   
   var_courseByTestStatistics <- by(
     testFrame,
     seq_len(nrow(testFrame)),
     function(testRow) {
       var_testInstances <- testRow$testInstances[[1]]
+      if (length(var_testInstances) == 0) {
+        return(list(idTest = testRow$id, testData = list()));
+      }
       
       var_sumOfTestInstanceScores <- aggregate(
         studentScore ~ idTest,
@@ -35,8 +33,10 @@ fun_calculateTestBasedQuestionStats <- function(param_course) {
       var_tiqs <- var_testInstances$testInstanceQuestions
       var_tiqsUnioned <- var_tiqs[[1]]
       
-      for (i in 2:length(var_tiqs)) {
-        var_tiqsUnioned <- rbind(var_tiqsUnioned, var_tiqs[[i]])
+      if (length(var_tiqs) != 1) {
+        for (i in 2:length(var_tiqs)) {
+          var_tiqsUnioned <- rbind(var_tiqsUnioned, var_tiqs[[i]])
+        }
       }
       
       var_stats <- aggregate(
@@ -110,9 +110,11 @@ fun_calculateTestBasedQuestionStats <- function(param_course) {
       
       var_mergedDf <- var_toMerge[1]
       
-      for (x in var_toMerge[2:length(var_toMerge)]) {
-        called <- do.call(data.frame, x)
-        var_mergedDf <- merge(var_mergedDf, called, by = c("idQuestion"))
+      if (length(var_toMerge) != 1) {
+        for (x in var_toMerge[2:length(var_toMerge)]) {
+          called <- do.call(data.frame, x)
+          var_mergedDf <- merge(var_mergedDf, called, by = c("idQuestion"))
+        }
       }
       
       var_stats <- merge(var_stats, var_mergedDf, by = c("idQuestion"))
@@ -144,8 +146,11 @@ fun_calculateCourseBasedQuestionStats <- function(param_course) {
   var_flattenedTiFrames <- purrr::flatten(var_tiFrames)
   
   var_unionedTiFrames <- var_flattenedTiFrames[[1]]
-  for (i in 2:length(var_flattenedTiFrames)) {
-    var_unionedTiFrames <- rbind(var_unionedTiFrames, var_flattenedTiFrames[[i]])
+
+  if (length(var_flattenedTiFrames) != 1) {
+    for (i in 2:length(var_flattenedTiFrames)) {
+      var_unionedTiFrames <- rbind(var_unionedTiFrames, var_flattenedTiFrames[[i]])
+    }
   }
   # flat map end
   
@@ -251,9 +256,11 @@ fun_calculateCourseBasedQuestionStats <- function(param_course) {
   
   var_mergedDf <- var_toMerge[1]
   
-  for (x in var_toMerge[2:length(var_toMerge)]) {
-    called <- do.call(data.frame, x)
-    var_mergedDf <- merge(var_mergedDf, called, by = c("idQuestion"))
+  if (length(var_toMerge) != 1) {
+    for (x in var_toMerge[2:length(var_toMerge)]) {
+      called <- do.call(data.frame, x)
+      var_mergedDf <- merge(var_mergedDf, called, by = c("idQuestion"))
+    }
   }
   
   return(var_mergedDf)
