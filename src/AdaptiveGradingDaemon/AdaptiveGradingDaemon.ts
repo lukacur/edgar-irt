@@ -103,7 +103,7 @@ export class AdaptiveGradingDaemon {
         }
 
         let configuration: DaemonConfig = AdaptiveGradingConfigProvider.instance.getConfiguration();
-        if (!("scanInterval" in configuration)) {
+        if (!("resultStalenessInterval" in configuration)) {
             throw new Error(`Unable to parse given configuration file at: ${configFilePath}`);
         }
 
@@ -183,7 +183,7 @@ export class AdaptiveGradingDaemon {
             path.join(fileURLToPath(import.meta.url), "..", "DaemonProgressReportWorker.js"),
             {
                 workerData: {
-                    intervalMillis: AdaptiveGradingDaemon.getIntervalMillis(this.configuration!.scanInterval),
+                    intervalMillis: AdaptiveGradingDaemon.getIntervalMillis(this.configuration!.resultStalenessInterval),
                     noReports: this.options.actionProgress.noReports,
                 }
             }
@@ -201,7 +201,7 @@ export class AdaptiveGradingDaemon {
             path.join(fileURLToPath(import.meta.url), "..", "DaemonIntervalWorker.js"),
             {
                 workerData: {
-                    intervalMillis: AdaptiveGradingDaemon.getIntervalMillis(this.configuration!.scanInterval),
+                    intervalMillis: AdaptiveGradingDaemon.getIntervalMillis(this.configuration!.resultStalenessInterval),
                 }
             }
         );
@@ -401,6 +401,58 @@ export class AdaptiveGradingDaemon {
         this.registeredTimeoutIdFetchFunctions.push(getIntervalTimeoutId);
     }
 
+    private async runAutoJobStart() {
+        const dbConn: DatabaseConnection = DatabaseConnectionRegistry.instance.getItem(
+            RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY
+        );
+
+        const courseIds = await dbConn.doQuery<{ id: number }>(
+            `SELECT public.course.id
+            FROM public.course
+                LEFT JOIN statistics_schema.question_param_calculation
+                    ON public.course.id = statistics_schema.question_param_calculation.id_based_on_course
+            WHERE statistics_schema.question_param_calculation.id IS NULL`
+        );
+
+        if (courseIds === null || courseIds.count === 0) {
+            return;
+        }
+
+        const idCourseObj = courseIds.rows[Math.floor(Math.random() * (courseIds.count - 1))]
+
+        if (this.configuration === null) {
+            throw new Error("Daemon not properly configured");
+        }
+
+        const request: IStartJobRequest<CourseStatisticsProcessingRequest> =
+            { ...this.configuration.autoJobStartInfo.startJobRequest };
+
+        request.request.idCourse = idCourseObj.id;
+
+        this.usedRequestQueue?.enqueue(request);
+    }
+
+    private async startAutoJobStartTracking(): Promise<void> {
+        // TODO: Restart interval if new job requested by user applications
+        const getIntervalTimeoutId: () => (NodeJS.Timeout | null) = TimeoutUtil.doIntervalTimeout(
+            AdaptiveGradingDaemon.getIntervalMillis(this.configuration!.autoJobStartInfo.interval),
+            async () => {
+                if (this.stopSignalProm.isFinished()) {
+                    const tid = getIntervalTimeoutId();
+
+                    if (tid !== null) {
+                        clearTimeout(tid);
+                    }
+                    return;
+                }
+                
+                await this.runAutoJobStart();
+            },
+        );
+
+        this.registeredTimeoutIdFetchFunctions.push(getIntervalTimeoutId);
+    }
+
     private async run(): Promise<void> {
         if (this.configuration === null || this.usedRequestQueue === null || this.usedWorkQueue === null) {
             throw new Error("Daemon not correctly configured");
@@ -434,6 +486,7 @@ export class AdaptiveGradingDaemon {
 
         this.startRefreshCheckTracking();
         this.startRecalculationCheckTracking();
+            this.startAutoJobStartTracking();
 
         console.log("[INFO] Daemon: Statistics processing daemon booted up and waiting for requests");
         while (!this.stopSignalProm.isFinished()) {
@@ -451,10 +504,10 @@ export class AdaptiveGradingDaemon {
 
             const newJobConfig = await EdgarStatProcJobConfiguration.fromStatisticsProcessingRequest(
                 req,
-                this.configuration.scanInterval,
+                this.configuration.resultStalenessInterval,
                 this.configuration.calculationConfig,
                 this.usedWorkQueue.queueName,
-                `Statistics calculation job for course with ID '${req.request.idCourse}' ` +
+                req.jobName ?? `Statistics calculation job for course with ID '${req.request.idCourse}' ` +
                     `started @ '${new Date().toISOString()}'`,
                 this.configuration.maxJobTimeoutMs ?? AdaptiveGradingDaemon.defaultMaxJobTimeout,
             );
@@ -533,12 +586,12 @@ export class AdaptiveGradingDaemon {
         console.log("[INFO] Daemon: Received daemon shutdown request");
         await this.stopSignalProm.delayedResolve(sdType);
         console.log("[INFO] Daemon: Daemon shutting down...");
-        await this.runningProm;
-        console.log("[INFO] Daemon: Daemon shutdown successful");
-
         await this.usedWorkQueue?.close();
         await this.usedRequestQueue?.close();
         await this.backedJobService?.shutdownJobService();
+        await this.runningProm;
+        console.log("[INFO] Daemon: Daemon shutdown successful");
+
 
         for (const tidFetcher of this.registeredTimeoutIdFetchFunctions) {
             const tid = tidFetcher();

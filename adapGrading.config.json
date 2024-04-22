@@ -1,6 +1,6 @@
 {
-    "scanInterval": {
-        "seconds": 3
+    "resultStalenessInterval": {
+        "hours": 5
     },
 
     "calculationRefreshInterval": {
@@ -9,6 +9,36 @@
 
     "recalculationCheckInterval": {
         "days": 1
+    },
+
+    "autoJobStartInfo": {
+        "interval": {
+            "days": 1,
+            "hours": 2,
+            "minutes": 15,
+            "seconds": 30
+        },
+
+        "jobRequestQueue": "edgar-irt-work-request-queue",
+
+        "startJobRequest": {
+            "idJobType": 1,
+
+            "jobName": "Auto statistics processing for courses which have no previous statistics processing jobs ran",
+            "userNote": null,
+            "periodical": false,
+            "idUserRequested": null,
+
+            "jobMaxTimeoutMs": 350000,
+
+            "request": {
+                "idStartAcademicYear": 2022,
+                "numberOfIncludedPreviousYears": 3,
+                "forceCalculation": false
+            }
+        },
+
+        "restartIntervalWithNewRequest": true
     },
 
     "calculationConfig": {

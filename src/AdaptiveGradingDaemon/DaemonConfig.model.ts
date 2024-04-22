@@ -1,5 +1,6 @@
 import { IDatabaseConfig } from "../ApplicationImplementation/Models/Config/DatabaseConfig.model.js";
 import { HttpMethod } from "../ApplicationModel/Jobs/BasicJobPartImplementations/Steps/Models/URLJobStepConfiguration.js";
+import { IStartJobRequest } from "../ApplicationModel/Models/IStartJobRequest.js";
 
 export type ScanInterval = {
     days?: number;
@@ -38,9 +39,16 @@ export type QueueDescriptor =
     );
 
 export interface DaemonConfig {
-    scanInterval: ScanInterval;
+    resultStalenessInterval: ScanInterval;
     calculationRefreshInterval: ScanInterval;
     recalculationCheckInterval: ScanInterval;
+
+    autoJobStartInfo: {
+        interval: ScanInterval;
+        jobRequestQueue: string;
+        startJobRequest: IStartJobRequest<any>;
+        restartIntervalWithNewRequest: boolean;
+    }
 
     calculationConfig: {
         useJudge0: true,
