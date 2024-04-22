@@ -36,22 +36,24 @@ abstract class DatabaseJobInfoStoringJobProvider<TJobConfiguration extends IJobC
                 id_job_type,
                 name,
                 id_user_started,
+                user_note,
                 job_definition,
                 started_on,
                 job_status,
                 periodical
-            ) VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, 'RUNNING', $6)`,
+            ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, 'RUNNING', $7)`,
             [
                 /* $1 */ job.jobId,
                 /* $2 */ jobTypeId,
                 /* $3 */ job.jobName,
                 /* $4 */ job.idUserStarted,
+                /* $5 */ job.userNote,
 
                 /* || */ (job.getRawDescriptor !== undefined && typeof(job.getRawDescriptor) === "function") ?
-                /* $5 */    await job.getRawDescriptor() :
+                /* $6 */    await job.getRawDescriptor() :
                 /* || */    null,
 
-                /* $6 */ job.periodical,
+                /* $7 */ job.periodical,
             ]
         );
 
