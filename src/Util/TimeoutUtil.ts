@@ -26,10 +26,10 @@ class TimerInstance {
         this.remainingTimeMs = this.initialTimeMs;
 
         if (type === "timeout") {
-            console.log(`[INFO] TimoutUtil: Timeout request for timeout of ${this.initialTimeMs} ms`);
+            console.log(`[INFO] TimeoutUtil: Timeout request for timeout of ${this.initialTimeMs} ms`);
             this.finalAction = action;
         } else {
-            console.log(`[INFO] TimoutUtil: Interval request with interval time value of ${this.initialTimeMs} ms`);
+            console.log(`[INFO] TimeoutUtil: Interval request with interval time value of ${this.initialTimeMs} ms`);
             this.finalAction = () => {
                 action();
 
