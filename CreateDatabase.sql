@@ -162,6 +162,8 @@ CREATE TABLE IF NOT EXISTS job_step (
 	started_on TIMESTAMP,
 	finished_on TIMESTAMP,
 
+	name VARCHAR(2048) NOT NULL,
+
 	job_step_status job_step_status_type NOT NULL DEFAULT 'NOT_STARTED',
 	job_step_status_message TEXT,
 
