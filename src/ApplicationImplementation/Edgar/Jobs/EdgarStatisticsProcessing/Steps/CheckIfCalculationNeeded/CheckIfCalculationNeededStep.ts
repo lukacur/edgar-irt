@@ -68,17 +68,14 @@ export class CheckIfCalculationNeededStep
                 WHERE id_based_on_course = $1
                 GROUP BY id_based_on_course, created_on
                 HAVING created_on >= (CURRENT_TIMESTAMP - CAST('${this.createSQLIntervalFromConfig()}' AS INTERVAL)) AND
-                        MIN(id_academic_year) = CAST($2 AS INT) - CAST($3 AS INT) + 1 AND
+                        MIN(id_academic_year) = CAST($2 AS INT) - CAST($3 AS INT) AND
                         MAX(id_academic_year) = CAST($2 AS INT)
 
             ) AS existance`,
             [
                 /* $1 */ validinputEl.id,
                 /* $2 */ validinputEl.idStartAcademicYear.toString(),
-
-                /* || */ (validinputEl.numberOfIncludedPreviousYears === 0) ?
-                /* $3 */     "1" :
-                /* || */     validinputEl.numberOfIncludedPreviousYears.toString(),
+                /* $3 */ validinputEl.numberOfIncludedPreviousYears.toString(),
             ]
         );
         
