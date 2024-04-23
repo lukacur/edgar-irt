@@ -101,7 +101,9 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
         return instance;
     }
 
-    public static async fromStatisticsProcessingRequest(
+    public static async fromStatisticsProcessingRequest<TReturnType extends "strict" | "generic">(
+        returnType: TReturnType,
+
         startJobReq: IStartJobRequest<CourseStatisticsProcessingRequest>,
         calculationsValidFor: ScanInterval,
 
@@ -121,7 +123,7 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
         jobTimeoutMs: number = 200000,
         stalenessCheckTimeoutMs: number = 5000,
         statProcessingTimeoutMs: number = 150000,
-    ) {
+    ): Promise<(TReturnType extends 'strict' ? EdgarStatProcJobConfiguration : (TReturnType extends 'generic' ? IJobConfiguration : never))> {
         const statProcReq = startJobReq.request;
 
         let remainingJobTime: number = startJobReq.jobMaxTimeoutMs ?? jobTimeoutMs;
@@ -143,15 +145,19 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
             databaseConnection: RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY,
         };
 
-        const jobSteps: JobStepDescriptor[] = [
-            {
-                type: EdgarStatsProcessingConstants.STALENESS_CHECK_STEP_ENTRY,
-                configContent: cicnsConfig,
-                isCritical: true,
-                stepTimeoutMs: stalenessCheckTimeoutMs,
-            },
-        ];
-        remainingJobTime -= stalenessCheckTimeoutMs;
+        const jobSteps: JobStepDescriptor[] = [];
+
+        if (!statProcReq.forceCalculation) {
+            jobSteps.push(
+                {
+                    type: EdgarStatsProcessingConstants.STALENESS_CHECK_STEP_ENTRY,
+                    configContent: cicnsConfig,
+                    isCritical: true,
+                    stepTimeoutMs: stalenessCheckTimeoutMs,
+                },
+            );
+            remainingJobTime -= stalenessCheckTimeoutMs;
+        }
 
         if (!calculationConfig.useJudge0) {
             const statCalcConfig: EdgarStatProcStepConfiguration = {
@@ -174,38 +180,44 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
 
         remainingJobTime -= statProcessingTimeoutMs;
 
-        return await EdgarStatProcJobConfiguration.fromGenericJobConfig(
-            {
-                jobId: undefined!,
-                jobName: jobName ?? `Edgar statistics processing job started @ ${new Date().toISOString()}`,
-                jobTypeAbbrevation: "STATPROC",
-                periodical: startJobReq.periodical,
+        const genericJobConfig: IJobConfiguration = {
+            jobId: undefined!,
+            jobName: jobName ?? `Edgar statistics processing job started @ ${new Date().toISOString()}`,
+            jobTypeAbbrevation: "STATPROC",
+            periodical: startJobReq.periodical,
 
-                userNote: startJobReq.userNote ?? null,
-                idUserStarted: startJobReq.idUserRequested ?? null,
-                jobTimeoutMs,
-                jobQueue,
+            userNote: startJobReq.userNote ?? null,
+            idUserStarted: startJobReq.idUserRequested ?? null,
+            jobTimeoutMs,
+            jobQueue,
 
-                blockingConfig: {
-                    awaitDataExtraction: true,
-                    persistResultInBackground: false,
-                    workInBackground: false,
-                },
-                inputExtractorConfig: {
-                    type: EdgarStatsProcessingConstants.DATA_EXTRACTOR_REGISTRY_ENTRY,
-                    configContent: ieConfig,
-                },
-                jobWorkerConfig: {
-                    type: EdgarStatsProcessingConstants.JOB_WORKER_REGISTRY_ENTRY,
-                    databaseConnection: RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY,
-                    steps: jobSteps,
-                },
-                dataPersistorConfig: {
-                    type: EdgarStatsProcessingConstants.DATA_PERSISTOR_REGISTRY_ENTRY,
-                    persistanceTimeoutMs: remainingJobTime,
-                    configContent: dpConfig,
-                },
-            }
-        )
+            blockingConfig: {
+                awaitDataExtraction: true,
+                persistResultInBackground: false,
+                workInBackground: false,
+            },
+            inputExtractorConfig: {
+                type: EdgarStatsProcessingConstants.DATA_EXTRACTOR_REGISTRY_ENTRY,
+                configContent: ieConfig,
+            },
+            jobWorkerConfig: {
+                type: EdgarStatsProcessingConstants.JOB_WORKER_REGISTRY_ENTRY,
+                databaseConnection: RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY,
+                steps: jobSteps,
+            },
+            dataPersistorConfig: {
+                type: EdgarStatsProcessingConstants.DATA_PERSISTOR_REGISTRY_ENTRY,
+                persistanceTimeoutMs: remainingJobTime,
+                configContent: dpConfig,
+            },
+        };
+
+        if (returnType === "strict") {
+            return await EdgarStatProcJobConfiguration.fromGenericJobConfig(genericJobConfig) as any;
+        } else if (returnType === "generic") {
+            return genericJobConfig as any;
+        }
+
+        return undefined as any;
     }
 }

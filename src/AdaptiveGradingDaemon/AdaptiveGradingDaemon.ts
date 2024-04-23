@@ -536,6 +536,7 @@ export class AdaptiveGradingDaemon {
             console.log("[INFO] Daemon: Incoming statistics processing request:", req);
 
             const newJobConfig = await EdgarStatProcJobConfiguration.fromStatisticsProcessingRequest(
+                "generic",
                 req,
                 this.configuration.resultStalenessInterval,
                 this.configuration.calculationConfig,
