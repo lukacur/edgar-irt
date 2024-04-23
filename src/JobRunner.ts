@@ -439,6 +439,8 @@ ${errorReport.message.split('\n').join('\n    ')}`,
                 this.jobCompletionListenersMap.delete(jobConfig.jobId);
             }
         }
+
+        console.log("[INFO] JobRunner: Job runner stopped!");
     }
 
     private async run(): Promise<void> {

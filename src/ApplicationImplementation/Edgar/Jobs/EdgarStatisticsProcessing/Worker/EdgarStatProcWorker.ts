@@ -38,12 +38,13 @@ export class EdgarStatProcWorker extends AbstractJobWorker<
             let ord = 1;
             for (const step of this.jobSteps) {
                 await transaction.doQuery(
-                    `INSERT INTO job_step (id, job_step_status, ordinal, parent_job)
-                        VALUES ($1, 'NOT_STARTED', $2, $3);`,
+                    `INSERT INTO job_step (id, job_step_status, name, ordinal, parent_job)
+                        VALUES ($1, 'NOT_STARTED', $2, $3, $4);`,
                     [
                         /* $1 */ step.stepRunId,
-                        /* $2 */ ord,
-                        /* $3 */jobConfig.jobId,
+                        /* $2 */ step.constructor?.name ?? "Classless job step",
+                        /* $3 */ ord,
+                        /* $4 */jobConfig.jobId,
                     ]
                 );
     
