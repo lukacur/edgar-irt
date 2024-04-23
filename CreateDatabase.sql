@@ -3,6 +3,7 @@ BEGIN TRANSACTION
 
 DROP SCHEMA IF EXISTS statistics_schema CASCADE;
 DROP SCHEMA IF EXISTS job_tracking_schema CASCADE;
+DROP SCHEMA IF EXISTS adaptive_exercise CASCADE;
 
 -- Statistics calculation related entries --
 CREATE SCHEMA IF NOT EXISTS statistics_schema;
@@ -171,6 +172,102 @@ CREATE TABLE IF NOT EXISTS job_step (
 		FOREIGN KEY (parent_job)
 		REFERENCES job(id)
 );
+
+
+-- Adaptive exercises related entries --
+CREATE SCHEMA IF NOT EXISTS adaptive_exercise;
+
+SET search_path TO adaptive_exercise;
+
+CREATE TABLE exercise_instance (
+	id SERIAL PRIMARY KEY,
+
+	id_student_started INT NOT NULL,
+
+    start_irt_theta DOUBLE PRECISION,
+	current_irt_theta DOUBLE PRECISION,
+    final_irt_theta DOUBLE PRECISION,
+
+	current_question_ordinal INT NOT NULL DEFAULT 1,
+	questions_count INT,
+
+	started_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	finished_on TIMESTAMP,
+
+    is_finished BOOLEAN NOT NULL DEFAULT FALSE,
+
+    CONSTRAINT fk_exinst_user
+        FOREIGN KEY (id_student_started)
+        REFERENCES public.student(id)
+);
+
+CREATE TABLE exercise_instance_question (
+	id SERIAL PRIMARY KEY,
+	id_exercise INT NOT NULL,
+
+	id_question INT NOT NULL,
+
+    -- Question IRT param table FK --
+	id_question_irt_cb_info INT NOT NULL,
+	id_question_irt_tb_info INT[] NOT NULL,
+    -- --------------------------- --
+
+    question_ordinal INT,
+
+    student_answers INT[] DEFAULT '{}'::INT[],
+    correct_answers INT[] DEFAULT '{}'::INT[],
+
+    student_answer_code TEXT,
+    student_answer_code_pl INT,
+    c_eval_data TEXT,
+    student_answer_text TEXT,
+
+	user_answer_correct BOOLEAN NOT NULL DEFAULT FALSE,
+    question_skipped BOOLEAN NOT NULL DEFAULT FALSE,
+
+    irt_delta_perc DOUBLE PRECISION,
+    irt_delta_val DOUBLE PRECISION,
+
+    CONSTRAINT fk_exinstqt_exinstance
+        FOREIGN KEY (id_exercise)
+        REFERENCES exercise_instance(id),
+
+    CONSTRAINT fk_exinstqt_question
+        FOREIGN KEY (id_question)
+        REFERENCES public.question(id),
+
+    CONSTRAINT fk_exinstqt_qirtparam
+        FOREIGN KEY (id_question_irt_cb_info, id_question_irt_tb_info)
+        REFERENCES statistics_schema.question_irt_parameters(id_course_based_info, id_test_based_info),
+
+    CONSTRAINT fk_exinstqt_code_pl
+        FOREIGN KEY (student_answer_code_pl)
+        REFERENCES public.programming_language(id)
+);
+
+CREATE FUNCTION exinstqt_bf_insert_func() RETURNS TRIGGER AS
+$$
+    DECLARE
+        next_ordinal INT;
+    BEGIN
+        SELECT MAX(question_ordinal) INTO next_ordinal
+        FROM exercise_instance_question
+        WHERE id_exercise = NEW.id_exercise;
+
+        IF next_ordinal IS NULL THEN
+            NEW.question_ordinal = 1;
+        ELSE
+            NEW.question_ordinal = next_ordinal + 1;
+        END IF;
+
+        RETURN NEW;
+    END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER tg_exinstqt_bf_insert
+    BEFORE INSERT ON exercise_instance_question
+        FOR EACH ROW
+            EXECUTE FUNCTION exinstqt_bf_insert_func();
 
 COMMIT;
 END;
