@@ -186,6 +186,8 @@ CREATE TABLE exercise_instance (
 
 	id_student_started INT NOT NULL,
 
+	id_course INT NOT NULL,
+
     start_irt_theta DOUBLE PRECISION,
 	current_irt_theta DOUBLE PRECISION,
     final_irt_theta DOUBLE PRECISION,
@@ -197,6 +199,10 @@ CREATE TABLE exercise_instance (
 	finished_on TIMESTAMP,
 
     is_finished BOOLEAN NOT NULL DEFAULT FALSE,
+
+	CONSTRAINT fk_exinst_course
+        FOREIGN KEY (id_course)
+        REFERENCES public.course(id),
 
     CONSTRAINT fk_exinst_user
         FOREIGN KEY (id_student_started)
@@ -226,6 +232,9 @@ CREATE TABLE exercise_instance_question (
 
 	user_answer_correct BOOLEAN NOT NULL DEFAULT FALSE,
     question_skipped BOOLEAN NOT NULL DEFAULT FALSE,
+
+	started_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	finished_on TIMESTAMP,
 
     irt_delta_perc DOUBLE PRECISION,
     irt_delta_val DOUBLE PRECISION,
