@@ -256,8 +256,8 @@ CREATE TABLE exercise_instance_question (
 	started_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	finished_on TIMESTAMP,
 
-    irt_delta_perc DOUBLE PRECISION,
-    irt_delta_val DOUBLE PRECISION,
+    irt_delta DOUBLE PRECISION,
+    is_irt_delta_percentage BOOLEAN,
 
     CONSTRAINT fk_exinstqt_exinstance
         FOREIGN KEY (id_exercise)
