@@ -181,6 +181,26 @@ CREATE SCHEMA IF NOT EXISTS adaptive_exercise;
 
 SET search_path TO adaptive_exercise;
 
+CREATE TABLE exercise_allowed_question_type (
+	id_question_type INT NOT NULL PRIMARY KEY,
+
+	allowed_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+	CONSTRAINT fk_exallqt_question_type
+		FOREIGN KEY (id_question_type)
+		REFERENCES public.question_type(id)
+);
+
+CREATE TABLE exercise_question_blacklist (
+	id_question INT NOT NULL PRIMARY KEY,
+
+	blacklisted_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+	CONSTRAINT fk_eqbl_question
+		FOREIGN KEY (id_question)
+		REFERENCES public.question(id)
+);
+
 CREATE TABLE exercise_instance (
 	id SERIAL PRIMARY KEY,
 
