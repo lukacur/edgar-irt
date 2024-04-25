@@ -304,6 +304,7 @@ COMMIT;
 END;
 
 -- Database prefil with certain job types --
+SET search_path TO job_tracking_schema;
 INSERT INTO job_type (id, abbrevation, title, description, request_form)
 	VALUES
 	(
