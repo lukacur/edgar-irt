@@ -121,8 +121,8 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
 
         jobName?: string,
         jobTimeoutMs: number = 200000,
-        stalenessCheckTimeoutMs: number = 5000,
-        statProcessingTimeoutMs: number = 150000,
+        stalenessCheckTimeoutPerc: number = 0.1,
+        statProcessingTimeoutPerc: number = 0.7,
     ): Promise<(TReturnType extends 'strict' ? EdgarStatProcJobConfiguration : (TReturnType extends 'generic' ? IJobConfiguration : never))> {
         const statProcReq = startJobReq.request;
 
@@ -153,10 +153,10 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
                     type: EdgarStatsProcessingConstants.STALENESS_CHECK_STEP_ENTRY,
                     configContent: cicnsConfig,
                     isCritical: true,
-                    stepTimeoutMs: stalenessCheckTimeoutMs,
+                    stepTimeoutMs: stalenessCheckTimeoutPerc * jobTimeoutMs,
                 },
             );
-            remainingJobTime -= stalenessCheckTimeoutMs;
+            remainingJobTime -= (stalenessCheckTimeoutPerc * (1 - jobTimeoutMs));
         }
 
         if (!calculationConfig.useJudge0) {
@@ -171,14 +171,14 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
                     type: EdgarStatsProcessingConstants.STATISTICS_CALCULATION_STEP_ENTRY,
                     configContent: statCalcConfig,
                     isCritical: true,
-                    stepTimeoutMs: statProcessingTimeoutMs,
+                    stepTimeoutMs: statProcessingTimeoutPerc * jobTimeoutMs,
                 }
             );
         } else {
             throw new Error("Not implemented");
         }
 
-        remainingJobTime -= statProcessingTimeoutMs;
+        remainingJobTime -= (statProcessingTimeoutPerc * (1 - statProcessingTimeoutPerc));
 
         const genericJobConfig: IJobConfiguration = {
             jobId: undefined!,
