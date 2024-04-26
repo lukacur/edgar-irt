@@ -191,14 +191,20 @@ CREATE TABLE exercise_allowed_question_type (
 		REFERENCES public.question_type(id)
 );
 
-CREATE TABLE exercise_question_blacklist (
-	id_question INT NOT NULL PRIMARY KEY,
+CREATE TABLE exercise_node_whitelist (
+	id_node INT NOT NULL PRIMARY KEY,
 
-	blacklisted_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	id_course INT NOT NULL,
 
-	CONSTRAINT fk_eqbl_question
-		FOREIGN KEY (id_question)
-		REFERENCES public.question(id)
+	whitelisted_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+	CONSTRAINT fk_eqbl_node
+		FOREIGN KEY (id_node)
+		REFERENCES public.node(id),
+
+	CONSTRAINT fk_eqbl_course
+		FOREIGN KEY (id_course)
+		REFERENCES public.course(id)
 );
 
 CREATE TABLE exercise_instance (
