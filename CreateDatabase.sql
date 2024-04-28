@@ -53,16 +53,16 @@ CREATE TABLE IF NOT EXISTS question_param_calculation_academic_year (
 CREATE TABLE IF NOT EXISTS question_param_course_level_calculation (
 	id_question_param_calculation INT PRIMARY KEY,
 	
-	score_mean DOUBLE PRECISION,
-	score_std_dev DOUBLE PRECISION,
-	score_median DOUBLE PRECISION,
+	score_perc_mean DOUBLE PRECISION,
+	score_perc_std_dev DOUBLE PRECISION,
+	score_perc_median DOUBLE PRECISION,
 	total_achieved DOUBLE PRECISION,
 	total_achievable DOUBLE PRECISION,
 	answers_count INT,
-	correct INT,
-	incorrect INT,
-	unanswered INT,
-	partial INT,
+	correct_perc DOUBLE PRECISION,
+	incorrect_perc DOUBLE PRECISION,
+	unanswered_perc DOUBLE PRECISION,
+	partial_perc DOUBLE PRECISION,
 	
 	CONSTRAINT fk_qpclc_qparam_calc
 		FOREIGN KEY (id_question_param_calculation)
@@ -72,16 +72,16 @@ CREATE TABLE IF NOT EXISTS question_param_course_level_calculation (
 CREATE TABLE IF NOT EXISTS question_param_test_level_calculation (
 	id_question_param_calculation INT PRIMARY KEY,
 	
-	mean DOUBLE PRECISION,
-	std_dev DOUBLE PRECISION,
+	score_perc_mean DOUBLE PRECISION,
+	score_perc_std_dev DOUBLE PRECISION,
 	count INT,
-	median DOUBLE PRECISION,
-	sum DOUBLE PRECISION,
+	score_perc_median DOUBLE PRECISION,
+	score_sum DOUBLE PRECISION,
 	part_of_total_sum DOUBLE PRECISION,
-	correct INT,
-	incorrect INT,
-	unanswered INT,
-	partial INT,
+	correct_perc DOUBLE PRECISION,
+	incorrect_perc DOUBLE PRECISION,
+	unanswered_perc DOUBLE PRECISION,
+	partial_perc DOUBLE PRECISION,
 	
 	CONSTRAINT fk_qptlc_qparam_calc
 		FOREIGN KEY (id_question_param_calculation)

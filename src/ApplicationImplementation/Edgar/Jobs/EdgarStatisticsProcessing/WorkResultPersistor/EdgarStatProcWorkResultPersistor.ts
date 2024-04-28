@@ -98,29 +98,29 @@ export class EdgarStatProcWorkResultPersistor
         const count = (await transactionCtx.doQuery<{ id: number }>(
             `INSERT INTO question_param_course_level_calculation(
                 id_question_param_calculation,
-                score_mean,
-                score_std_dev,
-                score_median,
+                score_perc_mean,
+                score_perc_std_dev,
+                score_perc_median,
                 total_achieved,
                 total_achievable,
                 answers_count,
-                correct,
-                incorrect,
-                unanswered,
-                partial
+                correct_perc,
+                incorrect_perc,
+                unanswered_perc,
+                partial_perc
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
             [
                 /* $1 */ idQparamCalc,
-                /* $2 */ courseBasedInfo.scoreMean,
-                /* $3 */ courseBasedInfo.scoreStdDev,
-                /* $4 */ courseBasedInfo.scoreMedian,
+                /* $2 */ courseBasedInfo.scorePercMean,
+                /* $3 */ courseBasedInfo.scorePercStdDev,
+                /* $4 */ courseBasedInfo.scorePercMedian,
                 /* $5 */ courseBasedInfo.totalAchieved,
                 /* $6 */ courseBasedInfo.totalAchievable,
                 /* $7 */ courseBasedInfo.answersCount,
-                /* $8 */ courseBasedInfo.correct,
-                /* $9 */ courseBasedInfo.incorrect,
-                /* $10 */ courseBasedInfo.unanswered,
-                /* $11 */ courseBasedInfo.partial,
+                /* $8 */ courseBasedInfo.correctPerc,
+                /* $9 */ courseBasedInfo.incorrectPerc,
+                /* $10 */ courseBasedInfo.unansweredPerc,
+                /* $11 */ courseBasedInfo.partialPerc,
             ]
         ))?.count ?? null;
 
@@ -135,29 +135,29 @@ export class EdgarStatProcWorkResultPersistor
         const count = (await transactionCtx.doQuery<{ id: number }>(
             `INSERT INTO question_param_test_level_calculation(
                 id_question_param_calculation,
-                mean,
-                std_dev,
+                score_perc_mean,
+                score_perc_std_dev,
                 count,
-                median,
-                sum,
+                score_perc_median,
+                score_sum,
                 part_of_total_sum,
-                correct,
-                incorrect,
-                unanswered,
-                partial
+                correct_perc,
+                incorrect_perc,
+                unanswered_perc,
+                partial_perc
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
             [
                 /*  $1 */ idQparamCalc,
-                /*  $2 */ testBasedInfo.mean,
-                /*  $3 */ testBasedInfo.stdDev,
+                /*  $2 */ testBasedInfo.scorePercMean,
+                /*  $3 */ testBasedInfo.scorePercStdDev,
                 /*  $4 */ testBasedInfo.count,
-                /*  $5 */ testBasedInfo.median,
-                /*  $6 */ testBasedInfo.sum,
+                /*  $5 */ testBasedInfo.scorePercMedian,
+                /*  $6 */ testBasedInfo.scoreSum,
                 /*  $7 */ testBasedInfo.partOfTotalSum,
-                /*  $8 */ testBasedInfo.correct,
-                /*  $9 */ testBasedInfo.incorrect,
-                /* $10 */ testBasedInfo.unanswered,
-                /* $11 */ testBasedInfo.partial,
+                /*  $8 */ testBasedInfo.correctPerc,
+                /*  $9 */ testBasedInfo.incorrectPerc,
+                /* $10 */ testBasedInfo.unansweredPerc,
+                /* $11 */ testBasedInfo.partialPerc,
             ]
         ))?.count ?? null;
 
@@ -169,8 +169,8 @@ export class EdgarStatProcWorkResultPersistor
             const courseBased = qCalcInfo.courseBasedCalc;
             const testBased = qCalcInfo.testBasedCalc;
 
-            return (courseBased.incorrect / courseBased.correct) *
-                (testBased.reduce((acc, e) => acc + e.partOfTotalSum, 0) / (testBased.length + 1)) * 10;
+            return (courseBased.incorrectPerc / courseBased.correctPerc) *
+                (testBased.reduce((acc, e) => acc + e.partOfTotalSum, 0) * (testBased.length + 1)) * 10;
         },
 
         calculateItemDifficulty: (qCalcInfo: QuestionCalcultionInfo) => {
@@ -178,22 +178,22 @@ export class EdgarStatProcWorkResultPersistor
             const testBased = qCalcInfo.testBasedCalc;
 
             return (courseBased.totalAchieved / courseBased.totalAchievable) *
-                (courseBased.incorrect / courseBased.correct) *
-                (testBased.reduce((acc, e) => acc + e.median, 0) / (testBased.length + 1));
+                (courseBased.incorrectPerc / courseBased.correctPerc) *
+                (testBased.reduce((acc, e) => acc + e.scorePercMedian, 0) * (testBased.length + 1));
         },
 
         calculateItemGuessProbability: (qCalcInfo: QuestionCalcultionInfo) => {
             const courseBased = qCalcInfo.courseBasedCalc;
             const testBased = qCalcInfo.testBasedCalc;
 
-            return courseBased.correct / courseBased.answersCount;
+            return courseBased.correctPerc;
         },
 
         calculateItemMistakeProbability: (qCalcInfo: QuestionCalcultionInfo) => {
             const courseBased = qCalcInfo.courseBasedCalc;
             const testBased = qCalcInfo.testBasedCalc;
 
-            return courseBased.incorrect / courseBased.answersCount;
+            return courseBased.incorrectPerc;
         }
     };
 

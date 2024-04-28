@@ -39,42 +39,61 @@ fun_calculateTestBasedQuestionStats <- function(param_course) {
         }
       }
       
-      var_stats <- aggregate(
-        score ~ idQuestion,
+      var_stats_perc <- aggregate(
+        scorePercentage ~ idQuestion,
         var_tiqsUnioned,
         function(x) c(
           mean(x),
           sd(x),
           length(x),
-          median(x),
+          median(x)
+        )
+      )
+
+      var_stats_perc <- setNames(
+        do.call(
+          data.frame,
+          var_stats_perc
+        ),
+        c(
+          "idQuestion",
+          "scorePercMean",
+          "scorePercStdDev",
+          "count",
+          "scorePercMedian"
+        )
+      )
+
+      var_stats_abs <- aggregate(
+        score ~ idQuestion,
+        var_tiqsUnioned,
+        function(x) c(
           sum(x),
           sum(x) / var_sumOfTestInstanceScores
         )
       )
       
-      var_stats <- setNames(
+      var_stats_abs <- setNames(
         do.call(
           data.frame,
-          var_stats
+          var_stats_abs
         ),
         c(
           "idQuestion",
-          "mean",
-          "stdDev",
-          "count",
-          "median",
-          "sum",
+          "scoreSum",
           "partOfTotalSum"
         )
       )
+
+      var_stats <- merge(var_stats_perc, var_stats_abs, by = c("idQuestion"))
       
       var_answersCorrect <- setNames(
         aggregate(
           isCorrect ~ idQuestion,
           var_tiqsUnioned,
-          FUN = function(x) c(sum(ifelse(x, 1, 0)))
+          FUN = function(x) c(sum(ifelse(x, 1, 0)) / length(x))
         ),
-        c("idQuestion", "correct")
+        c("idQuestion", "correctPerc")
       )
       var_toMerge <- list(var_answersCorrect)
       
@@ -82,9 +101,9 @@ fun_calculateTestBasedQuestionStats <- function(param_course) {
         aggregate(
           isIncorrect ~ idQuestion,
           var_tiqsUnioned,
-          FUN = function(x) c(sum(ifelse(x, 1, 0)))
+          FUN = function(x) c(sum(ifelse(x, 1, 0)) / length(x))
         ),
-        c("idQuestion", "incorrect")
+        c("idQuestion", "incorrectPerc")
       )
       var_toMerge <- append(var_toMerge, list(var_answersIncorrect))
       
@@ -92,9 +111,9 @@ fun_calculateTestBasedQuestionStats <- function(param_course) {
         aggregate(
           isUnanswered ~ idQuestion,
           var_tiqsUnioned,
-          FUN = function(x) c(sum(ifelse(x, 1, 0)))
+          FUN = function(x) c(sum(ifelse(x, 1, 0)) / length(x))
         ),
-        c("idQuestion", "unanswered")
+        c("idQuestion", "unansweredPerc")
       )
       var_toMerge <- append(var_toMerge, list(var_answersUnanswered))
       
@@ -102,9 +121,9 @@ fun_calculateTestBasedQuestionStats <- function(param_course) {
         aggregate(
           isPartial ~ idQuestion,
           var_tiqsUnioned,
-          FUN = function(x) c(sum(ifelse(x, 1, 0)))
+          FUN = function(x) c(sum(ifelse(x, 1, 0)) / length(x))
         ),
-        c("idQuestion", "partial")
+        c("idQuestion", "partialPerc")
       )
       var_toMerge <- append(var_toMerge, list(var_answersPartial))
       
@@ -156,31 +175,31 @@ fun_calculateCourseBasedQuestionStats <- function(param_course) {
   
   var_questionsScoreMeans <- setNames(
     aggregate(
-      score ~ idQuestion,
+      scorePercentage ~ idQuestion,
       var_unionedTiFrames,
       FUN = function(x) c(mean(x))
     ),
-    c("idQuestion", "scoreMean")
+    c("idQuestion", "scorePercMean")
   )
   var_toMerge <- list(var_questionsScoreMeans)
   
   var_questionsScoreStdDevs <- setNames(
     aggregate(
-      score ~ idQuestion,
+      scorePercentage ~ idQuestion,
       var_unionedTiFrames,
       FUN = function(x) c(sd(x))
     ),
-    c("idQuestion", "scoreStdDev")
+    c("idQuestion", "scorePercStdDev")
   )
   var_toMerge <- append(var_toMerge, list(var_questionsScoreStdDevs))
   
   var_questionsScoreMedians <- setNames(
     aggregate(
-      score ~ idQuestion,
+      scorePercentage ~ idQuestion,
       var_unionedTiFrames,
       FUN = function(x) c(median(x))
     ),
-    c("idQuestion", "scoreMedian")
+    c("idQuestion", "scorePercMedian")
   )
   var_toMerge <- append(var_toMerge, list(var_questionsScoreMedians))
   
@@ -218,9 +237,9 @@ fun_calculateCourseBasedQuestionStats <- function(param_course) {
     aggregate(
       isCorrect ~ idQuestion,
       var_unionedTiFrames,
-      FUN = function(x) c(sum(ifelse(x, 1, 0)))
+      FUN = function(x) c(sum(ifelse(x, 1, 0)) / length(x))
     ),
-    c("idQuestion", "correct")
+    c("idQuestion", "correctPerc")
   )
   var_toMerge <- append(var_toMerge, list(var_answersCorrect))
   
@@ -228,9 +247,9 @@ fun_calculateCourseBasedQuestionStats <- function(param_course) {
     aggregate(
       isIncorrect ~ idQuestion,
       var_unionedTiFrames,
-      FUN = function(x) c(sum(ifelse(x, 1, 0)))
+      FUN = function(x) c(sum(ifelse(x, 1, 0)) / length(x))
     ),
-    c("idQuestion", "incorrect")
+    c("idQuestion", "incorrectPerc")
   )
   var_toMerge <- append(var_toMerge, list(var_answersIncorrect))
   
@@ -238,9 +257,9 @@ fun_calculateCourseBasedQuestionStats <- function(param_course) {
     aggregate(
       isUnanswered ~ idQuestion,
       var_unionedTiFrames,
-      FUN = function(x) c(sum(ifelse(x, 1, 0)))
+      FUN = function(x) c(sum(ifelse(x, 1, 0)) / length(x))
     ),
-    c("idQuestion", "unanswered")
+    c("idQuestion", "unansweredPerc")
   )
   var_toMerge <- append(var_toMerge, list(var_answersUnanswered))
   
@@ -248,9 +267,9 @@ fun_calculateCourseBasedQuestionStats <- function(param_course) {
     aggregate(
       isPartial ~ idQuestion,
       var_unionedTiFrames,
-      FUN = function(x) c(sum(ifelse(x, 1, 0)))
+      FUN = function(x) c(sum(ifelse(x, 1, 0)) / length(x))
     ),
-    c("idQuestion", "partial")
+    c("idQuestion", "partialPerc")
   )
   var_toMerge <- append(var_toMerge, list(var_answersPartial))
   

@@ -1,29 +1,29 @@
 export type CourseBasedCalculation = {
     idQuestion: number;
-    scoreMean: number;
-    scoreStdDev: number;
-    scoreMedian: number;
+    scorePercMean: number;
+    scorePercStdDev: number;
+    scorePercMedian: number;
     totalAchieved: number;
     totalAchievable: number;
     answersCount: number;
-    correct: number;
-    incorrect: number;
-    unanswered: number;
-    partial: number;
+    correctPerc: number;
+    incorrectPerc: number;
+    unansweredPerc: number;
+    partialPerc: number;
 };
 
 export type TestBasedCalculation = {
     idQuestion: number;
-    mean: number;
-    stdDev: number;
+    scorePercMean: number;
+    scorePercStdDev: number;
     count: number;
-    median: number;
-    sum: number;
+    scorePercMedian: number;
+    scoreSum: number;
     partOfTotalSum: number;
-    correct: number;
-    incorrect: number;
-    unanswered: number;
-    partial: number;
+    correctPerc: number;
+    incorrectPerc: number;
+    unansweredPerc: number;
+    partialPerc: number;
 };
 
 type TestCalculationInfo = {
