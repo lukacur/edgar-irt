@@ -26,6 +26,7 @@ export class PgBossQueueSystem<TQueueData extends object> implements IQueueSyste
                 password: this.pgBossConnStringOrConfig.password,
                 schema: this.pgBossConnStringOrConfig.schema,
                 //max: this.pgBossConnStringOrConfig.maxConnections,
+                newJobCheckInterval: 20000,
             });
         }
         this.startProm = this.bossCon.start().then(b => { this.startProm = null; return this.bossCon = b; });
@@ -58,10 +59,11 @@ export class PgBossQueueSystem<TQueueData extends object> implements IQueueSyste
         const delProm = new DelayablePromise<TQueueData>();
         this.dequeueRequests.push(delProm);
 
-        await this.bossCon.work<TQueueData>(
+        const workId = await this.bossCon.work<TQueueData>(
             this.queueName,
             { newJobCheckInterval: 1000 },
             async (job) => {
+                await this.bossCon?.offWork({ id: workId });
                 await delProm.delayedResolve(job.data);
                 
                 const idx = this.dequeueRequests.indexOf(delProm);
@@ -89,9 +91,10 @@ export class PgBossQueueSystem<TQueueData extends object> implements IQueueSyste
 
         const delProm = new DelayablePromise<TQueueData>();
         
-        await this.bossCon.work<TQueueData>(
+        const workId = await this.bossCon.work<TQueueData>(
             this.queueName,
             async (job) => {
+                await this.bossCon?.offWork({ id: workId });
                 await delProm.delayedResolve(job.data);
             }
         );
