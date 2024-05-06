@@ -20,7 +20,7 @@ export interface IConfiguredJobService {
     addShutdownHook(hook: ShutdownHook): ConfiguredJobService;
     startJobService(): ConfiguredJobService;
     shutdownJobService(): Promise<void>;
-    getJobRunner(): JobRunner;
+    getJobRunners(): JobRunner[];
 }
 
 class ConfiguredJobService implements IConfiguredJobService {
@@ -33,6 +33,7 @@ class ConfiguredJobService implements IConfiguredJobService {
         private readonly dataExtractor: IInputDataExtractor,
         private readonly jobWorker: IJobWorker,
         private readonly jobWorkResultPersistor: IWorkResultPersistor,
+        private readonly concurrentJobRunners: number = 1,
     ) {}
 
     public initialize(): JobServiceInitializer {
@@ -61,7 +62,7 @@ class ConfiguredJobService implements IConfiguredJobService {
         return token === ConfiguredJobService.CONTROL_TOKEN;
     }
 
-    private jobRunner: JobRunner | null = null;
+    private readonly jobRunners: JobRunner[] = [];
 
     public startJobService(): ConfiguredJobService {
         if (this.wasShutdown) {
@@ -70,12 +71,16 @@ class ConfiguredJobService implements IConfiguredJobService {
             );
         }
 
-        this.jobRunner = new JobRunner(
-            this.jobProvider,
-            this.dataExtractor,
-            this.jobWorker,
-            this.jobWorkResultPersistor,
-        );
+        for (let i = 0; i < this.concurrentJobRunners; ++i) {
+            this.jobRunners.push(
+                new JobRunner(
+                    this.jobProvider,
+                    this.dataExtractor,
+                    this.jobWorker,
+                    this.jobWorkResultPersistor,
+                )
+            );
+        }
 
         /*masterRunner.registerDriver(this.driver);
         masterRunner.registerStatisticsProcessor(this.statProcessor);
@@ -83,7 +88,7 @@ class ConfiguredJobService implements IConfiguredJobService {
 
         // masterRunner.start(ConfiguredJobService.CONTROL_TOKEN);
 
-        this.jobRunner.start();
+        this.jobRunners.forEach(jr => jr.start());
 
         return this;
     }
@@ -95,7 +100,7 @@ class ConfiguredJobService implements IConfiguredJobService {
 
         await Promise.all(this.shutdownHooks.map(sh => sh("PRE_SHUTDOWN")));
         
-        await this.jobRunner?.stop(true);
+        await Promise.all(this.jobRunners.map(jr => jr.stop(true)));
         const prom = Promise.all(this.shutdownHooks.map(sh => sh("SHUTDOWN")));
         await prom;
 
@@ -104,11 +109,11 @@ class ConfiguredJobService implements IConfiguredJobService {
         this.wasShutdown = true;
     }
 
-    public getJobRunner(): JobRunner {
-        if ((this.jobRunner ?? null) === null) {
+    public getJobRunners(): JobRunner[] {
+        if ((this.jobRunners ?? null) === null) {
             throw new Error("Service not properly configured");
         }
-        return this.jobRunner!;
+        return this.jobRunners!;
     }
 }
 
@@ -117,6 +122,7 @@ class JobServiceConfigurer {
     private dataExtractor?: IInputDataExtractor;
     private jobWorker?: IJobWorker;
     private jobWorkResultPersistor?: IWorkResultPersistor;
+    private maxRunners?: number;
 
     public useProvider(provider: IJobProvider): JobServiceConfigurer {
         this.jobProvider = provider;
@@ -135,6 +141,11 @@ class JobServiceConfigurer {
 
     public useWorkResultPersistor(jobWorkResultPersistor: IWorkResultPersistor): JobServiceConfigurer {
         this.jobWorkResultPersistor = jobWorkResultPersistor;
+        return this;
+    }
+
+    public withConcurrentJobRunners(concurrentRunners: number): JobServiceConfigurer {
+        this.maxRunners = concurrentRunners;
         return this;
     }
 
@@ -160,7 +171,8 @@ class JobServiceConfigurer {
             this.jobProvider!,
             this.dataExtractor!,
             this.jobWorker!,
-            this.jobWorkResultPersistor!
+            this.jobWorkResultPersistor!,
+            this.maxRunners,
         );
     }
 }

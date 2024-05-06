@@ -498,6 +498,7 @@ export class AdaptiveGradingDaemon {
                     []
                 )
             )
+            .withConcurrentJobRunners(this.configuration.maxAllowedConcurrentCalculations ?? 1)
             .build();
 
 

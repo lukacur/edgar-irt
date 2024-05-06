@@ -50,6 +50,8 @@
 
     "maxJobTimeoutMs": 250000,
 
+    "maxAllowedConcurrentCalculations": 3,
+
     "incomingWorkRequestQueue": {
         "type": "pg_boss", 
         "queueName": "edgar-irt-work-request-queue",

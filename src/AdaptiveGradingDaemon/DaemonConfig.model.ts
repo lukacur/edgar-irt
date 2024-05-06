@@ -64,6 +64,8 @@ export interface DaemonConfig {
 
     maxJobTimeoutMs?: number;
 
+    maxAllowedConcurrentCalculations?: number;
+
     incomingWorkRequestQueue: QueueDescriptor;
     jobRunnerWorkingQueue: QueueDescriptor;
 
