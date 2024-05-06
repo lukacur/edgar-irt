@@ -9,7 +9,7 @@ import { JobPartsParser } from "./Util/JobPartsParser.js";
 import { MailerProvider } from "./Util/MailerProvider.js";
 
 type ErrorReport = { jobId: string, stage: string, message: string, status: string, userRequested: string }
-type JobCompletionListener = (errored: boolean, error: ErrorReport | null) => Promise<void>;
+export type JobCompletionListener = (errored: boolean, error: ErrorReport | null) => Promise<void>;
 
 export class JobRunner {
     constructor(
@@ -30,6 +30,21 @@ export class JobRunner {
         }
 
         this.jobCompletionListenersMap.get(jobId)!.push(lst);
+    }
+
+    public removeJobCompletionListener(jobId: string, lst: JobCompletionListener) {
+        if (!this.jobCompletionListenersMap.has(jobId)) {
+            return;
+        }
+
+        const lsts = this.jobCompletionListenersMap.get(jobId)!;
+        const idx = lsts.indexOf(lst);
+
+        if (idx === -1) {
+            return;
+        }
+
+        lsts.splice(idx, 1);
     }
 
     private errorMessageAdditionalInfoProvider(methodName: "runStrict" | "runGeneric"): string {

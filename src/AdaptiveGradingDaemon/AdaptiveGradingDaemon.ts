@@ -23,6 +23,7 @@ import { TimeoutUtil } from "../Util/TimeoutUtil.js";
 import { QueueClosedException } from "./Exceptions/QueueClosedException.js";
 import { IStartJobRequest } from "../ApplicationModel/Models/IStartJobRequest.js";
 import { FrameworkLogger } from "../Logger/FrameworkLogger.js";
+import { JobCompletionListener } from "../JobRunner.js";
 
 type ForceShutdownHandler<TSource> = (source: TSource, reason?: string) => void;
 
@@ -239,57 +240,63 @@ export class AdaptiveGradingDaemon {
     Previous name: ${oldJob.job_definition.jobName}`
             );
 
-            this.backedJobService?.getJobRunner()
-                .addJobCompletionListener(
-                    newJobConfig.jobId,
-                    async (errored, error) => {
-                        if (errored) {
-                            return;
-                        }
+            const lst: JobCompletionListener = async (errored, error) => {
+                if (errored) {
+                    return;
+                }
 
-                        const transaction = await dbConn.beginTransaction(
-                            FrameworkConfigurationProvider.instance.getJobSchemaName()
-                        );
-
-                        try {
-                            await transaction.doQuery(
-                                `UPDATE ${escapedSchemaName}.job SET periodical = FALSE WHERE id = $1`,
-                                [oldJob.id]
-                            );
-    
-                            const acYear = await transaction.doQuery<{ id: number }>(
-                                `SELECT *
-                                FROM public.academic_year
-                                WHERE CURRENT_DATE BETWEEN date_start AND date_end`
-                            );
-    
-                            if (acYear === null || acYear.count === 0) {
-                                throw new Error("Could not determine current academic year");
-                            }
-    
-                            const recalculableYears = [acYear.rows[0].id, acYear.rows[0].id - 1];
-                            const newConfstartAcYear =
-                                newJobConfig.inputExtractorConfig.configContent.idStartAcademicYear;
-    
-                            await transaction.doQuery(
-                                `UPDATE ${escapedSchemaName}.job SET periodical = $1 WHERE id = $2`,
-                                [
-                                    /* $1 */ recalculableYears.includes(newConfstartAcYear),
-                                    /* $2 */ newJobConfig.jobId
-                                ],
-                            );
-
-                            await transaction.commit();
-                        } catch (err) {
-                            console.log(err);
-                            await transaction.rollback();
-                        } finally {
-                            if (!transaction.isFinished()) {
-                                transaction.rollback();
-                            }
-                        }
-                    }
+                const transaction = await dbConn.beginTransaction(
+                    FrameworkConfigurationProvider.instance.getJobSchemaName()
                 );
+
+                try {
+                    await transaction.doQuery(
+                        `UPDATE ${escapedSchemaName}.job SET periodical = FALSE WHERE id = $1`,
+                        [oldJob.id]
+                    );
+
+                    const acYear = await transaction.doQuery<{ id: number }>(
+                        `SELECT *
+                        FROM public.academic_year
+                        WHERE CURRENT_DATE BETWEEN date_start AND date_end`
+                    );
+
+                    if (acYear === null || acYear.count === 0) {
+                        throw new Error("Could not determine current academic year");
+                    }
+
+                    const recalculableYears = [acYear.rows[0].id, acYear.rows[0].id - 1];
+                    const newConfstartAcYear =
+                        newJobConfig.inputExtractorConfig.configContent.idStartAcademicYear;
+
+                    await transaction.doQuery(
+                        `UPDATE ${escapedSchemaName}.job SET periodical = $1 WHERE id = $2`,
+                        [
+                            /* $1 */ recalculableYears.includes(newConfstartAcYear),
+                            /* $2 */ newJobConfig.jobId
+                        ],
+                    );
+
+                    await transaction.commit();
+                } catch (err) {
+                    console.log(err);
+                    await transaction.rollback();
+                } finally {
+                    if (!transaction.isFinished()) {
+                        transaction.rollback();
+                    }
+                }
+
+                this.backedJobService?.getJobRunners().forEach(jr =>
+                    jr.removeJobCompletionListener(
+                        newJobConfig.jobId,
+                        lst,
+                    )
+                );
+            };
+
+            this.backedJobService?.getJobRunners()
+                .forEach(jr => jr.addJobCompletionListener(newJobConfig.jobId, lst));
 
             this.usedWorkQueue?.enqueue(newJobConfig);
         }
@@ -349,42 +356,47 @@ export class AdaptiveGradingDaemon {
     Previous name: ${oldJob.job_definition.jobName}`,
                 true,
             );
-            newJobConfig.jobWorkerConfig
 
-            this.backedJobService?.getJobRunner()
-                .addJobCompletionListener(
-                    newJobConfig.jobId,
-                    async (errored, error) => {
-                        if (errored) {
-                            return;
-                        }
+            const lst: JobCompletionListener = async (errored, error) => {
+                if (errored) {
+                    return;
+                }
 
-                        const transaction = await dbConn.beginTransaction(
-                            FrameworkConfigurationProvider.instance.getJobSchemaName()
-                        );
-
-                        try {
-                            await transaction.doQuery(
-                                `UPDATE ${escapedSchemaName}.job SET rerun_requested = FALSE WHERE id = $1`,
-                                [oldJob.id],
-                            );
-    
-                            await transaction.doQuery(
-                                `UPDATE ${escapedSchemaName}.job SET rerun_requested = FALSE WHERE id = $1`,
-                                [newJobConfig.jobId],
-                            );
-
-                            await transaction.commit();
-                        } catch (err) {
-                            console.log(err);
-                            await transaction.rollback();
-                        } finally {
-                            if (!transaction.isFinished()) {
-                                transaction.rollback();
-                            }
-                        }
-                    }
+                const transaction = await dbConn.beginTransaction(
+                    FrameworkConfigurationProvider.instance.getJobSchemaName()
                 );
+
+                try {
+                    await transaction.doQuery(
+                        `UPDATE ${escapedSchemaName}.job SET rerun_requested = FALSE WHERE id = $1`,
+                        [oldJob.id],
+                    );
+
+                    await transaction.doQuery(
+                        `UPDATE ${escapedSchemaName}.job SET rerun_requested = FALSE WHERE id = $1`,
+                        [newJobConfig.jobId],
+                    );
+
+                    await transaction.commit();
+                } catch (err) {
+                    console.log(err);
+                    await transaction.rollback();
+                } finally {
+                    if (!transaction.isFinished()) {
+                        transaction.rollback();
+                    }
+                }
+
+                this.backedJobService?.getJobRunners().forEach(jr =>
+                    jr.removeJobCompletionListener(
+                        newJobConfig.jobId,
+                        lst,
+                    )
+                );
+            };
+
+            this.backedJobService?.getJobRunners()
+                .forEach(jr => jr.addJobCompletionListener(newJobConfig.jobId, lst));
 
             this.usedWorkQueue?.enqueue(newJobConfig);
         }
@@ -544,21 +556,26 @@ export class AdaptiveGradingDaemon {
                 this.usedWorkQueue.queueName,
                 req.jobName ?? `Statistics calculation job for course with ID '${req.request.idCourse}' ` +
                     `started @ '${new Date().toISOString()}'`,
-                this.configuration.maxJobTimeoutMs ?? AdaptiveGradingDaemon.defaultMaxJobTimeout,
+                req.jobMaxTimeoutMs ?? this.configuration.maxJobTimeoutMs ?? AdaptiveGradingDaemon.defaultMaxJobTimeout,
             );
 
-            this.backedJobService.getJobRunner()
-                .addJobCompletionListener(
-                    newJobConfig.jobId,
-                    async (errored, error) => {
-                        if (errored) {
-                            console.log(`[ERROR] Daemon: Job ${newJobConfig.jobId} finished in error`);
-                            return;
-                        }
+            const lst: JobCompletionListener = async (errored, error) => {
+                if (errored) {
+                    console.log(`[ERROR] Daemon: Job ${newJobConfig.jobId} finished in error`);
+                    return;
+                }
 
-                        console.log(`[INFO] Daemon: Job ${newJobConfig.jobId} successfully finished execution`);
-                    }
+                console.log(`[INFO] Daemon: Job ${newJobConfig.jobId} successfully finished execution`);
+                this.backedJobService?.getJobRunners().forEach(jr =>
+                    jr.removeJobCompletionListener(
+                        newJobConfig.jobId,
+                        lst,
+                    )
                 );
+            };
+
+            this.backedJobService.getJobRunners()
+                .forEach(jr => jr.addJobCompletionListener(newJobConfig.jobId, lst));
 
             await this.usedWorkQueue.enqueue(newJobConfig);
             console.log(`[INFO] Daemon: Request enqueued @ ${new Date().toISOString()}`);
