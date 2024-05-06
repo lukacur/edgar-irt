@@ -94,8 +94,8 @@ export class EdgarStatProcJobProvider extends AbstractGenericJobProvider<EdgarSt
         this.jobQueueInfo[jobId] = {
             associatedQueueEntry: queueEntry,
             timeoutId: TimeoutUtil.doTimeout(
-                this.expectedJobTimeout,
-                () => this.resetJob(jobId),
+                jobConfig.jobTimeoutMs ?? this.expectedJobTimeout,
+                () => this.failJob(jobId, "retry"),
             )
         };
 
@@ -112,7 +112,7 @@ export class EdgarStatProcJobProvider extends AbstractGenericJobProvider<EdgarSt
             if (tid !== null) {
                 clearTimeout(tid);
             }
-            this.jobQueueInfo[jobId].timeoutId = TimeoutUtil.doTimeout(extendForMs, () => this.resetJob(jobId));
+            this.jobQueueInfo[jobId].timeoutId = TimeoutUtil.doTimeout(extendForMs, () => this.failJob(jobId, "retry"));
 
             return "success";
         } catch(err) {
