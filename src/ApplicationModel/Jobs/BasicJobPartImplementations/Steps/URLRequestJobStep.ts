@@ -4,6 +4,7 @@ import { AbstractGenericJobStep } from "../../AbstractGenericJobStep.js";
 import { JobStepDescriptor } from "../../IJobConfiguration.js";
 import { StepResult } from "../../IJobStep.js";
 import { URLJobStepConfiguration } from "./Models/URLJobStepConfiguration.js";
+import fetch, { Headers } from "node-fetch";
 
 type URLFetchResultType = { result: string | object | Buffer };
 
