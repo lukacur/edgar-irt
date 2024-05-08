@@ -1,4 +1,4 @@
-import { ScanInterval } from "../../../../../AdaptiveGradingDaemon/DaemonConfig.model.js";
+import { CalculationConfig, ScanInterval } from "../../../../../AdaptiveGradingDaemon/DaemonConfig.model.js";
 import { CourseStatisticsProcessingRequest } from "../../../../../AdaptiveGradingDaemon/Queue/StatisticsCalculationQueues/CourseStatisticsCalculationQueue.js";
 import { BlockingConfig, DataPersistorConfig, IJobConfiguration, InputExtractorConfig, JobStepDescriptor, JobWorkerConfig } from "../../../../../ApplicationModel/Jobs/IJobConfiguration.js";
 import { IJobStep } from "../../../../../ApplicationModel/Jobs/IJobStep.js";
@@ -107,15 +107,7 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
         startJobReq: IStartJobRequest<CourseStatisticsProcessingRequest>,
         calculationsValidFor: ScanInterval,
 
-        calculationConfig: {
-            useJudge0: true,
-        } |
-        {
-            useJudge0: false,
-            scriptPath: string,
-            outputFile: string,
-            generatedJSONInputPath: string,
-        },
+        calculationConfig: CalculationConfig,
 
         jobQueue: string | null,
 

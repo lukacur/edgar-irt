@@ -14,6 +14,23 @@ export type DaemonOptions = {
     actionProgress: { reportActionProgress: boolean, noReports: number };
 };
 
+export type CalculationConfig =
+{
+    useJudge0: true,
+    endpoint: string,
+    langId: number,
+    stdin: string,
+
+    authentication?: { header: string, value: string },
+    authorization?: { header: string, value: string },
+} |
+{
+    useJudge0: false,
+    scriptPath: string,
+    outputFile: string,
+    generatedJSONInputPath: string,
+};
+
 export type QueueDescriptor =
     {
         queueName: string;
@@ -50,17 +67,7 @@ export interface DaemonConfig {
         restartIntervalWithNewRequest: boolean;
     }
 
-    calculationConfig: {
-        useJudge0: true,
-        endpoint: string,
-        method: HttpMethod,
-    } |
-    {
-        useJudge0: false,
-        scriptPath: string,
-        outputFile: string,
-        generatedJSONInputPath: string,
-    };
+    calculationConfig: CalculationConfig;
 
     maxJobTimeoutMs?: number;
 

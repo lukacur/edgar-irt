@@ -17,6 +17,7 @@ import { EdgarStatProcDataExtractor } from "./ApplicationImplementation/Edgar/Jo
 import { EdgarStatProcWorker } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Worker/EdgarStatProcWorker.js";
 import { EdgarStatProcWorkResultPersistor } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/WorkResultPersistor/EdgarStatProcWorkResultPersistor.js";
 import { EdgarStatProcJobStep } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Steps/StatisticsProcessing/EdgarStatProcJobStep.js";
+import { EdgarJudge0StatProcJobStep } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Steps/StatisticsProcessing/EdgarJudge0StatProcJobStep.js";
 import { EdgarStatProcStepConfiguration } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Steps/StatisticsProcessing/EdgarStatProcStepConfiguration.js";
 import { JobService } from "./JobService.js";
 import { CheckIfCalculationNeededStep } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Steps/CheckIfCalculationNeeded/CheckIfCalculationNeededStep.js";
@@ -34,6 +35,7 @@ import { fileURLToPath } from "url";
 import { FrameworkConfigurationProvider } from "./ApplicationModel/FrameworkConfiguration/FrameworkConfigurationProvider.js";
 import { TimeoutUtil } from "./Util/TimeoutUtil.js";
 import { IStartJobRequest } from "./ApplicationModel/Models/IStartJobRequest.js";
+import { EdgarJudge0StatProcStepConfiguration } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Steps/StatisticsProcessing/EdgarJudge0StatProcStepConfiguration.js";
 
 type AvailableTests =
     "db" |
@@ -636,7 +638,15 @@ export class MainRunner {
                         "./tests_dir/test_serialization.json",
                         "./tests_dir/output/serialization_output.json",
                     )
-                )
+                ),
+                new EdgarJudge0StatProcJobStep(
+                    200000,
+                    new EdgarJudge0StatProcStepConfiguration(
+                        "http://localhost:2358",
+                        92,
+                        "",
+                    )
+                ),
             ]
         );
         const dataExtractor = new EdgarStatProcDataExtractor();
