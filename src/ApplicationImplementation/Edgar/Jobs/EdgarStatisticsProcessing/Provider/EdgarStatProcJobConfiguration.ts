@@ -10,6 +10,7 @@ import { EdgarStatsProcessingConstants } from "../../../EdgarStatsProcessing.con
 import { EdgarStatProcDataExtractorConfiguration } from "../DataExtractor/EdgarStatProcDataExtractorConfiguration.js";
 import { CheckIfCalculationNeededStep } from "../Steps/CheckIfCalculationNeeded/CheckIfCalculationNeededStep.js";
 import { CheckIfCalculationNeededStepConfiguration } from "../Steps/CheckIfCalculationNeeded/CheckIfCalculationNeededStepConfiguration.js";
+import { EdgarJudge0StatProcStepConfiguration } from "../Steps/StatisticsProcessing/EdgarJudge0StatProcStepConfiguration.js";
 import { EdgarStatProcStepConfiguration } from "../Steps/StatisticsProcessing/EdgarStatProcStepConfiguration.js";
 
 export class EdgarStatProcJobConfiguration implements IJobConfiguration {
@@ -167,7 +168,23 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
                 }
             );
         } else {
-            throw new Error("Not implemented");
+            const statCalcConfig: EdgarJudge0StatProcStepConfiguration = {
+                judge0ServerAddress: calculationConfig.endpoint,
+                languageId: calculationConfig.langId,
+                stdin: calculationConfig.stdin,
+
+                judge0Authentication: calculationConfig.authentication,
+                judge0Authorization: calculationConfig.authorization,
+            };
+
+            jobSteps.push(
+                {
+                    type: EdgarStatsProcessingConstants.JUDGE0_STATISTICS_CALCULATION_STEP_ENTRY,
+                    configContent: statCalcConfig,
+                    isCritical: true,
+                    stepTimeoutMs: statProcessingTimeoutPerc * jobTimeoutMs,
+                }
+            );
         }
 
         remainingJobTime -= (statProcessingTimeoutPerc * (1 - statProcessingTimeoutPerc));
