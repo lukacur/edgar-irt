@@ -1,5 +1,4 @@
 library(jsonlite)
-library(purrr)
 
 pipe_it <- NULL
 "%|%" <- function(lhs, rhs) {
@@ -162,7 +161,7 @@ fun_calculateCourseBasedQuestionStats <- function(param_course) {
     var_testFrame$testInstances
   )
   
-  var_flattenedTiFrames <- purrr::flatten(var_tiFrames)
+  var_flattenedTiFrames <- unlist(var_tiFrames, recursive = FALSE)
   
   var_unionedTiFrames <- var_flattenedTiFrames[[1]]
 
@@ -308,29 +307,34 @@ if (declared_arguments["outFile"] %in% comm_args) {
 var_fileConnIn <- file(var_in_file, open = "r")
 var_dataIn <- fromJSON(readLines(var_fileConnIn, encoding = "utf-8"))
 
-print("Computing course based...")
 var_computedByCourse <- fun_calculateCourseBasedQuestionStats(var_dataIn)
-print("Computing test based...")
 var_computedByTestStats <- fun_calculateTestBasedQuestionStats(var_dataIn)
 
 close(var_fileConnIn)
 
+acYearIds <- unlist(
+  unique(var_dataIn$tests[[1]]$idAcademicYear),
+  recursive = TRUE
+)
+
+if (class(acYearIds) != 'list') {
+  acYearIds <- list(acYearIds);
+}
+
 var_outputObj <- list(
   courseId = var_dataIn$id,
-  academicYearIds = purrr::flatten(
-    list(unique(var_dataIn$tests[[1]]$idAcademicYear))
-  ),
+  academicYearIds = acYearIds,
   courseBased = var_computedByCourse,
   testBased = var_computedByTestStats
 )
 
 if (is.null(var_out_file)) {
-  write(toJSON(var_outputObj, auto_unbox = TRUE, pretty = TRUE), stdout())
+  write(toJSON(var_outputObj, auto_unbox = TRUE, pretty = FALSE), stdout())
 } else {
   fileConnOut <- file(var_out_file)
   
   print("Writing to output file...")
-  writeLines(toJSON(var_outputObj, auto_unbox = TRUE, pretty = TRUE), fileConnOut)
+  writeLines(toJSON(var_outputObj, auto_unbox = TRUE, pretty = FALSE), fileConnOut)
   
   close(fileConnOut)
 }
