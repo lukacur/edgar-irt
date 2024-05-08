@@ -65,8 +65,8 @@ export class TestBasedBatch extends EdgarItemBatch<TestInstanceBasedBatch> {
         obj.type = "test";
         obj.idTestType = this.idTestType;
         obj.idAcademicYear = this.idAcademicYear;
-        obj.maxScore = this.maxScore;
-        obj.questionsNo = this.questionsNo;
+        obj.maxScore = this.maxScore ?? 0;
+        obj.questionsNo = this.questionsNo ?? 0;
 
         const testInstancesArr: any[] = [];
         obj.testInstances = testInstancesArr;

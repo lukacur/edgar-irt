@@ -43,12 +43,12 @@ export class TestInstanceQuestionItem extends EdgarItem {
         obj.idQuestion = this.idQuestion;
         obj.idTestInstance = this.idTestInstance;
         obj.idStudent = this.idStudent;
-        obj.isCorrect = this.isCorrect;
-        obj.isIncorrect = this.isIncorrect;
-        obj.isUnanswered = this.isUnanswered;
-        obj.isPartial = this.isPartial;
-        obj.score = this.score;
-        obj.maxScore = this.maxScore;
-        obj.scorePercentage = this.scorePercentage;
+        obj.isCorrect = this.isCorrect ?? false;
+        obj.isIncorrect = this.isIncorrect ?? false;
+        obj.isUnanswered = this.isUnanswered ?? false;
+        obj.isPartial = this.isPartial ?? false;
+        obj.score = this.score ?? 0;
+        obj.maxScore = this.maxScore ?? 0;
+        obj.scorePercentage = this.scorePercentage ?? 0;
     }
 }

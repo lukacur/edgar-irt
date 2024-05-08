@@ -45,7 +45,7 @@ export class CourseBasedBatch extends EdgarItemBatch<TestBasedBatch> {
                         tst.id_test_type,
                         tst.id_academic_year,
 
-                        (typeof(tst.max_score) === "string") ? parseFloat(tst.max_score) : tst.max_score,
+                        (typeof(tst.max_score) === "string") ? parseFloat(tst.max_score) : (tst.max_score ?? 0),
                         tst.questions_no,
 
                         tst.title,
@@ -68,7 +68,7 @@ export class CourseBasedBatch extends EdgarItemBatch<TestBasedBatch> {
         obj.id = this.id;
         obj.type = "course";
         obj.idStartAcademicYear = this.idStartAcademicYear;
-        obj.numberOfIncludedPreviousYears = this.numberOfIncludedPreviousYears;
+        obj.numberOfIncludedPreviousYears = this.numberOfIncludedPreviousYears ?? 0;
         const testsArr: any[] = [];
         obj.tests = testsArr;
 
