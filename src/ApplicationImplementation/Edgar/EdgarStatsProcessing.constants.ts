@@ -19,4 +19,7 @@ export class EdgarStatsProcessingConstants {
 
     public static readonly JUDGE0_STATISTICS_CALCULATION_STEP_ENTRY =
         `${EdgarStatsProcessingConstants.REGISTRY_PREFIX}/Judge0StatisticsCalculation`;
+
+    public static readonly CALCULATE_IRT_PARAMETERS_STEP_ENTRY =
+        `${EdgarStatsProcessingConstants.REGISTRY_PREFIX}/CalculateIrtParameters`;
 }

@@ -10,6 +10,7 @@ import { EdgarStatsProcessingConstants } from "../../../EdgarStatsProcessing.con
 import { EdgarStatProcDataExtractorConfiguration } from "../DataExtractor/EdgarStatProcDataExtractorConfiguration.js";
 import { CheckIfCalculationNeededStep } from "../Steps/CheckIfCalculationNeeded/CheckIfCalculationNeededStep.js";
 import { CheckIfCalculationNeededStepConfiguration } from "../Steps/CheckIfCalculationNeeded/CheckIfCalculationNeededStepConfiguration.js";
+import { EdgarIRTCalculationStepConfiguration } from "../Steps/IRTCalculation/EdgarIRTCalculationStepConfiguration.js";
 import { EdgarJudge0StatProcStepConfiguration } from "../Steps/StatisticsProcessing/EdgarJudge0StatProcStepConfiguration.js";
 import { EdgarStatProcStepConfiguration } from "../Steps/StatisticsProcessing/EdgarStatProcStepConfiguration.js";
 
@@ -90,7 +91,7 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
         
         instance.rawDescriptor = JSON.stringify({ ...config, jobTypeAbbrevation: instance.jobTypeAbbrevation });
 
-        const parsedJobSteps = await JobPartsParser.with(config).parseJobStepDescriptors();
+        const parsedJobSteps = await JobPartsParser.with(instance).parseJobStepDescriptors();
 
         instance.jobSteps.push(...parsedJobSteps);
 
@@ -182,10 +183,23 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
                     type: EdgarStatsProcessingConstants.JUDGE0_STATISTICS_CALCULATION_STEP_ENTRY,
                     configContent: statCalcConfig,
                     isCritical: true,
-                    stepTimeoutMs: statProcessingTimeoutPerc * jobTimeoutMs,
+                    stepTimeoutMs: statProcessingTimeoutPerc * 0.8 * jobTimeoutMs,
                 }
             );
         }
+
+        const irtCalcConfig: EdgarIRTCalculationStepConfiguration = {
+            jobId: null!
+        };
+
+        jobSteps.push(
+            {
+                type: EdgarStatsProcessingConstants.CALCULATE_IRT_PARAMETERS_STEP_ENTRY,
+                configContent: irtCalcConfig,
+                isCritical: true,
+                stepTimeoutMs: statProcessingTimeoutPerc * 0.2 * jobTimeoutMs,
+            }
+        );
 
         remainingJobTime -= (statProcessingTimeoutPerc * (1 - statProcessingTimeoutPerc));
 

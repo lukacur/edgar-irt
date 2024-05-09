@@ -36,6 +36,8 @@ import { FrameworkConfigurationProvider } from "./ApplicationModel/FrameworkConf
 import { TimeoutUtil } from "./Util/TimeoutUtil.js";
 import { IStartJobRequest } from "./ApplicationModel/Models/IStartJobRequest.js";
 import { EdgarJudge0StatProcStepConfiguration } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Steps/StatisticsProcessing/EdgarJudge0StatProcStepConfiguration.js";
+import { EdgarIRTCalculationStep } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Steps/IRTCalculation/EdgarIRTCalculationStep.js";
+import { EdgarIRTCalculationStepConfiguration } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Steps/IRTCalculation/EdgarIRTCalculationStepConfiguration.js";
 
 type AvailableTests =
     "db" |
@@ -647,6 +649,10 @@ export class MainRunner {
                         "",
                     )
                 ),
+                new EdgarIRTCalculationStep(
+                    200000,
+                    new EdgarIRTCalculationStepConfiguration(null!)
+                )
             ]
         );
         const dataExtractor = new EdgarStatProcDataExtractor();
