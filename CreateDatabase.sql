@@ -64,6 +64,14 @@ CREATE TABLE IF NOT EXISTS question_param_course_level_calculation (
 	unanswered_perc DOUBLE PRECISION,
 	partial_perc DOUBLE PRECISION,
 	
+	-- IRT parameter related columns --
+	default_item_offset_parameter DOUBLE PRECISION,
+	level_of_item_knowledge DOUBLE PRECISION,
+	item_difficulty DOUBLE PRECISION,
+	item_guess_probability DOUBLE PRECISION,
+	item_mistake_probability DOUBLE PRECISION,
+	-- ----------------------------- --
+	
 	CONSTRAINT fk_qpclc_qparam_calc
 		FOREIGN KEY (id_question_param_calculation)
 		REFERENCES question_param_calculation(id)
@@ -86,30 +94,6 @@ CREATE TABLE IF NOT EXISTS question_param_test_level_calculation (
 	CONSTRAINT fk_qptlc_qparam_calc
 		FOREIGN KEY (id_question_param_calculation)
 		REFERENCES question_param_calculation(id)
-);
-
-CREATE TABLE IF NOT EXISTS question_irt_parameters (
-	id_course_based_info INT NOT NULL,
-	id_test_based_info INT[] NOT NULL,
-
-	id_question INT NOT NULL,
-
-	default_item_offset_parameter DOUBLE PRECISION,
-	level_of_item_knowledge DOUBLE PRECISION,
-	item_difficulty DOUBLE PRECISION,
-	item_guess_probability DOUBLE PRECISION,
-	item_mistake_probability DOUBLE PRECISION,
-
-	CONSTRAINT pk_qip
-		PRIMARY KEY (id_course_based_info, id_test_based_info),
-
-	CONSTRAINT fk_qip_qpclc
-		FOREIGN KEY (id_course_based_info)
-		REFERENCES question_param_course_level_calculation(id_question_param_calculation),
-
-	CONSTRAINT fk_qip_question
-		FOREIGN KEY (id_question)
-		REFERENCES public.question(id)
 );
 
 
@@ -192,11 +176,15 @@ CREATE TABLE exercise_allowed_question_type (
 );
 
 CREATE TABLE exercise_node_whitelist (
-	id_node INT NOT NULL PRIMARY KEY,
+	id_node INT NOT NULL,
+	exercise_name VARCHAR(256) NOT NULL,
 
 	id_course INT NOT NULL,
 
 	whitelisted_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+	CONSTRAINT pk_ex_node_wl
+		PRIMARY KEY (id_node, exercise_name),
 
 	CONSTRAINT fk_eqbl_node
 		FOREIGN KEY (id_node)
@@ -242,8 +230,7 @@ CREATE TABLE exercise_instance_question (
 	id_question INT NOT NULL,
 
     -- Question IRT param table FK --
-	id_question_irt_cb_info INT NOT NULL,
-	id_question_irt_tb_info INT[] NOT NULL,
+	id_question_param_course_level_calculation INT NOT NULL,
     -- --------------------------- --
 
     question_ordinal INT,
@@ -273,9 +260,9 @@ CREATE TABLE exercise_instance_question (
         FOREIGN KEY (id_question)
         REFERENCES public.question(id),
 
-    CONSTRAINT fk_exinstqt_qirtparam
-        FOREIGN KEY (id_question_irt_cb_info, id_question_irt_tb_info)
-        REFERENCES statistics_schema.question_irt_parameters(id_course_based_info, id_test_based_info),
+    CONSTRAINT fk_exinstqt_qparamclc
+        FOREIGN KEY (id_question_param_course_level_calculation)
+        REFERENCES statistics_schema.question_param_course_level_calculation(id_question_param_calculation),
 
     CONSTRAINT fk_exinstqt_code_pl
         FOREIGN KEY (student_answer_code_pl)
