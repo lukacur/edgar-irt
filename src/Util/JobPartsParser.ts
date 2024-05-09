@@ -21,7 +21,7 @@ export class JobPartsParser {
         return <IInputDataExtractor>(
             (isDynamicallyImported) ?
                 new (await DynamicScriptImporter.importScript(ieConfig.importInfo!)).type(ieConfig) :
-                InputExtractorRegistry.instance.getItem(ieConfig.type, ieConfig)
+                InputExtractorRegistry.instance.getItem(ieConfig.type, ieConfig, this.jobConfiguration)
         );
     }
 
@@ -32,7 +32,7 @@ export class JobPartsParser {
         return <IJobWorker>(
             (isDynamicallyImported) ?
                 new (await DynamicScriptImporter.importScript(jwConfig.importInfo!)).type(jwConfig) :
-                JobWorkerRegistry.instance.getItem(jwConfig.type, jwConfig)
+                JobWorkerRegistry.instance.getItem(jwConfig.type, jwConfig, this.jobConfiguration)
         );
     }
 
@@ -44,7 +44,7 @@ export class JobPartsParser {
         return <IWorkResultPersistor>(
             (isDynamicallyImported) ?
                 new (await DynamicScriptImporter.importScript(dpConfig.importInfo!)).type(dpConfig) :
-                PersistorRegistry.instance.getItem(dpConfig.type, dpConfig)
+                PersistorRegistry.instance.getItem(dpConfig.type, dpConfig, this.jobConfiguration)
         );
     }
 
@@ -58,7 +58,7 @@ export class JobPartsParser {
                         new (await DynamicScriptImporter.importScript(jsd.importInfo!)).type(
                             jsd
                         ) :
-                        JobStepRegistry.instance.getItem(jsd.type, jsd));
+                        JobStepRegistry.instance.getItem(jsd.type, jsd, this.jobConfiguration));
     
                     return step;
                 }
