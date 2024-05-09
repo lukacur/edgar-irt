@@ -1,3 +1,5 @@
+import { LogisticFunctionParams } from "../../../IRT/LogisticFunction/LogisticFunctionTypes.js";
+
 export type CourseBasedCalculation = {
     idQuestion: number;
     scorePercMean: number;
@@ -36,4 +38,14 @@ export interface IRCalculationResult {
     academicYearIds: number[];
     courseBased: CourseBasedCalculation[];
     testBased: TestCalculationInfo[];
+}
+
+export type QuestionIrtParamInfo = {
+    idQuestion: number;
+    params: LogisticFunctionParams;
+    defaultItemOffsetParam: number;
 };
+
+export interface IExtendedRCalculationResult extends IRCalculationResult {
+    calculatedIrtParams: QuestionIrtParamInfo[];
+}
