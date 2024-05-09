@@ -317,7 +317,7 @@ acYearIds <- unlist(
   recursive = TRUE
 )
 
-if (class(acYearIds) != 'list') {
+if ((is.list(acYearIds) || is.vector(acYearIds)) && length(acYearIds) == 1) {
   acYearIds <- list(acYearIds);
 }
 
