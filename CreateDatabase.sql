@@ -50,6 +50,8 @@ CREATE TABLE IF NOT EXISTS question_param_calculation_academic_year (
 		REFERENCES public.academic_year(id)
 );
 
+CREATE TYPE irt_classification_type AS ENUM('easy', 'very_easy', 'normal', 'hard', 'very_hard');
+
 CREATE TABLE IF NOT EXISTS question_param_course_level_calculation (
 	id_question_param_calculation INT PRIMARY KEY,
 	
@@ -70,6 +72,8 @@ CREATE TABLE IF NOT EXISTS question_param_course_level_calculation (
 	item_difficulty DOUBLE PRECISION,
 	item_guess_probability DOUBLE PRECISION,
 	item_mistake_probability DOUBLE PRECISION,
+
+	question_irt_classification irt_classification_type,
 	-- ----------------------------- --
 	
 	CONSTRAINT fk_qpclc_qparam_calc
