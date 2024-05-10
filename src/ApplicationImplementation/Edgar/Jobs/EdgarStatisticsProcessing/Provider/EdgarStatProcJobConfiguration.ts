@@ -11,6 +11,7 @@ import { EdgarStatProcDataExtractorConfiguration } from "../DataExtractor/EdgarS
 import { CheckIfCalculationNeededStep } from "../Steps/CheckIfCalculationNeeded/CheckIfCalculationNeededStep.js";
 import { CheckIfCalculationNeededStepConfiguration } from "../Steps/CheckIfCalculationNeeded/CheckIfCalculationNeededStepConfiguration.js";
 import { EdgarIRTCalculationStepConfiguration } from "../Steps/IRTCalculation/EdgarIRTCalculationStepConfiguration.js";
+import { EdgarQuestionClassificationStepConfiguration } from "../Steps/QuestionClassiffication/EdgarQuestionClassificationStepConfiguration.js";
 import { EdgarJudge0StatProcStepConfiguration } from "../Steps/StatisticsProcessing/EdgarJudge0StatProcStepConfiguration.js";
 import { EdgarStatProcStepConfiguration } from "../Steps/StatisticsProcessing/EdgarStatProcStepConfiguration.js";
 
@@ -165,7 +166,7 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
                     type: EdgarStatsProcessingConstants.STATISTICS_CALCULATION_STEP_ENTRY,
                     configContent: statCalcConfig,
                     isCritical: true,
-                    stepTimeoutMs: statProcessingTimeoutPerc * jobTimeoutMs,
+                    stepTimeoutMs: statProcessingTimeoutPerc * 0.7 * jobTimeoutMs,
                 }
             );
         } else {
@@ -183,7 +184,7 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
                     type: EdgarStatsProcessingConstants.JUDGE0_STATISTICS_CALCULATION_STEP_ENTRY,
                     configContent: statCalcConfig,
                     isCritical: true,
-                    stepTimeoutMs: statProcessingTimeoutPerc * 0.8 * jobTimeoutMs,
+                    stepTimeoutMs: statProcessingTimeoutPerc * 0.7 * jobTimeoutMs,
                 }
             );
         }
@@ -198,6 +199,17 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
                 configContent: irtCalcConfig,
                 isCritical: true,
                 stepTimeoutMs: statProcessingTimeoutPerc * 0.2 * jobTimeoutMs,
+            }
+        );
+
+        const classificationConfig: EdgarQuestionClassificationStepConfiguration = {};
+
+        jobSteps.push(
+            {
+                type: EdgarStatsProcessingConstants.CLASSIFY_QUESTION_STEP_ENTRY,
+                configContent: classificationConfig,
+                isCritical: true,
+                stepTimeoutMs: statProcessingTimeoutPerc * 0.1 * jobTimeoutMs,
             }
         );
 

@@ -38,6 +38,8 @@ import { IStartJobRequest } from "./ApplicationModel/Models/IStartJobRequest.js"
 import { EdgarJudge0StatProcStepConfiguration } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Steps/StatisticsProcessing/EdgarJudge0StatProcStepConfiguration.js";
 import { EdgarIRTCalculationStep } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Steps/IRTCalculation/EdgarIRTCalculationStep.js";
 import { EdgarIRTCalculationStepConfiguration } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Steps/IRTCalculation/EdgarIRTCalculationStepConfiguration.js";
+import { EdgarQuestionClassificationStep } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Steps/QuestionClassiffication/EdgarQuestionClassificationStep.js";
+import { EdgarQuestionClassificationStepConfiguration } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Steps/QuestionClassiffication/EdgarQuestionClassificationStepConfiguration.js";
 
 type AvailableTests =
     "db" |
@@ -652,6 +654,10 @@ export class MainRunner {
                 new EdgarIRTCalculationStep(
                     200000,
                     new EdgarIRTCalculationStepConfiguration(null!)
+                ),
+                new EdgarQuestionClassificationStep(
+                    20000,
+                    new EdgarQuestionClassificationStepConfiguration()
                 )
             ]
         );

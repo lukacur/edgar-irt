@@ -163,16 +163,19 @@ export class EdgarStatProcWorkResultPersistor
                     level_of_item_knowledge,
                     item_difficulty,
                     item_guess_probability,
-                    item_mistake_probability
-                ) = ($1, $2, $3, $4, $5)
-            WHERE id_question_param_calculation = $6`,
+                    item_mistake_probability,
+                    question_irt_classification
+                ) = ($1, $2, $3, $4, $5, $6)
+            WHERE id_question_param_calculation = $7`,
             [
-                questionIrtParams.defaultItemOffsetParam,
-                questionIrtParams.params.levelOfItemKnowledge,
-                questionIrtParams.params.itemDifficulty,
-                questionIrtParams.params.itemGuessProbability,
-                questionIrtParams.params.itemMistakeProbability,
-                idCourseLevelCalculation,
+                /* $1 */ questionIrtParams.defaultItemOffsetParam,
+                /* $2 */ questionIrtParams.params.levelOfItemKnowledge,
+                /* $3 */ questionIrtParams.params.itemDifficulty,
+                /* $4 */ questionIrtParams.params.itemGuessProbability,
+                /* $5 */ questionIrtParams.params.itemMistakeProbability,
+                /* $6 */ questionIrtParams.questionClassification ?? null,
+
+                /* $7 */ idCourseLevelCalculation,
             ]
         )) !== null;
     }

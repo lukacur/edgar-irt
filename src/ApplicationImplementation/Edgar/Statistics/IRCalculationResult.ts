@@ -40,10 +40,14 @@ export interface IRCalculationResult {
     testBased: TestCalculationInfo[];
 }
 
+export type QuestionClassification = "very_easy" | "easy" | "normal" | "hard" | "very_hard";
+
 export type QuestionIrtParamInfo = {
     idQuestion: number;
     params: LogisticFunctionParams;
     defaultItemOffsetParam: number;
+
+    questionClassification?: QuestionClassification
 };
 
 export interface IExtendedRCalculationResult extends IRCalculationResult {

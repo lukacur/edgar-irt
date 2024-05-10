@@ -22,4 +22,7 @@ export class EdgarStatsProcessingConstants {
 
     public static readonly CALCULATE_IRT_PARAMETERS_STEP_ENTRY =
         `${EdgarStatsProcessingConstants.REGISTRY_PREFIX}/CalculateIrtParameters`;
+
+    public static readonly CLASSIFY_QUESTION_STEP_ENTRY =
+        `${EdgarStatsProcessingConstants.REGISTRY_PREFIX}/QuestionClassification`;
 }
