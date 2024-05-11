@@ -16,7 +16,7 @@ export class EdgarIRTCalculationStep
             const courseBased = qCalcInfo.courseBasedCalc;
             const testBased = qCalcInfo.testBasedCalcs;
 
-            return (courseBased.incorrectPerc / courseBased.correctPerc) *
+            return ((courseBased.incorrectPerc + 0.1) / (courseBased.correctPerc + 0.1)) *
                 (testBased.reduce((acc, e) => acc + e.partOfTotalSum, 0) * (testBased.length + 1)) * 10;
         },
 
@@ -25,7 +25,7 @@ export class EdgarIRTCalculationStep
             const testBased = qCalcInfo.testBasedCalcs;
 
             return (courseBased.totalAchieved / courseBased.totalAchievable) *
-                (courseBased.incorrectPerc / courseBased.correctPerc) *
+                ((courseBased.incorrectPerc + 0.1) / (courseBased.correctPerc + 0.1)) *
                 (testBased.reduce((acc, e) => acc + e.scorePercMedian, 0) * (testBased.length + 1));
         },
 
