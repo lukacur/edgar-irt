@@ -179,24 +179,39 @@ CREATE TABLE exercise_allowed_question_type (
 		REFERENCES public.question_type(id)
 );
 
-CREATE TABLE exercise_node_whitelist (
-	id_node INT NOT NULL,
-	exercise_name VARCHAR(256) NOT NULL,
+CREATE TABLE exercise_definition (
+	id SERIAL PRIMARY KEY,
 
 	id_course INT NOT NULL,
+	exercise_name VARCHAR(256) NOT NULL,
+
+	created_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+	CONSTRAINT fk_exdef_course
+		FOREIGN KEY (id_course)
+		REFERENCES public.course(id),
+
+	CONSTRAINT uq_crs_exname
+		UNIQUE(id_course, exercise_name)
+);
+
+CREATE TABLE exercise_node_whitelist (
+	id_exercise_definition INT NOT NULL,
+	id_node INT NOT NULL,
 
 	whitelisted_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
 	CONSTRAINT pk_ex_node_wl
-		PRIMARY KEY (id_node, exercise_name),
+		PRIMARY KEY (id_exercise_definition, id_node),
 
-	CONSTRAINT fk_eqbl_node
+	CONSTRAINT fk_exndwl_exercise_definition
+		FOREIGN KEY (id_exercise_definition)
+		REFERENCES exercise_definition(id)
+			ON DELETE CASCADE,
+
+	CONSTRAINT fk_exndwl_node
 		FOREIGN KEY (id_node)
-		REFERENCES public.node(id),
-
-	CONSTRAINT fk_eqbl_course
-		FOREIGN KEY (id_course)
-		REFERENCES public.course(id)
+		REFERENCES public.node(id)
 );
 
 CREATE TABLE exercise_instance (
