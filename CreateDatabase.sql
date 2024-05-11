@@ -220,6 +220,7 @@ CREATE TABLE exercise_instance (
 	id_student_started INT NOT NULL,
 
 	id_course INT NOT NULL,
+	id_exercise_definition INT,
 
     start_irt_theta DOUBLE PRECISION,
 	current_irt_theta DOUBLE PRECISION,
@@ -236,6 +237,11 @@ CREATE TABLE exercise_instance (
 	CONSTRAINT fk_exinst_course
         FOREIGN KEY (id_course)
         REFERENCES public.course(id),
+
+	CONSTRAINT fk_exinst_exerdef
+		FOREIGN KEY (id_exercise_definition)
+		REFERENCES exercise_definition(id)
+			ON DELETE SET NULL,
 
     CONSTRAINT fk_exinst_user
         FOREIGN KEY (id_student_started)
