@@ -649,6 +649,7 @@ export class MainRunner {
                         "http://localhost:2358",
                         92,
                         "",
+                        "./test_script.r",
                     )
                 ),
                 new EdgarIRTCalculationStep(

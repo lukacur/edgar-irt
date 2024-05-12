@@ -44,8 +44,10 @@
     "calculationConfig": {
         "useJudge0": true,
         "endpoint": "http://localhost:2358",
-        "langId": 92,
-        "stdin": ""
+        "langId": 80,
+        "stdin": "",
+
+        "statisticsScriptPath": "./test_script.r"
     },
 
     "fileCalcConfig": {
@@ -58,8 +60,10 @@
     "judge0CalcConfig": {
         "useJudge0": true,
         "endpoint": "http://localhost:2358",
-        "langId": 92,
-        "stdin": ""
+        "langId": 80,
+        "stdin": "",
+
+        "statisticsScriptPath": "./test_script.r"
     },
 
     "maxJobTimeoutMs": 250000,

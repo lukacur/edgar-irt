@@ -9,6 +9,8 @@ import { IRCalculationResult } from "../../../../Statistics/IRCalculationResult.
 import { EdgarJudge0StatProcStepConfiguration } from "./EdgarJudge0StatProcStepConfiguration.js";
 import fetch, { Response, Headers } from 'node-fetch';
 import JSZip from "jszip";
+import { readFile } from "fs/promises";
+import path from "path";
 
 type Judge0Response = {
     stdout: string,
@@ -26,14 +28,22 @@ export class EdgarJudge0StatProcJobStep
         const stepIn: object = stepInput[0];
         const stepInJson = JSON.stringify([stepIn]);
 
+        const stepInScript = await readFile(
+            this.stepConfiguration.statisticsScriptPath,
+            { encoding: "utf-8", flag: "r" },
+        );
+
         const zipper = new JSZip();
         zipper.file("input.json", stepInJson);
-        const zipBase64: string = await zipper.generateAsync({ type: "base64" });
+        zipper.file(path.basename(this.stepConfiguration.statisticsScriptPath), stepInScript);
+        const zipBase64: string = await zipper.generateAsync(
+            { type: "base64", compression: "DEFLATE", compressionOptions: { level: 8 } }
+        );
 
         const judge0RequestBody = {
-            source_code: "print('')",
+            source_code:
+                `source('./${path.basename(this.stepConfiguration.statisticsScriptPath)}')`,
             language_id: this.stepConfiguration.languageId,
-            command_line_arguments: "--inFile input.json",
             enable_network: false,
             max_file_size: 102400,
             memory_limit: 512000,
@@ -71,7 +81,7 @@ export class EdgarJudge0StatProcJobStep
         );
 
         fetch(
-            `${this.stepConfiguration.judge0ServerAddress}/submissions?base64_encoded=true&wait=true`,
+            `${this.stepConfiguration.judge0ServerAddress}/submissions?base64_encoded=false&wait=true`,
             {
                 method: "POST",
                 body: JSON.stringify(judge0RequestBody),
@@ -141,7 +151,7 @@ export class EdgarJudge0StatProcJobStep
 
             return {
                 status: "success",
-                result: JSON.parse(Buffer.from(stdoutNormalized, "base64").toString("utf-8")),
+                result: JSON.parse(stdoutNormalized),
 
                 isCritical: this.isCritical,
 

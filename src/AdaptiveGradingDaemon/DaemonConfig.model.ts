@@ -1,5 +1,4 @@
 import { IDatabaseConfig } from "../ApplicationImplementation/Models/Config/DatabaseConfig.model.js";
-import { HttpMethod } from "../ApplicationModel/Jobs/BasicJobPartImplementations/Steps/Models/URLJobStepConfiguration.js";
 import { IStartJobRequest } from "../ApplicationModel/Models/IStartJobRequest.js";
 
 export type ScanInterval = {
@@ -20,6 +19,8 @@ export type CalculationConfig =
     endpoint: string,
     langId: number,
     stdin: string,
+
+    statisticsScriptPath: string,
 
     authentication?: { header: string, value: string },
     authorization?: { header: string, value: string },

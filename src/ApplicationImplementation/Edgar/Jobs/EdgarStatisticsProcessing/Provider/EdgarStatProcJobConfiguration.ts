@@ -175,6 +175,8 @@ export class EdgarStatProcJobConfiguration implements IJobConfiguration {
                 languageId: calculationConfig.langId,
                 stdin: calculationConfig.stdin,
 
+                statisticsScriptPath: calculationConfig.statisticsScriptPath,
+
                 judge0Authentication: calculationConfig.authentication,
                 judge0Authorization: calculationConfig.authorization,
             };
