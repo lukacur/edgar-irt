@@ -74,6 +74,8 @@ export class ZipperUtil {
             }
         }
 
-        return await this.currentZip.generateAsync({ type: "base64" });
+        return await this.currentZip.generateAsync(
+            { type: "base64", compression: "DEFLATE", compressionOptions: { level: 8 } }
+        );
     }
 }

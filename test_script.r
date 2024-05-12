@@ -293,15 +293,23 @@ declared_arguments <- c(
 )
 
 comm_args <- commandArgs(TRUE)
-var_in_file <- comm_args[
-  which(comm_args == declared_arguments["inFile"]) + 1
-]
+
+var_in_file <- NULL
+if (declared_arguments["inFile"] %in% comm_args) {
+  var_in_file <- comm_args[
+    which(comm_args == declared_arguments["inFile"]) + 1
+  ]
+}
 
 var_out_file <- NULL
 if (declared_arguments["outFile"] %in% comm_args) {
   var_out_file <- comm_args[
     which(comm_args == declared_arguments["outFile"]) + 1
   ]
+}
+
+if (is.null(var_in_file)) {
+  var_in_file = "./input.json"
 }
 
 var_fileConnIn <- file(var_in_file, open = "r")
