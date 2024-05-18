@@ -65,12 +65,7 @@ export class CourseBasedBatch extends EdgarItemBatch<TestBasedBatch> {
     }
 
     override async serializeInto(obj: any): Promise<void> {
-        obj.id = this.id;
-        obj.type = "course";
-        obj.idStartAcademicYear = this.idStartAcademicYear;
-        obj.numberOfIncludedPreviousYears = this.numberOfIncludedPreviousYears ?? 0;
         const testsArr: any[] = [];
-        obj.tests = testsArr;
 
         if (this.items === null) {
             await this.loadItems();
@@ -83,7 +78,18 @@ export class CourseBasedBatch extends EdgarItemBatch<TestBasedBatch> {
         for (const test of this.items) {
             const tstObj = {};
             await test.serializeInto(tstObj);
-            testsArr.push(tstObj);
+
+            if (Object.keys(tstObj).length !== 0) {
+                testsArr.push(tstObj);
+            }
+        }
+
+        if (testsArr.length !== 0) {
+            obj.id = this.id;
+            obj.type = "course";
+            obj.idStartAcademicYear = this.idStartAcademicYear;
+            obj.numberOfIncludedPreviousYears = this.numberOfIncludedPreviousYears ?? 0;
+            obj.tests = testsArr;
         }
     }
 
