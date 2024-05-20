@@ -1,10 +1,10 @@
+import { TestInstanceAdditionalInfo } from "../../Edgar/Batches/EdgarBatch.js";
 import { CourseBasedCalculation, TestBasedCalculation } from "../../Edgar/Statistics/IRCalculationResult.js";
-import { TestInstance } from "../Database/TestInstance/TestInstance.model.js";
 
 export type QuestionCalcultionInfo = {
     courseBasedCalc: CourseBasedCalculation;
     testBasedCalcs: TestBasedCalculation[];
-    relatedTestInstances: TestInstance[];
+    relatedTestInstances: TestInstanceAdditionalInfo[];
 };
 
 export interface IIRTParameterCalculator {

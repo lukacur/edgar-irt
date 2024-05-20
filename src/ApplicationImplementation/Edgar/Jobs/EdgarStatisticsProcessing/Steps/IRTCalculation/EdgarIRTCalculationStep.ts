@@ -17,7 +17,7 @@ export class EdgarIRTCalculationStep
             const testBased = qCalcInfo.testBasedCalcs;
 
             return ((courseBased.incorrectPerc + 0.1) / (courseBased.correctPerc + 0.1)) *
-                (testBased.reduce((acc, e) => acc + e.partOfTotalSum, 0) * (testBased.length + 1)) * 10;
+                (testBased.reduce((acc, e) => acc + (e.partOfTotalSum ?? 0), 0) * (testBased.length + 1)) * 10;
         },
 
         calculateItemDifficulty: (qCalcInfo: QuestionCalcultionInfo) => {
@@ -26,21 +26,33 @@ export class EdgarIRTCalculationStep
 
             return (courseBased.totalAchieved / courseBased.totalAchievable) *
                 ((courseBased.incorrectPerc + 0.1) / (courseBased.correctPerc + 0.1)) *
-                (testBased.reduce((acc, e) => acc + e.scorePercMedian, 0) * (testBased.length + 1));
+                (testBased.reduce((acc, e) => acc + (e.scorePercMedian ?? 0), 0) * (testBased.length + 1));
         },
 
         calculateItemGuessProbability: (qCalcInfo: QuestionCalcultionInfo) => {
             const courseBased = qCalcInfo.courseBasedCalc;
             const testBased = qCalcInfo.testBasedCalcs;
 
-            return courseBased.correctPerc;
+            const numberOfCorrectAnswersByLowScoringStudents = qCalcInfo.relatedTestInstances.reduce(
+                (acc, el) => acc += (((el.score_perc ?? 0) < 0.4 && el.scoredOnQuestion !== 0) ? 1 : 0),
+                0
+            );
+
+            return courseBased.correctPerc *
+                (numberOfCorrectAnswersByLowScoringStudents / qCalcInfo.relatedTestInstances.length);
         },
 
         calculateItemMistakeProbability: (qCalcInfo: QuestionCalcultionInfo) => {
             const courseBased = qCalcInfo.courseBasedCalc;
             const testBased = qCalcInfo.testBasedCalcs;
 
-            return courseBased.incorrectPerc;
+            const numberOfIncorrectAnswersByLowScoringStudents = qCalcInfo.relatedTestInstances.reduce(
+                (acc, el) => acc += (((el.score_perc ?? 0) > 0.75 && el.scoredOnQuestion === 0) ? 1 : 0),
+                0
+            );
+
+            return courseBased.incorrectPerc *
+                (1 - (numberOfIncorrectAnswersByLowScoringStudents / qCalcInfo.relatedTestInstances.length));
         }
     };
 
@@ -70,7 +82,7 @@ export class EdgarIRTCalculationStep
                 courseBasedCalc: cbCalculation,
                 testBasedCalcs: qTestBasedCalcs,
                 relatedTestInstances: (
-                    await StatProcessingJobBatchCache.instance.getCachedJobBatch(this.stepConfiguration.jobId) // TODO: somehow get jobId
+                    await StatProcessingJobBatchCache.instance.getCachedJobBatch(this.stepConfiguration.jobId)
                         ?.getTestInstancesWithQuestion(cbCalculation.idQuestion)
                 ) ?? [],
             };
