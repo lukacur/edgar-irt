@@ -29,11 +29,12 @@ export class EdgarQuestionClassificationStep
             return "hard";
         }
 
-        if (irtInfo.params.levelOfItemKnowledge < 0.1 || irtInfo.params.itemDifficulty < 0.2) {
+        if (irtInfo.params.levelOfItemKnowledge <= 0.1 || irtInfo.params.itemDifficulty <= 0.2) {
             return "very_easy"
         }
 
-        throw new Error("Unable to classify question");
+        // throw new Error("Unable to classify question");
+        return "normal";
     }
 
     protected async runTyped(
