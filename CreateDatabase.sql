@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS question_param_calculation_academic_year (
 		REFERENCES public.academic_year(id)
 );
 
-CREATE TYPE irt_classification_type AS ENUM('easy', 'very_easy', 'normal', 'hard', 'very_hard');
+CREATE TYPE irt_classification_type AS ENUM('very_easy', 'easy', 'normal', 'hard', 'very_hard');
 
 CREATE TABLE IF NOT EXISTS question_param_course_level_calculation (
 	id_question_param_calculation INT PRIMARY KEY,
@@ -221,6 +221,9 @@ CREATE TABLE exercise_instance (
 
 	id_course INT NOT NULL,
 	id_exercise_definition INT,
+
+	start_difficulty statistics_schema.irt_classification_type,
+	current_difficulty statistics_schema.irt_classification_type,
 
     start_irt_theta DOUBLE PRECISION,
 	current_irt_theta DOUBLE PRECISION,
