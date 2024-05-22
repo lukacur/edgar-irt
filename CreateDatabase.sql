@@ -277,6 +277,7 @@ CREATE TABLE exercise_instance_question (
 
     -- Question IRT param table FK --
 	id_question_param_course_level_calculation INT NOT NULL,
+	question_difficulty statistics_schema.irt_classification_type,
     -- --------------------------- --
 
     question_ordinal INT,
