@@ -214,6 +214,24 @@ CREATE TABLE exercise_node_whitelist (
 		REFERENCES public.node(id)
 );
 
+CREATE TABLE exercise_question_difficulty_override (
+	id_exercise_definition INT NOT NULL,
+	id_question INT NOT NULL,
+
+	question_difficulty statistics_schema.irt_classification_type NOT NULL,
+
+	CONSTRAINT pk_exer_q_diff_over
+		PRIMARY KEY (id_exercise_definition, id_question),
+
+	CONSTRAINT fk_exqdiffover_exer_def
+		FOREIGN KEY (id_exercise_definition)
+		REFERENCES exercise_definition(id),
+
+	CONSTRAINT fk_exqdiffover_question
+		FOREIGN KEY (id_question)
+		REFERENCES public.question(id)
+);
+
 CREATE TABLE exercise_instance (
 	id SERIAL PRIMARY KEY,
 
