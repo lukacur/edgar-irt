@@ -185,6 +185,10 @@ CREATE TABLE exercise_definition (
 	id_course INT NOT NULL,
 	exercise_name VARCHAR(256) NOT NULL,
 
+	correct_answers_to_upgrade INT NOT NULL DEFAULT 3,
+	incorrect_answers_to_downgrade INT NOT NULL DEFAULT 2,
+	skipped_questions_to_downgrade INT NOT NULL DEFAULT 5,
+
 	created_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
 	CONSTRAINT fk_exdef_course
