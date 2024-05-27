@@ -117,14 +117,24 @@ export class EdgarQuestionClassificationStep
             }
         }
 
-        const avgQuestionDifficulty = QuestionClassificationUtil.instance.getAverageDifficulty(
-            [
-                itKnowClass ?? lowestCountingClass!,
-                itDiffClass ?? lowestCountingClass!,
-                guessProbClass ?? lowestCountingClass!,
-                mistProbClass ?? lowestCountingClass!,
-            ]
-        );
+        const occurancesArr: QuestionClassification[] = [
+            itKnowClass ?? lowestCountingClass!,
+            itDiffClass ?? lowestCountingClass!,
+            guessProbClass ?? lowestCountingClass!,
+            mistProbClass ?? lowestCountingClass!,
+        ];
+
+        let avgQuestionDifficulty: QuestionClassification | null = null;
+
+        for (const classification of QuestionClassificationUtil.instance.getAvailableClasses()) {
+            let occurs = occurancesArr.reduce((acc, el) => acc + (el === classification ? 1 : 0), 0);
+            if (occurs >= 3) {
+                avgQuestionDifficulty = classification;
+                break;
+            }
+        }
+
+        avgQuestionDifficulty ??= QuestionClassificationUtil.instance.getAverageDifficulty(occurancesArr);
 
         const classifiedBoundInfo = classificationBounds[avgQuestionDifficulty];
         if (!QuestionClassificationUtil.instance.isLowestClass(avgQuestionDifficulty)) {
@@ -213,12 +223,18 @@ export class EdgarQuestionClassificationStep
             very_hard: 0,
         };
 
+        const veArr: [number, number] = [0.0, 0.25];
+        const eArr: [number, number] = [veArr[1], 0.45];
+        const nArr: [number, number] = [eArr[1], 0.55];
+        const hArr: [number, number] = [nArr[1], 0.75];
+        const vhArr: [number, number] = [hArr[1], 1.0];
+
         const classificationBounds: ClassificationBounds = {
-            very_easy: { itKnow: [0.0, 0.15], itDiff: [0.0, 0.15], guessProb: [0.85, 1.0], mistProb: [0.0, 0.15], },
-            easy: { itKnow: [0.15, 0.35], itDiff: [0.15, 0.35], guessProb: [0.65, 0.85], mistProb: [0.15, 0.35], },
-            normal: { itKnow: [0.35, 0.65], itDiff: [0.35, 0.65], guessProb: [0.35, 0.65], mistProb: [0.35, 0.65], },
-            hard: { itKnow: [0.65, 0.85], itDiff: [0.65, 0.85], guessProb: [0.15, 0.35], mistProb: [0.65, 0.85], },
-            very_hard: { itKnow: [0.85, 1.0], itDiff: [0.85, 1.0], guessProb: [0.0, 0.15], mistProb: [0.85, 1.0], },
+            very_easy: { itKnow: [...veArr], itDiff: [...veArr], guessProb: [...vhArr], mistProb: [...veArr], },
+            easy: { itKnow: [...eArr], itDiff: [...eArr], guessProb: [...hArr], mistProb: [...eArr], },
+            normal: { itKnow: [...nArr], itDiff: [...nArr], guessProb: [...nArr], mistProb: [...nArr], },
+            hard: { itKnow: [...hArr], itDiff: [...hArr], guessProb: [...eArr], mistProb: [...hArr], },
+            very_hard: { itKnow: [...vhArr], itDiff: [...vhArr], guessProb: [...veArr], mistProb: [...vhArr], },
         };
 
         for (const irtInfo of input.calculatedIrtParams) {
