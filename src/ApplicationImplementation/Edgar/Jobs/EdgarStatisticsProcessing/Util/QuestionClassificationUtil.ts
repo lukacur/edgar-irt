@@ -13,6 +13,10 @@ export class QuestionClassificationUtil {
         "very_hard",
     ];
 
+    public getAvailableClasses(): QuestionClassification[] {
+        return [...this.classificationOrder];
+    }
+
     public isLowestClass(qClass: QuestionClassification) {
         const index = this.classificationOrder.indexOf(qClass);
         if (index === -1) {
