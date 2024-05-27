@@ -46,7 +46,7 @@ export class EdgarJudge0StatProcJobStep
             language_id: this.stepConfiguration.languageId,
             enable_network: false,
             max_file_size: 102400,
-            memory_limit: 512000,
+            memory_limit: 2097152,
             cpu_time_limit: this.stepTimeoutMs / 1000,
             wall_time_limit: this.stepTimeoutMs / 1000,
             stdin: this.stepConfiguration.stdin,
