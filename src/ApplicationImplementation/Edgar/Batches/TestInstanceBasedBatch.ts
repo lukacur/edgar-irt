@@ -88,13 +88,7 @@ export class TestInstanceBasedBatch extends EdgarItemBatch<TestInstanceQuestionI
                         tiq.is_unanswered ?? false,
                         tiq.is_partial ?? false,
 
-                        ((manGrade !== null) ?
-                            (
-                                (typeof(manGrade) === "string") ?
-                                    parseFloat(manGrade) : manGrade
-                            ) :
-                            score
-                        ) + scoreDelta, // TODO: confirm that this should be deleted and replaced with 'tiq.score'
+                        score,
 
                         maxScore,
 
