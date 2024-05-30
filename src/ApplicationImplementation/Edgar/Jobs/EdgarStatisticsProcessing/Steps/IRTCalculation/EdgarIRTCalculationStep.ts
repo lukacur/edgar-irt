@@ -2,11 +2,19 @@ import { RegisterDelegateToRegistry } from "../../../../../../ApplicationModel/D
 import { AbstractGenericJobStep } from "../../../../../../ApplicationModel/Jobs/AbstractGenericJobStep.js";
 import { IJobConfiguration, JobStepDescriptor } from "../../../../../../ApplicationModel/Jobs/IJobConfiguration.js";
 import { StepResult } from "../../../../../../ApplicationModel/Jobs/IJobStep.js";
+import { FrameworkLogger } from "../../../../../../Logger/FrameworkLogger.js";
 import { IIRTParameterCalculator, QuestionCalcultionInfo } from "../../../../../Models/IRT/IIRTParameterCalculator.js";
 import { EdgarStatsProcessingConstants } from "../../../../EdgarStatsProcessing.constants.js";
 import { IExtendedRCalculationResult, IRCalculationResult, QuestionIrtParamInfo } from "../../../../Statistics/IRCalculationResult.js";
 import { StatProcessingJobBatchCache } from "../../StatProcessingJobBatchCache.js";
 import { EdgarIRTCalculationStepConfiguration } from "./EdgarIRTCalculationStepConfiguration.js";
+
+type BorderingParamValues = {
+    minItemDifficulty: number | null,
+    maxItemDifficulty: number | null,
+    minLevelOfItemKnowledge: number | null,
+    maxLevelOfItemKnowledge: number | null,
+};
 
 export class EdgarIRTCalculationStep
     extends AbstractGenericJobStep<EdgarIRTCalculationStepConfiguration, IRCalculationResult, IExtendedRCalculationResult> {
@@ -16,7 +24,30 @@ export class EdgarIRTCalculationStep
             const courseBased = qCalcInfo.courseBasedCalc;
             const testBased = qCalcInfo.testBasedCalcs;
 
-            return ((courseBased.incorrectPerc + 0.1) / (courseBased.correctPerc + 0.1)) *
+            let numberOfGoodStudentCorrectAnswers = 0;
+            let numberOfGoodStudentIncorrectAnswers = 0;
+            let numberOfBadStudentCorrectAnswers = 0;
+            let numberOfBadStudentInorrectAnswers = 0;
+
+            for (const testInstance of qCalcInfo.relatedTestInstances) {
+                if ((testInstance.score_perc ?? 0) > 0.7 && (testInstance.scoredOnQuestion ?? 0) !== 0) {
+                    numberOfGoodStudentCorrectAnswers++;
+                } else if ((testInstance.score_perc ?? 0) > 0.7 && (testInstance.scoredOnQuestion ?? 0) === 0) {
+                    numberOfGoodStudentIncorrectAnswers++;
+                } else if ((testInstance.score_perc ?? 0) < 0.4 && (testInstance.scoredOnQuestion ?? 0) !== 0) {
+                    numberOfBadStudentCorrectAnswers++;
+                } else if ((testInstance.score_perc ?? 0) < 0.4 && (testInstance.scoredOnQuestion ?? 0) === 0) {
+                    numberOfBadStudentInorrectAnswers
+                }
+            }
+
+            return (
+                    (
+                        (numberOfGoodStudentCorrectAnswers + numberOfBadStudentInorrectAnswers) /
+                        (numberOfBadStudentCorrectAnswers + numberOfGoodStudentIncorrectAnswers + 1)
+                    ) + 1
+                ) *
+                ((courseBased.incorrectPerc + 0.1) / (courseBased.correctPerc + 0.1)) *
                 (testBased.reduce((acc, e) => acc + (e.partOfTotalSum ?? 0), 0) * (testBased.length + 1)) * 10;
         },
 
@@ -24,7 +55,8 @@ export class EdgarIRTCalculationStep
             const courseBased = qCalcInfo.courseBasedCalc;
             const testBased = qCalcInfo.testBasedCalcs;
 
-            return (courseBased.totalAchieved / courseBased.totalAchievable) *
+            return (1.1 / (courseBased.scorePercMean + 0.1)) *
+                Math.sqrt(qCalcInfo.relatedTestInstances.length + 1) *
                 ((courseBased.incorrectPerc + 0.1) / (courseBased.correctPerc + 0.1)) *
                 (testBased.reduce((acc, e) => acc + (e.scorePercMedian ?? 0), 0) * (testBased.length + 1));
         },
@@ -55,6 +87,105 @@ export class EdgarIRTCalculationStep
                 (1 - (numberOfIncorrectAnswersByLowScoringStudents / qCalcInfo.relatedTestInstances.length));
         }
     };
+
+    private determineBorderingParamValues(questionIrtParams: QuestionIrtParamInfo[]): BorderingParamValues {
+        const borderParamVals: BorderingParamValues = {
+            minLevelOfItemKnowledge: null,
+            maxLevelOfItemKnowledge: null,
+            minItemDifficulty: null,
+            maxItemDifficulty: null,
+        };
+
+        for (const param of questionIrtParams) {
+            if (
+                borderParamVals.minLevelOfItemKnowledge === null ||
+                param.params.levelOfItemKnowledge < borderParamVals.minLevelOfItemKnowledge
+            ) {
+                borderParamVals.minLevelOfItemKnowledge = param.params.levelOfItemKnowledge;
+            }
+
+            if (
+                borderParamVals.maxLevelOfItemKnowledge === null ||
+                param.params.levelOfItemKnowledge > borderParamVals.maxLevelOfItemKnowledge
+            ) {
+                borderParamVals.maxLevelOfItemKnowledge = param.params.levelOfItemKnowledge;
+            }
+
+            if (
+                borderParamVals.minItemDifficulty === null ||
+                param.params.itemDifficulty < borderParamVals.minItemDifficulty
+            ) {
+                borderParamVals.minItemDifficulty = param.params.itemDifficulty;
+            }
+
+            if (
+                borderParamVals.maxItemDifficulty === null ||
+                param.params.itemDifficulty > borderParamVals.maxItemDifficulty
+            ) {
+                borderParamVals.maxItemDifficulty = param.params.itemDifficulty;
+            }
+        }
+
+        return borderParamVals;
+    }
+
+    private normalizeParams(questionIrtParams: QuestionIrtParamInfo[]): QuestionIrtParamInfo[] {
+        const borderParamVals = this.determineBorderingParamValues(questionIrtParams);
+
+        if (
+            borderParamVals.minLevelOfItemKnowledge === null ||
+            borderParamVals.maxLevelOfItemKnowledge === null ||
+            borderParamVals.minItemDifficulty === null ||
+            borderParamVals.maxItemDifficulty === null
+        ) {
+            FrameworkLogger.warn(
+                EdgarIRTCalculationStep,
+                "No border values could be determined for either level of item knowledge or item difficulty. " +
+                "Normalization skipped."
+            );
+            return questionIrtParams;
+        }
+
+        const preNormalizationLevelOfItemKnowMin = Math.abs(borderParamVals.minLevelOfItemKnowledge!) + 1.5;
+
+        const midNormalizationLevelOfItemKnowMin = 1.0;
+        const midNormalizationLevelOfItemKnowMax =
+            Math.log(borderParamVals.maxLevelOfItemKnowledge + preNormalizationLevelOfItemKnowMin) /
+            Math.log(preNormalizationLevelOfItemKnowMin);
+
+        const preNormalizationItemDifficultyMin = Math.abs(borderParamVals.minItemDifficulty!) + 1.5;
+
+        const midNormalizationItemDifficultyMin = 1.0;
+        const midNormalizationItemDifficultyMax =
+            Math.log(borderParamVals.maxItemDifficulty + preNormalizationItemDifficultyMin) /
+            Math.log(preNormalizationItemDifficultyMin);
+
+        return questionIrtParams.map(param => {
+            const midNormalizedLevelOfItemKnow =
+                Math.log(param.params.levelOfItemKnowledge + preNormalizationLevelOfItemKnowMin) /
+                Math.log(preNormalizationLevelOfItemKnowMin);
+            const newLevelOfItemKnow =
+                (midNormalizedLevelOfItemKnow - midNormalizationLevelOfItemKnowMin) /
+                (midNormalizationLevelOfItemKnowMax - midNormalizationLevelOfItemKnowMin);
+
+            const midNormalizedItemDiff =
+                Math.log(param.params.itemDifficulty + preNormalizationItemDifficultyMin) /
+                Math.log(preNormalizationItemDifficultyMin);
+            const newItemDiff =
+                (midNormalizedItemDiff - midNormalizationItemDifficultyMin) /
+                (midNormalizationItemDifficultyMax - midNormalizationItemDifficultyMin);
+
+            return {
+                ...param,
+                params: {
+                    levelOfItemKnowledge: newLevelOfItemKnow,
+                    itemDifficulty: newItemDiff,
+                    itemGuessProbability: param.params.itemGuessProbability,
+                    itemMistakeProbability: param.params.itemMistakeProbability,
+                }
+            };
+        });
+    }
 
     protected override async runTyped(
         stepInput: (IRCalculationResult | null)[]
@@ -110,7 +241,7 @@ export class EdgarIRTCalculationStep
             status: "success",
             result: {
                 ...calculationResult,
-                calculatedIrtParams: irtParamCalculations
+                calculatedIrtParams: this.normalizeParams(irtParamCalculations)
             },
 
             isCritical: this.isCritical,
