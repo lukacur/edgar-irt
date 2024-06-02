@@ -218,11 +218,16 @@ CREATE TABLE exercise_node_whitelist (
 		REFERENCES public.node(id)
 );
 
-CREATE TABLE exercise_question_difficulty_override (
+CREATE TABLE exercise_question_difficulty (
 	id_exercise_definition INT NOT NULL,
 	id_question INT NOT NULL,
 
-	question_difficulty statistics_schema.irt_classification_type NOT NULL,
+	question_difficulty statistics_schema.irt_classification_type,
+	question_difficulty_override statistics_schema.irt_classification_type,
+
+	created_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+	excluded BOOLEAN NOT NULL DEFAULT FALSE,
 
 	CONSTRAINT pk_exer_q_diff_over
 		PRIMARY KEY (id_exercise_definition, id_question),
