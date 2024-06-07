@@ -35,9 +35,13 @@ export class QuestionClassificationUtil {
         return index === (this.classificationOrder.length - 1);
     }
 
+    public getDifficultyRank(difficulty: QuestionClassification): number {
+        return this.classificationOrder.indexOf(difficulty);
+    }
+
     public getDifficultyRanks(difficulties: QuestionClassification[]): number[] {
         return difficulties
-            .map(diff => this.classificationOrder.indexOf(diff))
+            .map(diff => this.getDifficultyRank(diff))
             .filter(diffIdx => diffIdx !== -1);
     }
 
