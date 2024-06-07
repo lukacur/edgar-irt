@@ -361,25 +361,4 @@ INSERT INTO job_type (id, abbrevation, title, description, request_form)
 		'Edgar exam question statistics processing',
 		'A job that calculates exam question statistics. This job is ran when a user wants to generate information on question statistics.',
 		NULL
-	),
-	(
-		2,
-		'PEERREV',
-		'Edgar Peer Assessment Analysis',
-		'A job that runs analysis on the Peer Assessment assignments.',
-		NULL
-	),
-	(
-		3,
-		'EXMRPT',
-		'Edgar exam statistics report',
-		'A job that generates statistics reports for certain exams selected by the user',
-		NULL
-	),
-	(
-		4,
-		'OTHR',
-		'Other',
-		'A job type that declares that the job is of an unspecified type.',
-		NULL
 	);
