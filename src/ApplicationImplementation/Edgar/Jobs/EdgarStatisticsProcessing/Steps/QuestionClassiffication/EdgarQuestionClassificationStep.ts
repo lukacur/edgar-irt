@@ -18,6 +18,25 @@ type ClassificationBounds = {
 
 type BoundType = "inclusive" | "exclusive";
 
+type IrtDistanceTable = {
+    levelOfItemKnowledge: Map<QuestionClassification, Map<number, number>>;
+    itemDifficulty: Map<QuestionClassification, Map<number, number>>;
+    guessProbability: Map<QuestionClassification, Map<number, number>>;
+    mistakeProbability: Map<QuestionClassification, Map<number, number>>;
+};
+
+type ClassificationByDistance = {
+    idQuestion: number,
+    distance: number,
+    classification: QuestionClassification,
+    reclassify: boolean
+};
+
+type ClassificationByOrder = {
+    idQuestion: number;
+    classification: QuestionClassification;
+};
+
 export class EdgarQuestionClassificationStep
     extends AbstractGenericJobStep<EdgarQuestionClassificationStepConfiguration, IExtendedRCalculationResult, IExtendedRCalculationResult> {
     private static inBounds(value: number, bounds: [number, number], boundTypes: [BoundType, BoundType]): boolean {
@@ -200,6 +219,307 @@ export class EdgarQuestionClassificationStep
         return avgQuestionDifficulty;
     }
 
+    private prepareDistanceTable(
+        calculatedQuestionIrtParams: QuestionIrtParamInfo[],
+    ): IrtDistanceTable {
+        const classWeightCenters: { [ClassName in QuestionClassification]: number } = {
+            very_easy: 0.1,
+            easy: 0.3,
+            normal: 0.5,
+            hard: 0.7,
+            very_hard: 0.9,
+        };
+
+        const levelOfItemKnowledgeMap: Map<QuestionClassification, Map<number, number>> = new Map();
+        const itemDifficultyMap: Map<QuestionClassification, Map<number, number>> = new Map();
+        const guessProbabilityMap: Map<QuestionClassification, Map<number, number>> = new Map();
+        const mistakeProbabilityMap: Map<QuestionClassification, Map<number, number>> = new Map();
+
+        const availableClasses = QuestionClassificationUtil.instance.getAvailableClasses();
+        for (const difficultyClass of availableClasses) {
+            levelOfItemKnowledgeMap.set(difficultyClass, new Map());
+            itemDifficultyMap.set(difficultyClass, new Map());
+            guessProbabilityMap.set(difficultyClass, new Map());
+            mistakeProbabilityMap.set(difficultyClass, new Map());
+        }
+
+        for (const irtParams of calculatedQuestionIrtParams) {
+            for (const difficultyClass of availableClasses) {
+                const cwCenter = classWeightCenters[difficultyClass];
+
+                const loikDelta = Math.abs(irtParams.params.levelOfItemKnowledge - cwCenter);
+                const itemDiffDelta = Math.abs(irtParams.params.itemDifficulty - cwCenter);
+                const guessProbDelta = Math.abs(irtParams.params.itemGuessProbability - (1 - cwCenter));
+                const mistProbDelta = Math.abs(irtParams.params.itemMistakeProbability - cwCenter);
+
+                const loikDeltaTable = levelOfItemKnowledgeMap.get(difficultyClass)!;
+                if (!loikDeltaTable.has(irtParams.idQuestion)) {
+                    loikDeltaTable.set(irtParams.idQuestion, loikDelta);
+                }
+
+                const itemDiffDeltaTable = itemDifficultyMap.get(difficultyClass)!;
+                if (!itemDiffDeltaTable.has(irtParams.idQuestion)) {
+                    itemDiffDeltaTable.set(irtParams.idQuestion, itemDiffDelta);
+                }
+
+                const guessProbDeltaTable = guessProbabilityMap.get(difficultyClass)!;
+                if (!guessProbDeltaTable.has(irtParams.idQuestion)) {
+                    guessProbDeltaTable!.set(irtParams.idQuestion, guessProbDelta);
+                }
+
+                const mistProbDeltaTable = mistakeProbabilityMap.get(difficultyClass)!;
+                if (!mistProbDeltaTable.has(irtParams.idQuestion)) {
+                    mistProbDeltaTable!.set(irtParams.idQuestion, mistProbDelta);
+                }
+            }
+        }
+
+        return {
+            levelOfItemKnowledge: levelOfItemKnowledgeMap,
+            itemDifficulty: itemDifficultyMap,
+            guessProbability: guessProbabilityMap,
+            mistakeProbability: mistakeProbabilityMap,
+        };
+    }
+
+    private classifyByDistance(
+        calculatedQuestionIrtParams: QuestionIrtParamInfo[]
+    ): Map<number, QuestionClassification> {
+        const distanceTable = this.prepareDistanceTable(calculatedQuestionIrtParams);
+
+        const questionClassificationMap: Map<number, QuestionClassification[]> = new Map();
+
+        const maps = [
+            distanceTable.levelOfItemKnowledge,
+            distanceTable.itemDifficulty, 
+            distanceTable.guessProbability,
+            distanceTable.mistakeProbability
+        ];
+
+        for (const map of maps) {
+            while ([...map.values()].some(vl => vl.size !== 0)) {
+                let maxIterCount = 5;
+                const byDistanceClassifications: ClassificationByDistance[] = [];
+
+                do {
+                    const dontClassifyOn =
+                        byDistanceClassifications.filter(cl => !cl.reclassify).map(cl => cl.classification);
+
+                    for (const classification of [...map.keys()].filter(key => !dontClassifyOn.includes(key))) {
+                        const previousClassification: ClassificationByDistance | undefined =
+                            byDistanceClassifications.find(el => el.classification === classification);
+                        const prevMin: number | null = previousClassification?.distance ?? null;
+
+                        const byDistTab = map.get(classification)!;
+                        const minDistanceEntry = [...byDistTab.entries()]
+                            .reduce<[number, number] | null>(
+                                (acc, el) =>
+                                    ((prevMin === null || el[1] > prevMin) && (acc === null || el[1] < acc[1])) ?
+                                        el : acc,
+                                null
+                            );
+                        if (minDistanceEntry === null) {
+                            if ((previousClassification ?? null) !== null) {
+                                const idx = byDistanceClassifications.indexOf(previousClassification!);
+                                if (idx !== -1) {
+                                    byDistanceClassifications.splice(idx, 1);
+                                }
+                            }
+                            continue;
+                        }
+
+                        const reclassifyIdx =
+                            byDistanceClassifications.findIndex(el => el.idQuestion === minDistanceEntry[0]);
+
+                        let reclassifySelf = false;
+                        if (
+                            reclassifyIdx !== -1 &&
+                                byDistanceClassifications[reclassifyIdx].distance < minDistanceEntry[1]
+                        ) {
+                            byDistanceClassifications[reclassifyIdx].reclassify = true;
+                        } else if (reclassifyIdx !== -1) {
+                            reclassifySelf = true;
+                        }
+
+                        if ((previousClassification ?? null) === null) {
+                            byDistanceClassifications.push({
+                                idQuestion: minDistanceEntry[0],
+                                distance: minDistanceEntry[1],
+                                classification: classification,
+                                reclassify: reclassifySelf,
+                            });
+                        } else {
+                            previousClassification!.idQuestion = minDistanceEntry[0];
+                            previousClassification!.distance = minDistanceEntry[1];
+                            previousClassification!.classification = classification;
+                            previousClassification!.reclassify = reclassifySelf;
+                        }
+                    }
+                    maxIterCount--;
+                } while (
+                    byDistanceClassifications.some(cl => cl.reclassify) &&
+                        ([...map.values()][0]?.size ?? 0) >=
+                            QuestionClassificationUtil.instance.getAvailableClasses().length &&
+                            maxIterCount > 0
+                );
+
+                for (const byDistanceClassification of byDistanceClassifications.filter(el => !el.reclassify)) {
+                    for (const subMap of map.values()) {
+                        subMap.delete(byDistanceClassification.idQuestion);
+                    }
+
+                    if (!questionClassificationMap.has(byDistanceClassification.idQuestion)) {
+                        questionClassificationMap.set(byDistanceClassification.idQuestion, []);
+                    }
+                    questionClassificationMap
+                        .get(byDistanceClassification.idQuestion)!
+                            .push(byDistanceClassification.classification);
+                }
+            }
+        }
+
+        return new Map(
+            [...questionClassificationMap.entries()].map(ent => {
+                let avgQuestionDifficulty: QuestionClassification | null = null;
+                for (const classification of QuestionClassificationUtil.instance.getAvailableClasses()) {
+                    let occurs = ent[1].reduce((acc, el) => acc + (el === classification ? 1 : 0), 0);
+                    if (occurs >= 3) {
+                        avgQuestionDifficulty = classification;
+                        break;
+                    }
+                }
+
+                avgQuestionDifficulty ??= QuestionClassificationUtil.instance.getAverageDifficulty(ent[1]);
+                return [ent[0], avgQuestionDifficulty];
+            })
+        );
+    }
+
+    private classifyByOrder(calculatedQuestionIrtParams: QuestionIrtParamInfo[]): Map<number, QuestionClassification> {
+        const levelOfItemKnowledgeSorted = calculatedQuestionIrtParams.sort(
+            (p1, p2) => p1.params.levelOfItemKnowledge - p2.params.levelOfItemKnowledge
+        );
+        const itemDifficultySorted = calculatedQuestionIrtParams.sort(
+            (p1, p2) => p1.params.itemDifficulty - p2.params.itemDifficulty
+        );
+        const guessProbabilitySorted = calculatedQuestionIrtParams.sort(
+            (p1, p2) => p1.params.itemGuessProbability - p2.params.itemGuessProbability
+        );
+        const mistakeProbabilitySorted = calculatedQuestionIrtParams.sort(
+            (p1, p2) => p1.params.itemMistakeProbability - p2.params.itemMistakeProbability
+        );
+
+        const availableClasses = QuestionClassificationUtil.instance.getAvailableClasses();
+        const countOfQuestionsToClassify = calculatedQuestionIrtParams.length;
+        const numberOfClassificationsByClass = countOfQuestionsToClassify / availableClasses.length;
+
+        const byClassClassificationCount = Math.floor(numberOfClassificationsByClass);
+        const remainder = countOfQuestionsToClassify - (byClassClassificationCount * availableClasses.length);
+
+        const info: { readonly inputArr: QuestionIrtParamInfo[], readonly outputArr: ClassificationByOrder[] }[] = [
+            { inputArr: levelOfItemKnowledgeSorted, outputArr: [] },
+            { inputArr: itemDifficultySorted, outputArr: [] },
+            { inputArr: guessProbabilitySorted, outputArr: [] },
+            { inputArr: mistakeProbabilitySorted, outputArr: [] },
+        ];
+
+        const questionClassificationMap: Map<number, QuestionClassification[]> = new Map();
+
+        let overflow = remainder;
+        for (const infoEl of info) {
+            let currentClassIdx = 0;
+            let currQuestionIdx = 0;
+
+            while (currQuestionIdx < countOfQuestionsToClassify) {
+                let currentClassificationCount = 0;
+                while (
+                    currQuestionIdx < countOfQuestionsToClassify && currentClassificationCount < byClassClassificationCount
+                ) {
+                    const entry = infoEl.inputArr[currQuestionIdx];
+                    infoEl.outputArr.push({
+                        idQuestion: entry.idQuestion,
+                        classification: availableClasses[currentClassIdx],
+                    });
+
+                    if (!questionClassificationMap.has(entry.idQuestion)) {
+                        questionClassificationMap.set(entry.idQuestion, []);
+                    }
+                    questionClassificationMap.get(entry.idQuestion)!.push(availableClasses[currentClassIdx]);
+
+                    currentClassificationCount++;
+                    currQuestionIdx++;
+                }
+    
+                if (overflow > 0 && currQuestionIdx < countOfQuestionsToClassify) {
+                    const entry = infoEl.inputArr[currQuestionIdx];
+                    infoEl.outputArr.push({
+                        idQuestion: entry.idQuestion,
+                        classification: availableClasses[currentClassIdx],
+                    });
+                    currQuestionIdx++;
+                    overflow--;
+                }
+    
+                currentClassIdx++;
+            }
+        }
+
+        const questionClassifications: ClassificationByOrder[] = [];
+
+        for (const entry of questionClassificationMap.entries()) {
+            let avgQuestionDifficulty: QuestionClassification | null = null;
+            const occurancesArr = entry[1];
+    
+            for (const classification of QuestionClassificationUtil.instance.getAvailableClasses()) {
+                let occurs = occurancesArr.reduce((acc, el) => acc + (el === classification ? 1 : 0), 0);
+                if (occurs >= 2) {
+                    avgQuestionDifficulty = classification;
+                    break;
+                }
+            }
+    
+            avgQuestionDifficulty ??= QuestionClassificationUtil.instance.getAverageDifficulty(occurancesArr);
+
+            questionClassifications.push({
+                idQuestion: entry[0],
+                classification: avgQuestionDifficulty,
+            });
+        }
+
+        const sorted = questionClassifications.sort(
+            (c1, c2) =>
+                QuestionClassificationUtil.instance.getDifficultyRank(c1.classification) -
+                QuestionClassificationUtil.instance.getDifficultyRank(c2.classification)
+        );
+
+        let idx = 0;
+        let currClass: QuestionClassification;
+
+        overflow = remainder;
+        while (idx < sorted.length) {
+            let classificationStreak = 0;
+            currClass = sorted[idx].classification;
+            while (idx < sorted.length && sorted[idx].classification === currClass) {
+                idx++;
+                classificationStreak++;
+            }
+
+            while (classificationStreak < byClassClassificationCount && idx < sorted.length) {
+                sorted[idx].classification = currClass;
+                idx++;
+                classificationStreak++;
+            }
+
+            if (overflow > 0 && idx < sorted.length) {
+                sorted[idx].classification = currClass;
+                idx++;
+                overflow--;
+            }
+        }
+
+        return new Map(sorted.map(el => [el.idQuestion, el.classification]));
+    }
+
     protected async runTyped(
         stepInput: (IExtendedRCalculationResult | null)[]
     ): Promise<StepResult<IExtendedRCalculationResult>> {
@@ -237,19 +557,54 @@ export class EdgarQuestionClassificationStep
             very_hard: { itKnow: [...vhArr], itDiff: [...vhArr], guessProb: [...veArr], mistProb: [...vhArr], },
         };
 
-        for (const irtInfo of input.calculatedIrtParams) {
-            irtInfo.questionClassification = this.getClassificationFor(
-                irtInfo,
-                input.calculatedIrtParams.length,
-                classificationObj,
-                classificationBounds,
-            );
+        let classifyBy: "distance" | "order" | "base" = "order" as "distance" | "order" | "base";
 
-            if ((classificationObj[irtInfo.questionClassification] ?? null) === null) {
-                classificationObj[irtInfo.questionClassification] = 0;
+        switch (classifyBy) {
+            case "distance": {
+                const byDistanceClassifications = this.classifyByDistance(input.calculatedIrtParams);
+                for (const irtInfo of input.calculatedIrtParams) {
+                    irtInfo.questionClassification = byDistanceClassifications.get(irtInfo.idQuestion)!;
+                    if ((classificationObj[irtInfo.questionClassification] ?? null) === null) {
+                        classificationObj[irtInfo.questionClassification] = 0;
+                    }
+        
+                    classificationObj[irtInfo.questionClassification]++;
+                }
+
+                break;
             }
 
-            classificationObj[irtInfo.questionClassification]++;
+            case "order": {
+                const byOrderClassifications = this.classifyByOrder(input.calculatedIrtParams);
+                for (const irtInfo of input.calculatedIrtParams) {
+                    irtInfo.questionClassification = byOrderClassifications.get(irtInfo.idQuestion)!;
+                    if ((classificationObj[irtInfo.questionClassification] ?? null) === null) {
+                        classificationObj[irtInfo.questionClassification] = 0;
+                    }
+        
+                    classificationObj[irtInfo.questionClassification]++;
+                }
+                break;
+            }
+
+            case "base": {
+                for (const irtInfo of input.calculatedIrtParams) {
+                    irtInfo.questionClassification = this.getClassificationFor(
+                        irtInfo,
+                        input.calculatedIrtParams.length,
+                        classificationObj,
+                        classificationBounds,
+                    );
+        
+                    if ((classificationObj[irtInfo.questionClassification] ?? null) === null) {
+                        classificationObj[irtInfo.questionClassification] = 0;
+                    }
+        
+                    classificationObj[irtInfo.questionClassification]++;
+                }
+
+                break;
+            }
         }
 
         return {
