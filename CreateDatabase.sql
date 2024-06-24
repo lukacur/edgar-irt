@@ -155,7 +155,7 @@ CREATE TABLE IF NOT EXISTS job_step (
 	job_step_status job_step_status_type NOT NULL DEFAULT 'NOT_STARTED',
 	job_step_status_message TEXT,
 
-	ordinal INT,
+	ordinal INT NOT NULL,
 	parent_job VARCHAR(512) NOT NULL,
 
 	CONSTRAINT fk_js_job
@@ -246,7 +246,6 @@ CREATE TABLE exercise_instance (
 
 	id_student_started INT NOT NULL,
 
-	id_course INT NOT NULL,
 	id_exercise_definition INT,
 
 	start_difficulty statistics_schema.irt_classification_type,
@@ -263,10 +262,6 @@ CREATE TABLE exercise_instance (
 	finished_on TIMESTAMP,
 
     is_finished BOOLEAN NOT NULL DEFAULT FALSE,
-
-	CONSTRAINT fk_exinst_course
-        FOREIGN KEY (id_course)
-        REFERENCES public.course(id),
 
 	CONSTRAINT fk_exinst_exerdef
 		FOREIGN KEY (id_exercise_definition)
@@ -288,7 +283,7 @@ CREATE TABLE exercise_instance_question (
 	question_difficulty statistics_schema.irt_classification_type,
     -- --------------------------- --
 
-    question_ordinal INT,
+    question_ordinal INT NOT NULL,
 
     student_answers INT[] DEFAULT '{}'::INT[],
     correct_answers INT[] DEFAULT '{}'::INT[],
@@ -314,10 +309,6 @@ CREATE TABLE exercise_instance_question (
     CONSTRAINT fk_exinstqt_question
         FOREIGN KEY (id_question)
         REFERENCES public.question(id),
-
-    CONSTRAINT fk_exinstqt_qparamclc
-        FOREIGN KEY (id_question_param_course_level_calculation)
-        REFERENCES statistics_schema.question_param_course_level_calculation(id_question_param_calculation),
 
     CONSTRAINT fk_exinstqt_code_pl
         FOREIGN KEY (student_answer_code_pl)

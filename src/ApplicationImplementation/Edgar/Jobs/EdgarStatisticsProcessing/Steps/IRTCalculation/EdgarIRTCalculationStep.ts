@@ -19,6 +19,10 @@ type BorderingParamValues = {
 export class EdgarIRTCalculationStep
     extends AbstractGenericJobStep<EdgarIRTCalculationStepConfiguration, IRCalculationResult, IExtendedRCalculationResult> {
 
+    private static readonly CORRECTNESS_THRESHOLD = 0.45;
+    private static readonly GOOD_STUDENT_THRESHOLD = 0.7;
+    private static readonly BAD_STUDENT_THRESHOLD = 0.4;
+
     private static readonly IRTCalculationConfiguration: IIRTParameterCalculator = {
         calculateLevelOfItemKnowledge: (qCalcInfo: QuestionCalcultionInfo) => {
             const courseBased = qCalcInfo.courseBasedCalc;
@@ -30,13 +34,20 @@ export class EdgarIRTCalculationStep
             let numberOfBadStudentInorrectAnswers = 0;
 
             for (const testInstance of qCalcInfo.relatedTestInstances) {
-                if ((testInstance.score_perc ?? 0) > 0.7 && (testInstance.scoredOnQuestion ?? 0) !== 0) {
+                const isConsideredGoodStudent =
+                    (testInstance.score_perc ?? 0) > EdgarIRTCalculationStep.GOOD_STUDENT_THRESHOLD;
+
+                const isConsideredCorrect = (
+                    (testInstance.scoredOnQuestion ?? 0) / (testInstance.questionMaxScore ?? 1)
+                ) >= EdgarIRTCalculationStep.CORRECTNESS_THRESHOLD;
+
+                if (isConsideredGoodStudent && isConsideredCorrect) {
                     numberOfGoodStudentCorrectAnswers++;
-                } else if ((testInstance.score_perc ?? 0) > 0.7 && (testInstance.scoredOnQuestion ?? 0) === 0) {
+                } else if (isConsideredGoodStudent) {
                     numberOfGoodStudentIncorrectAnswers++;
-                } else if ((testInstance.score_perc ?? 0) < 0.4 && (testInstance.scoredOnQuestion ?? 0) !== 0) {
+                } else if (!isConsideredGoodStudent && isConsideredCorrect) {
                     numberOfBadStudentCorrectAnswers++;
-                } else if ((testInstance.score_perc ?? 0) < 0.4 && (testInstance.scoredOnQuestion ?? 0) === 0) {
+                } else if (!isConsideredGoodStudent) {
                     numberOfBadStudentInorrectAnswers
                 }
             }
@@ -45,20 +56,39 @@ export class EdgarIRTCalculationStep
                     (
                         (numberOfGoodStudentCorrectAnswers + numberOfBadStudentInorrectAnswers) /
                         (numberOfBadStudentCorrectAnswers + numberOfGoodStudentIncorrectAnswers + 1)
-                    ) + 1
-                ) *
+                    ) /*+ 1*/
+                )/* *
                 ((courseBased.incorrectPerc + 0.1) / (courseBased.correctPerc + 0.1)) *
-                (testBased.reduce((acc, e) => acc + (e.partOfTotalSum ?? 0), 0) * (testBased.length + 1)) * 10;
+                (testBased.reduce((acc, e) => acc + (e.partOfTotalSum ?? 0), 0) * (testBased.length + 1)) * 10*/;
         },
 
         calculateItemDifficulty: (qCalcInfo: QuestionCalcultionInfo) => {
             const courseBased = qCalcInfo.courseBasedCalc;
             const testBased = qCalcInfo.testBasedCalcs;
 
+            let partialsConsideredCorrect = 0;
+            let partialsConsideredIncorrect = 0;
+
+            for (const rti of qCalcInfo.relatedTestInstances) {
+                if ((rti.scoredOnQuestion ?? 0) / (rti.questionMaxScore ?? 1) >= EdgarIRTCalculationStep.CORRECTNESS_THRESHOLD) {
+                    partialsConsideredCorrect++;
+                } else {
+                    partialsConsideredIncorrect++;
+                }
+            }
+
+            const partialsTotal = partialsConsideredCorrect + partialsConsideredIncorrect;
+
+            const correctPartialsPerc = (partialsConsideredCorrect / partialsTotal) * courseBased.partialPerc;
+            const incorrectPartialsPerc = (partialsConsideredIncorrect / partialsTotal) * courseBased.partialPerc;
+
+            const finalCrsBasedCorrPerc = correctPartialsPerc + courseBased.correctPerc;
+            const finalCrsBasedIncPerc = incorrectPartialsPerc + courseBased.incorrectPerc;
+
             return (1.1 / (courseBased.scorePercMean + 0.1)) *
                 Math.sqrt(qCalcInfo.relatedTestInstances.length + 1) *
-                ((courseBased.incorrectPerc + 0.1) / (courseBased.correctPerc + 0.1)) *
-                (testBased.reduce((acc, e) => acc + (e.scorePercMedian ?? 0), 0) * (testBased.length + 1));
+                ((finalCrsBasedCorrPerc + 0.1) / (finalCrsBasedIncPerc + 0.1))/* *
+                (testBased.reduce((acc, e) => acc + (e.scorePercMedian ?? 0), 0) * (testBased.length + 1))*/;
         },
 
         calculateItemGuessProbability: (qCalcInfo: QuestionCalcultionInfo) => {
@@ -66,7 +96,15 @@ export class EdgarIRTCalculationStep
             const testBased = qCalcInfo.testBasedCalcs;
 
             const numberOfCorrectAnswersByLowScoringStudents = qCalcInfo.relatedTestInstances.reduce(
-                (acc, el) => acc += (((el.score_perc ?? 0) < 0.4 && el.scoredOnQuestion !== 0) ? 1 : 0),
+                (acc, el) => 
+                    acc += (
+                        (
+                            (el.score_perc ?? 0) < EdgarIRTCalculationStep.BAD_STUDENT_THRESHOLD &&
+                                (
+                                    (el.scoredOnQuestion ?? 0) / (el.questionMaxScore ?? 1)
+                                ) >= EdgarIRTCalculationStep.CORRECTNESS_THRESHOLD
+                        ) ? 1 : 0
+                    ),
                 0
             );
 
@@ -78,13 +116,21 @@ export class EdgarIRTCalculationStep
             const courseBased = qCalcInfo.courseBasedCalc;
             const testBased = qCalcInfo.testBasedCalcs;
 
-            const numberOfIncorrectAnswersByLowScoringStudents = qCalcInfo.relatedTestInstances.reduce(
-                (acc, el) => acc += (((el.score_perc ?? 0) > 0.75 && el.scoredOnQuestion === 0) ? 1 : 0),
+            const numberOfIncorrectAnswersByHighScoringStudents = qCalcInfo.relatedTestInstances.reduce(
+                (acc, el) =>
+                    acc += (
+                        (
+                            (el.score_perc ?? 0) > EdgarIRTCalculationStep.GOOD_STUDENT_THRESHOLD &&
+                            (
+                                (el.scoredOnQuestion ?? 0) / (el.questionMaxScore ?? 1)
+                            ) < EdgarIRTCalculationStep.CORRECTNESS_THRESHOLD
+                        ) ? 1 : 0
+                    ),
                 0
             );
 
             return courseBased.incorrectPerc *
-                (1 - (numberOfIncorrectAnswersByLowScoringStudents / qCalcInfo.relatedTestInstances.length));
+                (1 - (numberOfIncorrectAnswersByHighScoringStudents / qCalcInfo.relatedTestInstances.length));
         }
     };
 
