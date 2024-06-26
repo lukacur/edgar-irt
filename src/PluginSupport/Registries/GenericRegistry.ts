@@ -10,9 +10,9 @@ export abstract class GenericRegistry {
     public getItem<TReturnObject extends object>(
         ieType: string,
         ...args: any[]
-    ): TReturnObject {
+    ): TReturnObject | null {
         if (!this.registeredInputExtractors.has(ieType)) {
-            throw new Error(`Requested item was not registered: no item present under key ${ieType}`);
+            return null;
         }
 
         const regIe = this.registeredInputExtractors.get(ieType)!;
@@ -28,5 +28,15 @@ export abstract class GenericRegistry {
                 regIe.create(...args) :
                 regIe(...args)
         );
+    }
+
+    public getRegisteredItems(): [string, GenericFactory | FactoryDelegate][] {
+        const arr: [string, GenericFactory | FactoryDelegate][] = [];
+
+        for (const entry of this.registeredInputExtractors.entries()) {
+            arr.push(entry);
+        }
+
+        return arr;
     }
 }

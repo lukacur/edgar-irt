@@ -215,9 +215,13 @@ export class AdaptiveGradingDaemon {
     private async runRefreshCheck() {
         FrameworkLogger.info(AdaptiveGradingDaemon, "Running scheduled refresh check...");
 
-        const dbConn: DatabaseConnection = DatabaseConnectionRegistry.instance.getItem(
+        const dbConn: DatabaseConnection | null = DatabaseConnectionRegistry.instance.getItem(
             RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY
         );
+        if (dbConn === null) {
+            FrameworkLogger.warn(AdaptiveGradingDaemon, "Unable to fetch database connection");
+            return;
+        }
 
         const escapedSchemaName =
             await dbConn.escapeIdentifier(FrameworkConfigurationProvider.instance.getJobSchemaName());
@@ -331,9 +335,13 @@ export class AdaptiveGradingDaemon {
     private async runRecalculationCheck() {
         FrameworkLogger.info(AdaptiveGradingDaemon, "Running scheduled recalculation check...");
 
-        const dbConn: DatabaseConnection = DatabaseConnectionRegistry.instance.getItem(
+        const dbConn: DatabaseConnection | null = DatabaseConnectionRegistry.instance.getItem(
             RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY
         );
+        if (dbConn === null) {
+            FrameworkLogger.warn(AdaptiveGradingDaemon, "Unable to fetch database connection");
+            return;
+        }
 
         const escapedSchemaName =
             await dbConn.escapeIdentifier(FrameworkConfigurationProvider.instance.getJobSchemaName());
@@ -429,9 +437,13 @@ export class AdaptiveGradingDaemon {
     private async runAutoJobStart() {
         FrameworkLogger.info(AdaptiveGradingDaemon, "Running scheduled auto job start...");
 
-        const dbConn: DatabaseConnection = DatabaseConnectionRegistry.instance.getItem(
+        const dbConn: DatabaseConnection | null = DatabaseConnectionRegistry.instance.getItem(
             RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY
         );
+        if (dbConn === null) {
+            FrameworkLogger.warn(AdaptiveGradingDaemon, "Unable to fetch database connection");
+            return;
+        }
 
         const courseIds = await dbConn.doQuery<{ id: number }>(
             `SELECT public.course.id
@@ -496,12 +508,18 @@ export class AdaptiveGradingDaemon {
             throw new Error(`Unable to get registered queue with name '${this.usedWorkQueue}'`);
         }
 
+        const dbConn: DatabaseConnection | null = DatabaseConnectionRegistry.instance.getItem(
+            RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY
+        );
+        if (dbConn === null) {
+            FrameworkLogger.error(AdaptiveGradingDaemon, "Unable to fetch database connection");
+            return;
+        }
+
         this.backedJobService = JobService.configureNew()
             .useProvider(
                 new EdgarStatProcJobProvider(
-                    DatabaseConnectionRegistry.instance.getItem(
-                        RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY
-                    ),
+                    dbConn,
                     new CourseStatisticsCalculationQueue(
                         `StatProcQueueInst${randomUUID()}`,
                         this.usedWorkQueue,

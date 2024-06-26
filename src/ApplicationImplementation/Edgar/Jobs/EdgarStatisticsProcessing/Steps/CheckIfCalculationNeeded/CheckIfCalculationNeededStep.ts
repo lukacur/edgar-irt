@@ -2,6 +2,7 @@ import { RegisterDelegateToRegistry } from "../../../../../../ApplicationModel/D
 import { AbstractGenericJobStep } from "../../../../../../ApplicationModel/Jobs/AbstractGenericJobStep.js";
 import { JobStepDescriptor } from "../../../../../../ApplicationModel/Jobs/IJobConfiguration.js";
 import { StepResult } from "../../../../../../ApplicationModel/Jobs/IJobStep.js";
+import { FrameworkLogger } from "../../../../../../Logger/FrameworkLogger.js";
 import { GenericFactory } from "../../../../../../PluginSupport/GenericFactory.js";
 import { DatabaseConnectionRegistry } from "../../../../../../PluginSupport/Registries/Implementation/DatabaseConnectionRegistry.js";
 import { DatabaseConnection } from "../../../../../Database/DatabaseConnection.js";
@@ -107,10 +108,18 @@ export class CheckIfCalculationNeededStep
             throw new Error("Database connection is required but was not provided in the step descriptor");
         }
 
+        const dbConn: DatabaseConnection | null = DatabaseConnectionRegistry.instance.getItem(
+            config.databaseConnection
+        );
+        if (dbConn === null) {
+            FrameworkLogger.error(CheckIfCalculationNeededStep, "Unable to fetch database connection");
+            throw new Error("Unable to fetch database connection");
+        }
+
         return new CheckIfCalculationNeededStep(
             stepDescriptor.stepTimeoutMs,
             <CheckIfCalculationNeededStepConfiguration>stepDescriptor.configContent,
-            DatabaseConnectionRegistry.instance.getItem(config.databaseConnection),
+            dbConn,
             stepDescriptor.isCritical,
             stepDescriptor.resultTTL,
         );

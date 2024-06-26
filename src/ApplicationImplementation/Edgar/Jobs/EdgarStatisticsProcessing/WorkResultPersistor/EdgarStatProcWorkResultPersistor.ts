@@ -1,6 +1,7 @@
 import { RegisterDelegateToRegistry } from "../../../../../ApplicationModel/Decorators/Registration.decorator.js";
 import { DataPersistorConfig } from "../../../../../ApplicationModel/Jobs/IJobConfiguration.js";
 import { AbstractTypedWorkResultPersistor } from "../../../../../ApplicationModel/Jobs/WorkResultPersistors/AbstractTypedWorkResultPersistor.js";
+import { FrameworkLogger } from "../../../../../Logger/FrameworkLogger.js";
 import { DatabaseConnectionRegistry } from "../../../../../PluginSupport/Registries/Implementation/DatabaseConnectionRegistry.js";
 import { DatabaseConnection } from "../../../../Database/DatabaseConnection.js";
 import { TransactionContext } from "../../../../Database/TransactionContext.js";
@@ -281,8 +282,14 @@ export class EdgarStatProcWorkResultPersistor
             throw new Error("Database connection is required but was not provided in the configuration");
         }
 
-        return new EdgarStatProcWorkResultPersistor(
-            DatabaseConnectionRegistry.instance.getItem(configEntry.databaseConnection),
+        const dbConn: DatabaseConnection | null = DatabaseConnectionRegistry.instance.getItem(
+            configEntry.databaseConnection
         );
+        if (dbConn === null) {
+            FrameworkLogger.error(EdgarStatProcWorkResultPersistor, "Unable to fetch database connection");
+            throw new Error("Unable to fetch database connection");
+        }
+
+        return new EdgarStatProcWorkResultPersistor(dbConn);
     }
 }

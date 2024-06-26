@@ -9,6 +9,7 @@ import { RegisterDelegateToRegistry } from "../../../../../ApplicationModel/Deco
 import { IJobConfiguration, JobWorkerConfig } from "../../../../../ApplicationModel/Jobs/IJobConfiguration.js";
 import { DatabaseConnectionRegistry } from "../../../../../PluginSupport/Registries/Implementation/DatabaseConnectionRegistry.js";
 import { FrameworkConfigurationProvider } from "../../../../../ApplicationModel/FrameworkConfiguration/FrameworkConfigurationProvider.js";
+import { FrameworkLogger } from "../../../../../Logger/FrameworkLogger.js";
 
 type CalculationParams = {
     nBestParts: number | null,
@@ -214,8 +215,14 @@ export class EdgarStatProcWorker extends AbstractJobWorker<
         EdgarStatsProcessingConstants.JOB_WORKER_REGISTRY_ENTRY
     )
     public create(config: JobWorkerConfig, ...ctorArgs: any[]): object {
-        return new EdgarStatProcWorker(
-            DatabaseConnectionRegistry.instance.getItem(config.databaseConnection)
+        const dbConn: DatabaseConnection | null = DatabaseConnectionRegistry.instance.getItem(
+            config.databaseConnection
         );
+        if (dbConn === null) {
+            FrameworkLogger.error(EdgarStatProcWorker, "Unable to fetch database connection");
+            throw new Error("Unable to fetch database connection");
+        }
+
+        return new EdgarStatProcWorker(dbConn);
     }
 }

@@ -11,7 +11,7 @@ export class DatabaseConnectionRegistry extends GenericRegistry {
     public override getItem<TReturnObject extends object = DatabaseConnection>(
         ieType: string,
         ...args: any[]
-    ): TReturnObject {
+    ): TReturnObject | null {
         return <TReturnObject>super.getItem(ieType, ...args);
     }
 }

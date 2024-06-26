@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
-import { IJobStep } from "../../../ApplicationModel/Jobs/IJobStep.js";
 import { GenericRegistry } from "../GenericRegistry.js";
+import { IJobStep } from "ApplicationModel/Jobs/IJobStep.js";
 
 export class JobStepRegistry extends GenericRegistry {
     //#region SingletonHandling
@@ -12,7 +12,7 @@ export class JobStepRegistry extends GenericRegistry {
     public override getItem<TReturnObject extends object = IJobStep>(
         ieType: string,
         ...args: any[]
-    ): TReturnObject {
+    ): TReturnObject | null {
         const step = <TReturnObject & { stepRunId: string }>super.getItem(ieType, ...args);
         step.stepRunId = randomUUID();
 

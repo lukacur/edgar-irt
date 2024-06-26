@@ -1,8 +1,10 @@
 import { RegisterFactoryToRegistry } from "../../../../../ApplicationModel/Decorators/Registration.decorator.js";
 import { AbstractGenericInputDataExtractor } from "../../../../../ApplicationModel/Jobs/DataExtractors/AbstractGenericInputDataExtractor.js";
 import { IJobConfiguration, InputExtractorConfig } from "../../../../../ApplicationModel/Jobs/IJobConfiguration.js";
+import { FrameworkLogger } from "../../../../../Logger/FrameworkLogger.js";
 import { GenericFactory } from "../../../../../PluginSupport/GenericFactory.js";
 import { DatabaseConnectionRegistry } from "../../../../../PluginSupport/Registries/Implementation/DatabaseConnectionRegistry.js";
+import { DatabaseConnection } from "../../../../Database/DatabaseConnection.js";
 import { CourseBasedBatch } from "../../../Batches/CourseBasedBatch.js";
 import { EdgarStatsProcessingConstants } from "../../../EdgarStatsProcessing.constants.js";
 import { EdgarStatProcJobConfiguration } from "../Provider/EdgarStatProcJobConfiguration.js";
@@ -47,8 +49,16 @@ export class EdgarStatProcDataExtractor
                 const configContent = extractorConfiguration.configContent;
                 const serObj = {};
 
+                const dbConn: DatabaseConnection | null = DatabaseConnectionRegistry.instance.getItem(
+                    configContent.databaseConnection
+                );
+                if (dbConn === null) {
+                    FrameworkLogger.error(EdgarStatProcDataExtractor, "Unable to fetch database connection");
+                    throw new Error("Unable to fetch database connection");
+                }
+
                 const batch = new CourseBasedBatch(
-                    DatabaseConnectionRegistry.instance.getItem(configContent.databaseConnection),
+                    dbConn,
                     configContent.idCourse,
                     configContent.idStartAcademicYear,
                     configContent.numberOfIncludedPreviousYears,

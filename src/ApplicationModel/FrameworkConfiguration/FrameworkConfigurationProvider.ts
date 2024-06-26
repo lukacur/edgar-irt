@@ -1,5 +1,6 @@
 import { DatabaseConnection } from "../../ApplicationImplementation/Database/DatabaseConnection.js";
 import { EdgarDatabaseMailer } from "../../ApplicationImplementation/Mailer/EdgarDatabaseMailer.js";
+import { FrameworkLogger } from "../../Logger/FrameworkLogger.js";
 import { DatabaseConnectionRegistry } from "../../PluginSupport/Registries/Implementation/DatabaseConnectionRegistry.js";
 import { RegistryDefaultConstants } from "../../PluginSupport/RegistryDefault.constants.js";
 import { MailerProvider } from "../../Util/MailerProvider.js";
@@ -50,9 +51,16 @@ export class FrameworkConfigurationProvider {
             }
 
             case "edgar-db-mailer": {
+                const dbConn: DatabaseConnection | null = DatabaseConnectionRegistry.instance.getItem(
+                    mailerConfig.databaseConnection
+                );
+                if (dbConn === null) {
+                    FrameworkLogger.error(Object, "Unable to fetch database connection");
+                    throw new Error("Unable to fetch database connection");
+                }
                 MailerProvider.instance.registerMailer(
                     new EdgarDatabaseMailer(
-                        DatabaseConnectionRegistry.instance.getItem(mailerConfig.databaseConnection),
+                        dbConn,
                         this.configuration.smtpConfiguration,
                         mailerConfig.workingSchema,
                     )
@@ -110,9 +118,15 @@ export class FrameworkConfigurationProvider {
     }
 
     public getDefaultConnection(): DatabaseConnection {
-        return DatabaseConnectionRegistry.instance.getItem(
+        const dbConn: DatabaseConnection | null = DatabaseConnectionRegistry.instance.getItem(
             RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY
         );
+        if (dbConn === null) {
+            FrameworkLogger.error(Object, "Unable to fetch database connection");
+            throw new Error("Unable to fetch database connection");
+        }
+
+        return dbConn;
     }
 //#endregion
 

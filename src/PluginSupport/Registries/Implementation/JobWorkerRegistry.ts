@@ -13,7 +13,7 @@ export class JobWorkerRegistry extends GenericRegistry {
         ieType: string,
         workerConfig: JobWorkerConfig,
         ...args: any[]
-    ): TReturnObject {
+    ): TReturnObject | null {
         return <TReturnObject>super.getItem(ieType, workerConfig, ...args);
     }
 }

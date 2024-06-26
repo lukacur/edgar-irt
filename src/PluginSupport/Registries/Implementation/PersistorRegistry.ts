@@ -8,7 +8,10 @@ export class PersistorRegistry extends GenericRegistry {
 
     private constructor() { super(); }
 
-    public override getItem<TReturnObject extends object = IWorkResultPersistor>(ieType: string, ...args: any[]): TReturnObject {
+    public override getItem<TReturnObject extends object = IWorkResultPersistor>(
+        ieType: string,
+        ...args: any[]
+    ): TReturnObject | null {
         return <TReturnObject> super.getItem(ieType, ...args);
     }
 }
