@@ -87,6 +87,16 @@ export function RegisterFactoryToRegistry(
                 PersistorRegistry.instance.registerItem(key, factoryInst);
                 break;
             }
+
+            case "JobStep": {
+                JobStepRegistry.instance.registerItem(key, factoryInst);
+                break;
+            }
+
+            case "DatabaseConnection": {
+                DatabaseConnectionRegistry.instance.registerItem(key, factoryInst);
+                break;
+            }
         }
 
         return target;
