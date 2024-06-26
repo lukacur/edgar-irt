@@ -416,7 +416,7 @@ export class AdaptiveGradingDaemon {
         FrameworkLogger.info(AdaptiveGradingDaemon, "Recalculation check interval found, configuring...");
 
         const getIntervalTimeoutId: () => (NodeJS.Timeout | null) = TimeoutUtil.doIntervalTimeout(
-            AdaptiveGradingDaemon.getIntervalMillis(this.configuration!.calculationRefreshInterval),
+            AdaptiveGradingDaemon.getIntervalMillis(this.configuration!.recalculationCheckInterval),
             async () => {
                 if (this.stopSignalProm.isFinished()) {
                     const tid = getIntervalTimeoutId();
