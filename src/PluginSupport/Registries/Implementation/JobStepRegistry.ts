@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import { GenericRegistry } from "../GenericRegistry.js";
-import { IJobStep } from "ApplicationModel/Jobs/IJobStep.js";
+import { IJobStep } from "../../../ApplicationModel/Jobs/IJobStep.js";
 
 export class JobStepRegistry extends GenericRegistry {
     //#region SingletonHandling
