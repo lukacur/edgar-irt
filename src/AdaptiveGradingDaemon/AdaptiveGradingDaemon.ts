@@ -1,5 +1,5 @@
 import { DaemonConfig } from "../ApplicationModel/Daemon/DaemonConfig.model.js";
-import { AdaptiveGradingConfigProvider } from "../ApplicationImplementation/ApplicationConfiguration/AdaptiveGradingConfigProvider.js";
+import { AdaptiveGradingConfigProvider } from "./AdaptiveGradingConfigProvider.js";
 import { IConfiguredJobService, JobService } from "../JobService.js";
 import { EdgarStatProcJobProvider } from "../ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Provider/EdgarStatProcJobProvider.js";
 import { DatabaseConnectionRegistry } from "../PluginSupport/Registries/Implementation/DatabaseConnectionRegistry.js";

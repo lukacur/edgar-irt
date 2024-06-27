@@ -6,6 +6,7 @@ import { RegistryDefaultConstants } from "./PluginSupport/RegistryDefault.consta
 import { FrameworkConfigurationProvider } from "./ApplicationModel/FrameworkConfiguration/FrameworkConfigurationProvider.js";
 import { PluginsRegistrySource } from "./PluginSupport/Registries/RegistrySources/PluginsRegistrySource.js";
 import { RegistryUtil } from "./Util/RegistryUtil.js";
+import { SignalsUtil } from "./Util/SignalsUtil.js";
 
 export class EdgarIRTEntrypoint {
     public static async main(args: string[]): Promise<void> {
@@ -62,6 +63,7 @@ export class EdgarIRTEntrypoint {
         const prm = new DelayablePromise<void>();
 
         process.on("SIGTERM", (sig) => {
+            SignalsUtil.instance.emit(sig);
             terminated = true;
             console.log("Force shutdown requested (user sent SIGTERM)");
             daemon.forceShutdown("Terminated by user")
@@ -71,6 +73,7 @@ export class EdgarIRTEntrypoint {
         });
 
         process.on("SIGINT", async (sig) => {
+            SignalsUtil.instance.emit(sig);
             terminated = true;
             let exitCode = 0;
 

@@ -11,6 +11,7 @@ import fetch, { Response, Headers } from 'node-fetch';
 import JSZip from "jszip";
 import { readFile } from "fs/promises";
 import path from "path";
+import { SignalsUtil } from "../../../../../../Util/SignalsUtil.js";
 
 type Judge0Response = {
     stdout: string,
@@ -90,6 +91,11 @@ export class EdgarJudge0StatProcJobStep
         ).then(resp => delProm.delayedResolve(resp));
 
         let tid: NodeJS.Timeout | null;
+        const termLst: NodeJS.SignalsListener = (sig: NodeJS.Signals) => {
+            delProm.delayedReject();
+        };
+
+        SignalsUtil.instance.registerTerminationListener(termLst);
         try {
             const response: Response = await delProm.getWrappedPromise();
             if ((tid = getExecTimeout()) !== null) {
@@ -173,6 +179,8 @@ ${msg.split("\n").join("    \n")}`,
                 isCritical: this.isCritical,
                 canRetry: false,
             };
+        } finally {
+            SignalsUtil.instance.unregisterTerminationListener(termLst);
         }
     }
 

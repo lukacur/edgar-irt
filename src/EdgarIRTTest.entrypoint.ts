@@ -42,6 +42,7 @@ import { RegistryDefaultConstants } from "./PluginSupport/RegistryDefault.consta
 import { DelayablePromise } from "./Util/DelayablePromise.js";
 import { RegistryUtil } from "./Util/RegistryUtil.js";
 import { TimeoutUtil } from "./Util/TimeoutUtil.js";
+import { SignalsUtil } from "./Util/SignalsUtil.js";
 
 type AvailableTests =
     "db" |
@@ -273,6 +274,7 @@ export class EdgarIRTTestEntrypoint {
         );*/
 
         process.on("SIGTERM", (sig) => {
+            SignalsUtil.instance.emit(sig);
             terminated = true;
             console.log("Force shutdown requested (user sent SIGTERM)");
             daemon.forceShutdown("Terminated by user")
@@ -282,6 +284,7 @@ export class EdgarIRTTestEntrypoint {
         });
 
         process.on("SIGINT", async (sig) => {
+            SignalsUtil.instance.emit(sig);
             terminated = true;
             let exitCode = 0;
 
