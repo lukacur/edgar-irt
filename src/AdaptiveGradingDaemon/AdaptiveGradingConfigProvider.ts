@@ -1,7 +1,7 @@
 import path from "path";
 import * as fs from 'fs';
 import { readFile } from "fs/promises";
-import { AdaptiveGradingDaemonConfig } from "../../AdaptiveGradingDaemon/AdaptiveGradingDaemonConfig.model.js";
+import { AdaptiveGradingDaemonConfig } from "./AdaptiveGradingDaemonConfig.model.js";
 
 export class AdaptiveGradingConfigProvider {
     public static readonly instance = new AdaptiveGradingConfigProvider();
