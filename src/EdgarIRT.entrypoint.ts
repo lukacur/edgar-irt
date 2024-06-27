@@ -37,11 +37,11 @@ import { EdgarQuestionClassificationStep } from "./ApplicationImplementation/Edg
 import { EdgarQuestionClassificationStepConfiguration } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Steps/QuestionClassiffication/EdgarQuestionClassificationStepConfiguration.js";
 import { PluginsRegistrySource } from "./PluginSupport/Registries/RegistrySources/PluginsRegistrySource.js";
 import { RegistryUtil } from "./Util/RegistryUtil.js";
-import { CourseStatisticsProcessingRequest, CourseStatisticsCalculationQueue } from "./AdaptiveGradingDaemon/StatisticsCalculationQueues/CourseStatisticsCalculationQueue.js";
 import { IQueueSystemBase } from "./ApplicationModel/Queue/IQueueSystemBase.js";
 import { DirQueueSystem } from "./ApplicationModel/Queue/QueueSystemImplementations/DirQueueSystem.js";
 import { FileQueueSystem } from "./ApplicationModel/Queue/QueueSystemImplementations/FileQueueSystem.js";
 import { PgBossQueueSystem } from "./ApplicationModel/Queue/QueueSystemImplementations/PgBossQueueSystem.js";
+import { CourseStatisticsProcessingRequest, CourseStatisticsCalculationQueue } from "./AdaptiveGradingDaemon/StatisticsCalculationQueues/CourseStatisticsCalculationQueue.js";
 
 type AvailableTests =
     "db" |

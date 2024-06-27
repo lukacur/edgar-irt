@@ -1,4 +1,4 @@
-import { DaemonConfig, QueueDescriptor, ScanInterval } from "../../AdaptiveGradingDaemon/DaemonConfig.model.js";
+import { DaemonConfig, QueueDescriptor, ScanInterval } from "./DaemonConfig.model.js";
 import { QueueClosedException } from "../../Exceptions/QueueClosedException.js";
 import { DatabaseConnection } from "../../ApplicationImplementation/Database/DatabaseConnection.js";
 import { ErrorReport, JobCompletionListener } from "../../JobRunner.js";

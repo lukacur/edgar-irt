@@ -1,4 +1,4 @@
-import { DaemonConfig } from "./DaemonConfig.model.js";
+import { DaemonConfig } from "../ApplicationModel/Daemon/DaemonConfig.model.js";
 import { AdaptiveGradingConfigProvider } from "../ApplicationImplementation/ApplicationConfiguration/AdaptiveGradingConfigProvider.js";
 import { IConfiguredJobService, JobService } from "../JobService.js";
 import { EdgarStatProcJobProvider } from "../ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Provider/EdgarStatProcJobProvider.js";
@@ -15,6 +15,7 @@ import { EdgarStatsProcessingConstants } from "../ApplicationImplementation/Edga
 import { EdgarStatisticsProcessingJobRequestParser } from "../ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/EdgarStatisticsProcessingJobRequestParser.js";
 import { GenericCheckInfo, JobExecutionDaemonBase } from "../ApplicationModel/Daemon/JobExecutionDaemonBase.js";
 import { CourseStatisticsCalculationQueue, CourseStatisticsProcessingRequest } from "./StatisticsCalculationQueues/CourseStatisticsCalculationQueue.js";
+import { AdaptiveGradingDaemonConfig } from "./AdaptiveGradingDaemonConfig.model.js";
 
 type ForceShutdownHandler<TSource> = (source: TSource, reason?: string) => void;
 
@@ -140,6 +141,7 @@ export class AdaptiveGradingDaemon extends JobExecutionDaemonBase {
         configuration: DaemonConfig,
     ): Promise<IJobConfiguration | null> {
         const req = (<IStartJobRequest<CourseStatisticsProcessingRequest>>request);
+        const config = (<AdaptiveGradingDaemonConfig>configuration);
         return await JobRequestParserRegistry.instance
             .getItem<EdgarStatisticsProcessingJobRequestParser>(
                 EdgarStatsProcessingConstants.JOB_REQUEST_PARSER_ENTRY
@@ -148,7 +150,7 @@ export class AdaptiveGradingDaemon extends JobExecutionDaemonBase {
                 startJobReq: req,
                 calculationsValidFor: configuration.resultStalenessInterval,
                 
-                calculationConfig: configuration.calculationConfig,
+                calculationConfig: config.calculationConfig,
                 jobQueue: this.usedWorkQueue!.queueName,
                 
                 jobName: req.jobName ??
@@ -198,8 +200,10 @@ export class AdaptiveGradingDaemon extends JobExecutionDaemonBase {
             throw new Error("Daemon not properly configured");
         }
 
+        const config = (<AdaptiveGradingDaemonConfig>configuration);
+
         const request: IStartJobRequest<CourseStatisticsProcessingRequest> =
-            { ...configuration.autoJobStartInfo.startJobRequest };
+            { ...config.autoJobStartInfo.startJobRequest };
 
         request.request.idCourse = idCourseObj.id;
 

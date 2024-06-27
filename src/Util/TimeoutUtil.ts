@@ -1,4 +1,4 @@
-import { ScanInterval } from "../AdaptiveGradingDaemon/DaemonConfig.model.js";
+import { ScanInterval } from "../ApplicationModel/Daemon/DaemonConfig.model.js";
 
 class TimerInstance {
     private static readonly MAX_INT = 2147483647;
