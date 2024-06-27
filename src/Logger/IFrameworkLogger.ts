@@ -1,4 +1,4 @@
-export type CtorType = new(...args: any[]) => any;
+export type CtorType = abstract new(...args: any[]) => any;
 
 export interface IFrameworkLogger {
     debug(ctor: CtorType, message: string, ...optionalData: any[]): void;

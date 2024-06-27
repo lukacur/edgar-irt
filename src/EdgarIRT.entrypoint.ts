@@ -7,11 +7,6 @@ import { DelayablePromise } from "./Util/DelayablePromise.js";
 import { CourseBasedBatch } from "./ApplicationImplementation/Edgar/Batches/CourseBasedBatch.js";
 import { mkdir, readFile, writeFile } from 'fs/promises'
 import { existsSync } from "fs";
-import { IQueueSystemBase } from "./AdaptiveGradingDaemon/Queue/IQueueSystemBase.js";
-import { FileQueueSystem } from "./AdaptiveGradingDaemon/Queue/QueueSystemImplementations/FileQueueSystem.js";
-import { DirQueueSystem } from "./AdaptiveGradingDaemon/Queue/QueueSystemImplementations/DirQueueSystem.js";
-import { PgBossQueueSystem } from "./AdaptiveGradingDaemon/Queue/QueueSystemImplementations/PgBossQueueSystem.js";
-import { CourseStatisticsCalculationQueue, CourseStatisticsProcessingRequest } from "./AdaptiveGradingDaemon/Queue/StatisticsCalculationQueues/CourseStatisticsCalculationQueue.js";
 import { EdgarStatProcJobProvider } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Provider/EdgarStatProcJobProvider.js";
 import { EdgarStatProcDataExtractor } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/DataExtractor/EdgarStatProcDataExtractor.js";
 import { EdgarStatProcWorker } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Worker/EdgarStatProcWorker.js";
@@ -40,6 +35,13 @@ import { EdgarIRTCalculationStep } from "./ApplicationImplementation/Edgar/Jobs/
 import { EdgarIRTCalculationStepConfiguration } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Steps/IRTCalculation/EdgarIRTCalculationStepConfiguration.js";
 import { EdgarQuestionClassificationStep } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Steps/QuestionClassiffication/EdgarQuestionClassificationStep.js";
 import { EdgarQuestionClassificationStepConfiguration } from "./ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Steps/QuestionClassiffication/EdgarQuestionClassificationStepConfiguration.js";
+import { PluginsRegistrySource } from "./PluginSupport/Registries/RegistrySources/PluginsRegistrySource.js";
+import { RegistryUtil } from "./Util/RegistryUtil.js";
+import { CourseStatisticsProcessingRequest, CourseStatisticsCalculationQueue } from "./AdaptiveGradingDaemon/StatisticsCalculationQueues/CourseStatisticsCalculationQueue.js";
+import { IQueueSystemBase } from "./ApplicationModel/Queue/IQueueSystemBase.js";
+import { DirQueueSystem } from "./ApplicationModel/Queue/QueueSystemImplementations/DirQueueSystem.js";
+import { FileQueueSystem } from "./ApplicationModel/Queue/QueueSystemImplementations/FileQueueSystem.js";
+import { PgBossQueueSystem } from "./ApplicationModel/Queue/QueueSystemImplementations/PgBossQueueSystem.js";
 
 type AvailableTests =
     "db" |
@@ -216,8 +218,6 @@ export class MainRunner {
 
         const daemon = new AdaptiveGradingDaemon(
             "./adapGrading.config.json",
-            () => console.log("Yea..."),
-            { waitForActionCompletion: true, actionProgress: { reportActionProgress: true, noReports: 10 } },
             (dmn, reason) => console.log(`This is a forced daemon shutdown: ${reason ?? ""}`)
         );
 

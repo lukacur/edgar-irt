@@ -1,5 +1,4 @@
 import { randomUUID } from "crypto";
-import { CourseStatisticsCalculationQueue } from "../../../../../AdaptiveGradingDaemon/Queue/StatisticsCalculationQueues/CourseStatisticsCalculationQueue.js";
 import { AbstractGenericJobProvider } from "../../../../../ApplicationModel/Jobs/Providers/AbstractGenericJobProvider.js";
 import { DatabaseConnection } from "../../../../Database/DatabaseConnection.js";
 import { EdgarStatProcJobConfiguration } from "./EdgarStatProcJobConfiguration.js";
@@ -7,6 +6,7 @@ import { IJobStep } from "../../../../../ApplicationModel/Jobs/IJobStep.js";
 import { IJobConfiguration } from "../../../../../ApplicationModel/Jobs/IJobConfiguration.js";
 import { DelayablePromise } from "../../../../../Util/DelayablePromise.js";
 import { TimeoutUtil } from "../../../../../Util/TimeoutUtil.js";
+import { CourseStatisticsCalculationQueue } from "../../../../../AdaptiveGradingDaemon/StatisticsCalculationQueues/CourseStatisticsCalculationQueue.js";
 
 type JobQueueInfoEntry = {
     timeoutId: () => (NodeJS.Timeout | null),

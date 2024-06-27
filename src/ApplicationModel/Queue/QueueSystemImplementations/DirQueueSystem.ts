@@ -4,7 +4,7 @@ import { AsyncMutex } from "../../Mutex/AsyncMutex.js";
 import { IQueueSystemBase } from "../IQueueSystemBase.js";
 import path from "path";
 import { readFile, readdir, unlink, writeFile } from "fs/promises";
-import { QueueClosedException } from "../../Exceptions/QueueClosedException.js";
+import { QueueClosedException } from "../../../Exceptions/QueueClosedException.js";
 
 export class DirQueueSystem<TQueueData> implements IQueueSystemBase<TQueueData> {
     private readonly dequeueRequests: DelayablePromise<TQueueData>[] = [];

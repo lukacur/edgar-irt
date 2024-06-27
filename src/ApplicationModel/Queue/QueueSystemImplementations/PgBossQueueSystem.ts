@@ -2,7 +2,8 @@ import PgBoss from "pg-boss";
 import { IQueueSystemBase } from "../IQueueSystemBase.js";
 import { DelayablePromise } from "../../../Util/DelayablePromise.js";
 import { IDatabaseConfig } from "../../../ApplicationImplementation/Models/Config/DatabaseConfig.model.js";
-import { QueueClosedException } from "../../Exceptions/QueueClosedException.js";
+import { QueueClosedException } from "../../../Exceptions/QueueClosedException.js";
+import { FrameworkLogger } from "../../../Logger/FrameworkLogger.js";
 
 // In the database that this class uses command 'CREATE EXTENSION pgcrypto;' must be ran before using PgBoss
 export class PgBossQueueSystem<TQueueData extends object> implements IQueueSystemBase<TQueueData> {
@@ -41,13 +42,15 @@ export class PgBossQueueSystem<TQueueData extends object> implements IQueueSyste
             throw new Error("PgBoss connection was not correctly setup or was unable to be set up");
         }
 
-        const jobId = await this.bossCon.send(this.queueName, data);
+        const jobId = await this.bossCon.send(this.queueName, data, {  });
 
         return jobId !== null
     }
 
     private readonly dequeueRequests: DelayablePromise<TQueueData>[] = [];
     public async dequeue(): Promise<TQueueData> {
+        FrameworkLogger.info(PgBossQueueSystem, "Incoming dequeue request", { queueName: this.queueName });
+
         if (this.startProm !== null) {
             await this.startProm;
         }
@@ -59,12 +62,17 @@ export class PgBossQueueSystem<TQueueData extends object> implements IQueueSyste
         const delProm = new DelayablePromise<TQueueData>();
         this.dequeueRequests.push(delProm);
 
+        FrameworkLogger.info(PgBossQueueSystem, "Requesting work...", { queueName: this.queueName });
         const workId = await this.bossCon.work<TQueueData>(
             this.queueName,
             { newJobCheckInterval: 1000 },
             async (job) => {
                 await this.bossCon?.offWork({ id: workId });
+                FrameworkLogger.info(PgBossQueueSystem, "Job found", { queueName: this.queueName });
+                
                 await delProm.delayedResolve(job.data);
+
+                FrameworkLogger.info(PgBossQueueSystem, "Resolved job promise", { queueName: this.queueName });
                 
                 const idx = this.dequeueRequests.indexOf(delProm);
                 if (idx !== -1) {
@@ -72,6 +80,7 @@ export class PgBossQueueSystem<TQueueData extends object> implements IQueueSyste
                 }
             }
         );
+        FrameworkLogger.info(PgBossQueueSystem, "Work requested successfully...", { queueName: this.queueName });
         
         return await delProm.getWrappedPromise();
     }

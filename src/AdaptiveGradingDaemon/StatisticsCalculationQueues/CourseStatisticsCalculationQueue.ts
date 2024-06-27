@@ -1,5 +1,5 @@
-import { IJobConfiguration } from "../../../ApplicationModel/Jobs/IJobConfiguration.js";
-import { IQueueSystemBase } from "../IQueueSystemBase.js";
+import { IJobConfiguration } from "../../ApplicationModel/Jobs/IJobConfiguration.js";
+import { IQueueSystemBase } from "../../ApplicationModel/Queue/IQueueSystemBase.js";
 
 export type CourseStatisticsProcessingRequest = {
     idCourse: number;

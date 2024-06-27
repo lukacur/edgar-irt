@@ -3,7 +3,7 @@ import { IQueueSystemBase } from "../IQueueSystemBase.js";
 import { existsSync, lstatSync } from "fs";
 import { DelayablePromise } from "../../../Util/DelayablePromise.js";
 import { AsyncMutex } from "../../Mutex/AsyncMutex.js";
-import { QueueClosedException } from "../../Exceptions/QueueClosedException.js";
+import { QueueClosedException } from "../../../Exceptions/QueueClosedException.js";
 
 export class FileQueueSystem<TQueueData> implements IQueueSystemBase<TQueueData> {
     private readonly dequeueRequests: DelayablePromise<TQueueData>[] = [];
