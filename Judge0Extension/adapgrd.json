@@ -1,0 +1,8 @@
+[
+  {
+    name: "R for Adaptive Grading",
+    is_archived: false,
+    source_file: "script.r",
+    run_cmd: "/usr/bin/Rscript --vanilla ./script.r"
+  }
+]

@@ -1,0 +1,11 @@
+# Set up environment for enabling R statistics processing
+
+RUN sudo apt-get update && sudo apt-get install -y r-base
+
+COPY zadapgrd/adapgrading_script.r /usr/lib/adapgrading/adapgrading_script.r
+COPY zadapgrd/fetch_dependencies.r /adapgrading/fetch_dependencies.r
+
+RUN sudo /usr/bin/Rscript --vanilla /adapgrading/fetch_dependencies.r
+RUN sudo /usr/local/r-4.0.0/bin/Rscript --vanilla /adapgrading/fetch_dependencies.r
+
+RUN sudo rm -rf /adapgrading
