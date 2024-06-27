@@ -1,6 +1,7 @@
 **/excluded/**
 **/queues/**
 **/tests_dir/**
+Plugins/**
 
 # Logs
 logs
