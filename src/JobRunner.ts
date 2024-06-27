@@ -1,4 +1,4 @@
-import { QueueClosedException } from "./AdaptiveGradingDaemon/Exceptions/QueueClosedException.js";
+import { QueueClosedException } from "./Exceptions/QueueClosedException.js";
 import { IInputDataExtractor } from "./ApplicationModel/Jobs/DataExtractors/IInputDataExtractor.js";
 import { IJobConfiguration } from "./ApplicationModel/Jobs/IJobConfiguration.js";
 import { IJobProvider } from "./ApplicationModel/Jobs/Providers/IJobProvider.js";
@@ -7,8 +7,9 @@ import { IJobWorker } from "./ApplicationModel/Jobs/Workers/IJobWorker.js";
 import { JobPartsParser } from "./Util/JobPartsParser.js";
 
 import { MailerProvider } from "./Util/MailerProvider.js";
+import { FrameworkLogger } from "./Logger/FrameworkLogger.js";
 
-type ErrorReport = { jobId: string, stage: string, message: string, status: string, userRequested: string }
+export type ErrorReport = { jobId: string, stage: string, message: string, status: string, userRequested: string }
 export type JobCompletionListener = (errored: boolean, error: ErrorReport | null) => Promise<void>;
 
 export class JobRunner {
@@ -312,7 +313,10 @@ ${errorReport.message.split('\n').join('\n    ')}`,
                 const persistor = await parser.getResultPersistor();
 
                 // TODO: Maybe 'formatInitialJobInput(jobConfig)'?
+                FrameworkLogger.info(JobRunner, `Starting input extraction process`);
+                let start = new Date();
                 const jobInput = await inputExtractor.formatJobInput(jobConfig);
+                FrameworkLogger.info(JobRunner, `Done! (Took: ${(new Date()).getTime() - start.getTime()} ms)`);
             
                 let success = await jobWorker.startExecution(jobConfig, jobInput);
                 if (!success) {
@@ -391,6 +395,8 @@ ${errorReport.message.split('\n').join('\n    ')}`,
                     continue;
                 }
 
+                FrameworkLogger.info(JobRunner, `Persisting result...`);
+                start = new Date();
                 if (!(await persistor.perisistResult(result.result, jobConfig))) {
                     errorReport ??= {
                         jobId: jobConfig.jobId,
@@ -410,6 +416,7 @@ ${errorReport.message.split('\n').join('\n    ')}`,
                     );
                     continue;
                 }
+                FrameworkLogger.info(JobRunner, `Done! (Took: ${(new Date()).getTime() - start.getTime()} ms)`);
 
                 await this.jobProvider.finishJob(jobConfig.jobId);
 

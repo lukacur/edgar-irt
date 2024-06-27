@@ -1,3 +1,4 @@
+import { FrameworkLogger } from "../../../Logger/FrameworkLogger.js";
 import { IJobConfiguration } from "../IJobConfiguration.js";
 import { IJobStep, StepResult } from "../IJobStep.js";
 import { IJobWorker } from "./IJobWorker.js";
@@ -61,10 +62,12 @@ export abstract class AbstractJobWorker<
 
     public async executeNextStep(): Promise<boolean> {
         const jobStep = this.getNextStepInfo();
-
         if (jobStep === null) {
             return false;
         }
+
+        FrameworkLogger.info(AbstractJobWorker, `Starting execution of step ${jobStep.constructor.name}`);
+        const start = new Date();
 
         await this.startStepDB(jobStep);
 
@@ -75,6 +78,8 @@ export abstract class AbstractJobWorker<
                 jobStep,
                 this.currentStepInput
             );
+
+            FrameworkLogger.info(AbstractJobWorker, `Done! (Took: ${(new Date().getTime()) - start.getTime()} ms)`);
 
             if (stepResult?.resultTTLSteps !== undefined) {
                 if (stepResult.resultTTLSteps !== -1 && stepResult.resultTTLSteps <= 0) {
