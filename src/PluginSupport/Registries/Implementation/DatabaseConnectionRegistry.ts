@@ -1,4 +1,4 @@
-import { DatabaseConnection } from "../../../ApplicationImplementation/Database/DatabaseConnection.js";
+import { DatabaseConnection } from "../../../ApplicationModel/Database/DatabaseConnection.js";
 import { GenericRegistry } from "../GenericRegistry.js";
 
 export class DatabaseConnectionRegistry extends GenericRegistry {

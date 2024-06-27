@@ -1,5 +1,5 @@
 import { AbstractBatch } from "../../../ApplicationModel/Batch/AbstractBatch.js";
-import { DatabaseConnection } from "../../Database/DatabaseConnection.js";
+import { DatabaseConnection } from "../../../ApplicationModel/Database/DatabaseConnection.js";
 import { TestInstance } from "../../Models/Database/TestInstance/TestInstance.model.js";
 import { EdgarItemBatch, TestInstanceAdditionalInfo } from "./EdgarBatch.js";
 import { TestInstanceBasedBatch } from "./TestInstanceBasedBatch.js";

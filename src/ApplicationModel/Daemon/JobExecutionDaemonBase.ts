@@ -1,6 +1,6 @@
 import { DaemonConfig, QueueDescriptor, ScanInterval } from "./DaemonConfig.model.js";
 import { QueueClosedException } from "../../Exceptions/QueueClosedException.js";
-import { DatabaseConnection } from "../../ApplicationImplementation/Database/DatabaseConnection.js";
+import { DatabaseConnection } from "../Database/DatabaseConnection.js";
 import { ErrorReport, JobCompletionListener } from "../../JobRunner.js";
 import { IConfiguredJobService } from "../../JobService.js";
 import { FrameworkLogger } from "../../Logger/FrameworkLogger.js";
@@ -16,7 +16,7 @@ import { QueueRegistry } from "../Queue/QueueRegistry.js";
 import { DirQueueSystem } from "../Queue/QueueSystemImplementations/DirQueueSystem.js";
 import { FileQueueSystem } from "../Queue/QueueSystemImplementations/FileQueueSystem.js";
 import { PgBossQueueSystem } from "../Queue/QueueSystemImplementations/PgBossQueueSystem.js";
-import { TransactionContext } from "../../ApplicationImplementation/Database/TransactionContext.js";
+import { TransactionContext } from "../Database/TransactionContext.js";
 
 type ForceShutdownHandler<TSource> = (source: TSource, reason?: string) => void;
 

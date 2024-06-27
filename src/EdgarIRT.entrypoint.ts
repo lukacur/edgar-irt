@@ -1,6 +1,6 @@
 import { execFile } from "child_process";
 import { AdaptiveGradingDaemon } from "./AdaptiveGradingDaemon/AdaptiveGradingDaemon.js";
-import { DatabaseConnection } from "./ApplicationImplementation/Database/DatabaseConnection.js";
+import { DatabaseConnection } from "./ApplicationModel/Database/DatabaseConnection.js";
 import { AbstractLogisticFunctionParams } from "./IRT/LogisticFunction/LogisticFunctionTypes.js";
 import { StandardLogisticFunction } from "./IRT/LogisticFunction/StandardLogisticFunction.js";
 import { DelayablePromise } from "./Util/DelayablePromise.js";

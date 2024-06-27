@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { DatabaseConnection } from "../../../ApplicationImplementation/Database/DatabaseConnection.js";
+import { DatabaseConnection } from "../../Database/DatabaseConnection.js";
 import { IJobConfiguration } from "../IJobConfiguration.js";
 import { IJobProvider } from "./IJobProvider.js";
 import { FrameworkConfigurationProvider } from "../../FrameworkConfiguration/FrameworkConfigurationProvider.js";

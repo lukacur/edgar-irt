@@ -5,7 +5,7 @@ import { StepResult } from "../../../../../../ApplicationModel/Jobs/IJobStep.js"
 import { FrameworkLogger } from "../../../../../../Logger/FrameworkLogger.js";
 import { GenericFactory } from "../../../../../../PluginSupport/GenericFactory.js";
 import { DatabaseConnectionRegistry } from "../../../../../../PluginSupport/Registries/Implementation/DatabaseConnectionRegistry.js";
-import { DatabaseConnection } from "../../../../../Database/DatabaseConnection.js";
+import { DatabaseConnection } from "../../../../../../ApplicationModel/Database/DatabaseConnection.js";
 import { EdgarStatsProcessingConstants } from "../../../../EdgarStatsProcessing.constants.js";
 import { CheckIfCalculationNeededStepConfiguration } from "./CheckIfCalculationNeededStepConfiguration.js";
 

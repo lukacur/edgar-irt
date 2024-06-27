@@ -1,4 +1,4 @@
-import { DatabaseConnection } from "./ApplicationImplementation/Database/DatabaseConnection.js";
+import { DatabaseConnection } from "./ApplicationModel/Database/DatabaseConnection.js";
 import { IJobConfiguration } from "./ApplicationModel/Jobs/IJobConfiguration.js";
 import { AbstractTypedWorkResultPersistor } from "./ApplicationModel/Jobs/WorkResultPersistors/AbstractTypedWorkResultPersistor.js";
 import { DatabaseConnectionRegistry } from "./PluginSupport/Registries/Implementation/DatabaseConnectionRegistry.js"

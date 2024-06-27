@@ -1,7 +1,7 @@
 import PgBoss from "pg-boss";
 import { IQueueSystemBase } from "../IQueueSystemBase.js";
 import { DelayablePromise } from "../../../Util/DelayablePromise.js";
-import { IDatabaseConfig } from "../../../ApplicationImplementation/Models/Config/DatabaseConfig.model.js";
+import { IDatabaseConfig } from "../../Database/DatabaseConfig.model.js";
 import { QueueClosedException } from "../../../Exceptions/QueueClosedException.js";
 import { FrameworkLogger } from "../../../Logger/FrameworkLogger.js";
 

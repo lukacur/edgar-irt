@@ -1,4 +1,4 @@
-import { DatabaseConnection } from "../../ApplicationImplementation/Database/DatabaseConnection.js";
+import { DatabaseConnection } from "../Database/DatabaseConnection.js";
 import { EdgarDatabaseMailer } from "../../ApplicationImplementation/Mailer/EdgarDatabaseMailer.js";
 import { FrameworkLogger } from "../../Logger/FrameworkLogger.js";
 import { DatabaseConnectionRegistry } from "../../PluginSupport/Registries/Implementation/DatabaseConnectionRegistry.js";

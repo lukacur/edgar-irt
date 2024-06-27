@@ -1,7 +1,7 @@
 import { SmtpConfiguration } from "../../ApplicationModel/FrameworkConfiguration/IJobAutomatizationFrameworkConfiguration.js";
 import { EmailInfo, SmtpCredentials } from "../../ApplicationModel/Models/Email/EmailModels.model.js";
 import { IMailer } from "../../Util/MailerProvider.js";
-import { DatabaseConnection } from "../Database/DatabaseConnection.js";
+import { DatabaseConnection } from "../../ApplicationModel/Database/DatabaseConnection.js";
 
 type EdgarDatabaseMailerAdditionalParameters = {
     userCreated?: string;

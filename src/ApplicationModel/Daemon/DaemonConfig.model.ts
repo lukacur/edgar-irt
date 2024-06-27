@@ -1,4 +1,4 @@
-import { IDatabaseConfig } from "../../ApplicationImplementation/Models/Config/DatabaseConfig.model.js";
+import { IDatabaseConfig } from "../Database/DatabaseConfig.model.js";
 import { IStartJobRequest } from "../Models/IStartJobRequest.js";
 
 export type ScanInterval = {

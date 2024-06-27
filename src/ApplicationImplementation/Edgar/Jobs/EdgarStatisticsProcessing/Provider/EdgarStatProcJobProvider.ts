@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import { AbstractGenericJobProvider } from "../../../../../ApplicationModel/Jobs/Providers/AbstractGenericJobProvider.js";
-import { DatabaseConnection } from "../../../../Database/DatabaseConnection.js";
+import { DatabaseConnection } from "../../../../../ApplicationModel/Database/DatabaseConnection.js";
 import { EdgarStatProcJobConfiguration } from "./EdgarStatProcJobConfiguration.js";
 import { IJobStep } from "../../../../../ApplicationModel/Jobs/IJobStep.js";
 import { IJobConfiguration } from "../../../../../ApplicationModel/Jobs/IJobConfiguration.js";

@@ -4,7 +4,7 @@ import { EdgarStatProcJobStep } from "../Steps/StatisticsProcessing/EdgarStatPro
 import { getStepResultDBEnumValue, IJobStep, StepResult } from "../../../../../ApplicationModel/Jobs/IJobStep.js";
 import { EdgarStatsProcessingConstants } from "../../../EdgarStatsProcessing.constants.js";
 import { GenericFactory } from "../../../../../PluginSupport/GenericFactory.js";
-import { DatabaseConnection } from "../../../../Database/DatabaseConnection.js";
+import { DatabaseConnection } from "../../../../../ApplicationModel/Database/DatabaseConnection.js";
 import { RegisterDelegateToRegistry } from "../../../../../ApplicationModel/Decorators/Registration.decorator.js";
 import { IJobConfiguration, JobWorkerConfig } from "../../../../../ApplicationModel/Jobs/IJobConfiguration.js";
 import { DatabaseConnectionRegistry } from "../../../../../PluginSupport/Registries/Implementation/DatabaseConnectionRegistry.js";

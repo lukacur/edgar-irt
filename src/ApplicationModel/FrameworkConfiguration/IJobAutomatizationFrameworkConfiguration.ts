@@ -1,4 +1,4 @@
-import { IDatabaseConfig } from "../../ApplicationImplementation/Models/Config/DatabaseConfig.model.js";
+import { IDatabaseConfig } from "../Database/DatabaseConfig.model.js";
 import { EmailHeader, SmtpCredentials } from "../Models/Email/EmailModels.model.js";
 
 type DatabaseConnectivity =

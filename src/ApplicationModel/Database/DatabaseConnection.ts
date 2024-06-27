@@ -1,8 +1,8 @@
 import { existsSync } from "fs";
 import { readFile } from "fs/promises";
-import { IDatabaseConfig } from "../Models/Config/DatabaseConfig.model.js"
 import pg from 'pg';
 import { TransactionContext } from "./TransactionContext.js";
+import { IDatabaseConfig } from "./DatabaseConfig.model.js";
 
 const { Pool } = pg;
 

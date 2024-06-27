@@ -3,8 +3,8 @@ import { DataPersistorConfig } from "../../../../../ApplicationModel/Jobs/IJobCo
 import { AbstractTypedWorkResultPersistor } from "../../../../../ApplicationModel/Jobs/WorkResultPersistors/AbstractTypedWorkResultPersistor.js";
 import { FrameworkLogger } from "../../../../../Logger/FrameworkLogger.js";
 import { DatabaseConnectionRegistry } from "../../../../../PluginSupport/Registries/Implementation/DatabaseConnectionRegistry.js";
-import { DatabaseConnection } from "../../../../Database/DatabaseConnection.js";
-import { TransactionContext } from "../../../../Database/TransactionContext.js";
+import { DatabaseConnection } from "../../../../../ApplicationModel/Database/DatabaseConnection.js";
+import { TransactionContext } from "../../../../../ApplicationModel/Database/TransactionContext.js";
 import { EdgarStatsProcessingConstants } from "../../../EdgarStatsProcessing.constants.js";
 import { CourseBasedCalculation, IExtendedRCalculationResult, QuestionIrtParamInfo, TestBasedCalculation } from "../../../Statistics/IRCalculationResult.js";
 import { EdgarStatProcJobConfiguration } from "../Provider/EdgarStatProcJobConfiguration.js";

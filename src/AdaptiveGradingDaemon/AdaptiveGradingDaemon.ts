@@ -7,7 +7,7 @@ import { RegistryDefaultConstants } from "../PluginSupport/RegistryDefault.const
 import { randomUUID } from "crypto";
 import { IJobConfiguration } from "../ApplicationModel/Jobs/IJobConfiguration.js";
 import { EdgarStatProcJobConfiguration } from "../ApplicationImplementation/Edgar/Jobs/EdgarStatisticsProcessing/Provider/EdgarStatProcJobConfiguration.js";
-import { DatabaseConnection } from "../ApplicationImplementation/Database/DatabaseConnection.js";
+import { DatabaseConnection } from "../ApplicationModel/Database/DatabaseConnection.js";
 import { IStartJobRequest } from "../ApplicationModel/Models/IStartJobRequest.js";
 import { FrameworkLogger } from "../Logger/FrameworkLogger.js";
 import { JobRequestParserRegistry } from "../PluginSupport/Registries/Implementation/JobRequestParserRegistry.js";
