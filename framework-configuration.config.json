@@ -1,8 +1,6 @@
 {
     "databaseConnectivity": {
-        "connectionString": "",
-
-        "pgPoolConfiguration": {
+        "connectionConfiguration": {
             "host": "127.0.0.1",
             "port": 5433,
             "database": "edgar",
@@ -12,17 +10,17 @@
 
             "minConnections": 10,
             "maxConnections": 20
-        },
-
-        "jobSchema": "job_tracking_schema"
+        }
     },
 
     "smtpConfiguration": {
-        "defaults": {
-            "from": "<edgar@edgar.fer.hr>",
-            "to": "edgaradmin@fer.hr",
-            "subject": "Job automatization framework email message"
-        }
+        "always": {},
+        "credentials": { "type": "cert", "certificateBase64": "" },
+        "defaults": { "from": "foo", "subject": "Foo", "to": [] },
+        "host": "",
+        "port": 0,
+        "timeoutMs": 10000,
+        "useTls": true
     },
 
     "mailerConfiguration": {

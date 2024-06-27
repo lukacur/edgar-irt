@@ -10,28 +10,9 @@ import { SignalsUtil } from "./Util/SignalsUtil.js";
 
 export class EdgarIRTEntrypoint {
     public static async main(args: string[]): Promise<void> {
-        FrameworkConfigurationProvider.instance.useConfiguration({
-            databaseConnectivity: {
-                connectionConfiguration: JSON.parse(
-                    await readFile("./database-config.json", { encoding: "utf-8" })
-                ),
-                jobSchemaName: "job_tracking_schema",
-            },
-            smtpConfiguration: {
-                always: {},
-                credentials: { type: "cert", certificateBase64: "" },
-                defaults: {from: "foo", subject: "Foo", to: []},
-                host: "",
-                port: 0,
-                timeoutMs: 10000,
-                useTls: true,
-            },
-            mailerConfiguration: {
-                mailerType: "edgar-db-mailer",
-                databaseConnection: RegistryDefaultConstants.DEFAULT_DATABASE_CONNECTION_KEY,
-                workingSchema: "public",
-            }
-        });
+        FrameworkConfigurationProvider.instance.useConfiguration(
+            JSON.parse(await readFile("./framework-configuration.config.json", { encoding: "utf-8" }))
+        );
 
         await FrameworkConfigurationProvider.instance.registerDefaultConnectionProvider();
         await FrameworkConfigurationProvider.instance.registerConfiguredMailer();

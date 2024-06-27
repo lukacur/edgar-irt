@@ -9,5 +9,6 @@
         "module": "Node16",
         "experimentalDecorators": true,
         "sourceMap": true
-    }
+    },
+    "exclude": ["./Judge0Extension"]
 }
