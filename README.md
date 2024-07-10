@@ -319,6 +319,19 @@ from the `job-execution-framework` module.
 
 <br>
 
+## Fast job pipeline creation
+
+You can create a job pipeline easily by adding a generic daemon configuration to the `GenericDaemonConfigurations`
+directory. After configuring a daemon and giving it a proper implementation of the `IJobRequestParser` interface using
+plugins, you are ready to fast-boot a pipeline that will process jobs according to a configuration provided by the
+`IJobRequestParser` interface.
+
+Note that all daemons are started in the same NodeJS process, so the recommended amount of configurations given in the
+`GenericDaemonConfigurations` depends on your system and needs. If you want to use generic daemons in parallel (not in
+the same process) you can run multiple instances of the framework containing configurations that you want to run on a
+specific instance. In this way you can start multiple processes containing multiple daemons for processing job request
+queues.
+
 <br>
 
 # Important
