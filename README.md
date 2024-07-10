@@ -211,7 +211,115 @@ how the framework handles these files and to get a better understanding of their
 `src/PluginSupport/DynamicScriptImporter.ts` and `src\Util\JobPartsParser.ts` source files.
 
 ## Plugin support
-In future versions.
+Supports adding plugins to generic implementation registries through the Plugins folder in the base of a project.
+
+### Adding a plugin
+Firstly, you have to implement a job part of your choosing:
+- `IJobRequestParser` - used to parse incoming job processing requests and builds full `IJobConfigurations`
+- `IInputDataExtractor` - used to prepare initial job input
+- `IJobWorker` - used as a job execution context; stores all the necessary job steps
+- `IJobStep` - used to model a step of a job
+- `IWorkResultPersistor` - persists final result of the job
+
+After that, you have to ```export default``` a list of `IRegistryPlugin` implementations from a file named
+`*registry_plugin_index.js`.
+
+Note that from a single _plugin_ implementation you can export multiple implementations of the parts described above.
+This allows for a common interface with the framework for registering common job parts to the proper registries. The
+framework will load all implementations into the registries and, after starting an instance of the framework, you can
+use any of the job parts that a plugin provides __by name__.
+
+Example of the plugin index file for the Edgar statistics processing job:
+```
+import edgarStatProcDE from './EdgarStatProcDataExtractor.js';
+
+import checkIfCalcNeededJS from './CheckIfCalculationNeededStep.js';
+import irtCalcJS from './EdgarIRTCalculationStep.js';
+import edgarJudge0StatProcJS from './EdgarJudge0StatProcJobStep.js';
+import edgarQuestionClassificationJS from './EdgarQuestionClassificationStep.js';
+
+import edgarStatProcJW from './EdgarStatProcWorker.js';
+
+import edgarStatProcWRP from './EdgarStatProcWorkResultPersistor.js';
+
+import edgarStatProcJRP from './EdgarStatisticsProcessingJobRequestParser.js';
+
+export default [
+    edgarStatProcDE,
+    checkIfCalcNeededJS,
+    irtCalcJS,
+    edgarJudge0StatProcJS,
+    edgarQuestionClassificationJS,
+    edgarStatProcJW,
+    edgarStatProcWRP,
+    edgarStatProcJRP,
+];
+```
+
+Example of an export from `./EdgarJudge0StatProcJobStep.js`:
+```
+const impl: IRegistryPlugin = {
+    namespace:"EdgarStatsProcessing",
+    name: "Judge0StatisticsCalculation",
+    registry: "JobStep",
+    creationFunction(stepDescriptor: JobStepDescriptor, ...args: any[]): object {
+        return new EdgarJudge0StatProcJobStep(
+            stepDescriptor.stepTimeoutMs,
+            <EdgarJudge0StatProcStepConfiguration>stepDescriptor.configContent,
+            stepDescriptor.isCritical,
+            stepDescriptor.resultTTL,
+        );
+    }
+}
+
+export default impl;
+```
+
+Plugins can be organized in any way, but have to be present in the `Plugins` folder in the root directory of the
+framework utilization implementation. For example, you can develop a plugin named `Foo` and add all it's job part
+implementations to a `Foo` directory inside the `Plugins` directory. The framework will scan all subdirectories of the
+`Plugins` directory and search for files ending in `registry_plugin_index.js`. For your `Foo` plugin, the directory tree
+of the `Plugins` directory could look like this:
+```
+Plugins
+|
++- Foo
+|  |
+|  +- Steps
+|  |  |
+|  |  +- first_step.js
+|  |
+|  +- Workers
+|     |
+|     +- foo_job_worker.js
+|
++- foo_registry_plugin.js
+|
++- OtherPlugin1
+|  |
+|  +- ...
+|
++- OtherPlugin2
+   |
+   +- ...
+```
+
+### Note on plugin implementation
+All plugins must be written in `JavaScript`. _Dynamic, on demand_ compilation of `TypeScript` files is not yet supported
+by the framework. When building a plugin you can write the implementation in `TypeScript`, compile it and place the
+compiled plugin in a subdirectory of the `Plugins` directory.
+
+### Developing plugins in __this__ project repository
+When developing plugins directly in this project note that __all imports must be relative to the `Plugins` directory and
+reference implementations in the `dist` directory. Default import paths (imports from `src`) WILL NOT BE VALID__
+
+### Developing plugins in projects referencing the `job-execution-framework` module
+When developing plugins in this configuration, you can just use normal named import statements when using dependencies
+from the `job-execution-framework` module.
+
+<br>
+
+<br>
 
 # Important
 <span style="font-size:1.2rem"> __Please note:__ this framework does not have any authentication or authorization
