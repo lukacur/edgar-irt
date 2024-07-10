@@ -1,6 +1,10 @@
 export class EdgarStatsProcessingConstants {
     private static readonly REGISTRY_PREFIX = "EdgarStatsProcessing";
 
+    public static readonly JOB_REQUEST_PARSER_ENTRY =
+        `${EdgarStatsProcessingConstants.REGISTRY_PREFIX}/JobRequestParser`;
+
+
     public static readonly DATA_EXTRACTOR_REGISTRY_ENTRY =
         `${EdgarStatsProcessingConstants.REGISTRY_PREFIX}/DataExtractor`;
 

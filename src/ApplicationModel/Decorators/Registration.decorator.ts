@@ -1,6 +1,7 @@
 import { FactoryDelegate, GenericFactory } from "../../PluginSupport/GenericFactory.js";
 import { DatabaseConnectionRegistry } from "../../PluginSupport/Registries/Implementation/DatabaseConnectionRegistry.js";
 import { InputExtractorRegistry } from "../../PluginSupport/Registries/Implementation/InputExtractorRegistry.js";
+import { JobRequestParserRegistry } from "../../PluginSupport/Registries/Implementation/JobRequestParserRegistry.js";
 import { JobStepRegistry } from "../../PluginSupport/Registries/Implementation/JobStepRegistry.js";
 import { JobWorkerRegistry } from "../../PluginSupport/Registries/Implementation/JobWorkerRegistry.js";
 import { PersistorRegistry } from "../../PluginSupport/Registries/Implementation/PersistorRegistry.js";
@@ -10,7 +11,8 @@ export type AvailableRegistry =
     "JobWorker" |
     "JobStep" |
     "Persistor" |
-    "DatabaseConnection";
+    "DatabaseConnection" |
+    "JobRequestParser";
 
 export function RegisterDelegateToRegistry(
     registry: AvailableRegistry,
@@ -55,6 +57,11 @@ export function RegisterDelegateToRegistry(
                 break;
             }
 
+            case "JobRequestParser": {
+                JobRequestParserRegistry.instance.registerItem(key, descriptor.value);
+                break;
+            }
+
             default: throw new Error("Not yet implemented");
         }
     };
@@ -95,6 +102,11 @@ export function RegisterFactoryToRegistry(
 
             case "DatabaseConnection": {
                 DatabaseConnectionRegistry.instance.registerItem(key, factoryInst);
+                break;
+            }
+
+            case "JobRequestParser": {
+                JobRequestParserRegistry.instance.registerItem(key, factoryInst);
                 break;
             }
         }
