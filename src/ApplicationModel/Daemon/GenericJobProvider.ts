@@ -1,0 +1,157 @@
+import { randomUUID } from "crypto";
+import { DelayablePromise } from "../../Util/DelayablePromise.js";
+import { TimeoutUtil } from "../../Util/TimeoutUtil.js";
+import { DatabaseConnection } from "../Database/DatabaseConnection.js";
+import { IJobConfiguration } from "../Jobs/IJobConfiguration.js";
+import { AbstractGenericJobProvider } from "../Jobs/Providers/AbstractGenericJobProvider.js";
+import { IQueueSystemBase } from "../Queue/IQueueSystemBase.js";
+
+type JobQueueInfoEntry = {
+    timeoutId: () => (NodeJS.Timeout | null),
+    associatedQueueEntry: IJobConfiguration,
+};
+
+export class GenericJobProvider extends AbstractGenericJobProvider<IJobConfiguration> {
+    private readonly jobMap: { [jobId: string]: IJobConfiguration } = {};
+
+    private readonly jobQueueInfo: { [jobId: string]: JobQueueInfoEntry } = {};
+
+    constructor(
+        dbConn: DatabaseConnection,
+        private readonly jobConfigQueue: IQueueSystemBase<IJobConfiguration>,
+        private readonly expectedJobTimeout: number,
+    ) {
+        super(dbConn);
+    }
+
+    private jobActive(jobId: string): boolean {
+        return Object.keys(this.jobQueueInfo).includes(jobId);
+    }
+
+    private async resetJob(jobId: string): Promise<boolean> {
+        if (!this.jobActive(jobId)) {
+            return false;
+        }
+
+        const queueInfo = this.jobQueueInfo[jobId];
+        delete this.jobQueueInfo[jobId];
+
+        try {
+            const success = await this.jobConfigQueue.enqueue(queueInfo.associatedQueueEntry);
+            if (!success) {
+                queueInfo.timeoutId = TimeoutUtil.doTimeout(3000, () => this.resetJob(jobId));
+                this.jobQueueInfo[jobId] = queueInfo;
+
+                return false;
+            }
+
+            return true;
+        } catch (err) {
+            console.log(err);
+
+            queueInfo.timeoutId = TimeoutUtil.doTimeout(3000, () => this.resetJob(jobId));
+            this.jobQueueInfo[jobId] = queueInfo;
+        }
+
+        return false;
+    }
+
+    /*
+     * TODO: decide if returned jobs should be updated or not; e. g. check if a job ID is already present in the DB and 
+     * update it or create an entirely new job
+    */
+    protected async provideJobTyped(presetJobId?: string): Promise<IJobConfiguration> {
+        const queueEntry = await this.jobConfigQueue.dequeue();
+        let jobId = presetJobId ?? randomUUID();
+
+        const jobConfig = queueEntry
+
+        jobId = jobConfig.jobId;
+
+        this.jobMap[jobId] = jobConfig;
+
+        this.jobQueueInfo[jobId] = {
+            associatedQueueEntry: queueEntry,
+            timeoutId: TimeoutUtil.doTimeout(
+                jobConfig.jobTimeoutMs ?? this.expectedJobTimeout,
+                () => this.failJob(jobId, "retry"),
+            )
+        };
+
+        return jobConfig;
+    }
+
+    public async extendJob(jobId: string, extendForMs: number): Promise<"success" | "fail" | "job-inactive"> {
+        if (!this.jobActive(jobId)) {
+            return "job-inactive";
+        }
+
+        const tid: NodeJS.Timeout | null = this.jobQueueInfo[jobId].timeoutId();
+        try {
+            if (tid !== null) {
+                clearTimeout(tid);
+            }
+            this.jobQueueInfo[jobId].timeoutId = TimeoutUtil.doTimeout(extendForMs, () => this.failJob(jobId, "retry"));
+
+            return "success";
+        } catch(err) {
+            console.log(err);
+        }
+
+        return "fail";
+    }
+
+    protected override async doFinishJob(jobId: string): Promise<boolean> {
+        if (!this.jobActive(jobId)) {
+            return false;
+        }
+
+        const tid: NodeJS.Timeout | null = this.jobQueueInfo[jobId].timeoutId();
+        try {
+            if (tid !== null) {
+                clearTimeout(tid);
+            }
+            delete this.jobQueueInfo[jobId];
+
+            return true;
+        } catch(err) {
+            console.log(err);
+        }
+
+        return false;
+    }
+
+    private jobFailureMap: Map<string, number> = new Map();
+
+    protected override async doFailJob(
+        jobId: string,
+        retryMode: "retry" | "no-retry" | { retryAfterMs: number }
+    ): Promise<boolean> {
+        if (retryMode === "no-retry") {
+            return true;
+        }
+
+        if (!this.jobFailureMap.has(jobId)) {
+            this.jobFailureMap.set(jobId, 0);
+        }
+
+        if (this.jobFailureMap.get(jobId)! <= 5) {
+            this.jobFailureMap.set(jobId, this.jobFailureMap.get(jobId)! + 1);
+
+            if (retryMode === "retry") {
+                return await this.resetJob(jobId);
+            } else {
+                const prm = new DelayablePromise<boolean>();
+
+                TimeoutUtil.doTimeout(
+                    retryMode.retryAfterMs,
+                    async () => prm.delayedResolve(await this.resetJob(jobId))
+                );
+
+                return prm.getWrappedPromise();
+            }
+        }
+
+        return true;
+    }
+}

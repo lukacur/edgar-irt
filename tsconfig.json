@@ -10,5 +10,5 @@
         "experimentalDecorators": true,
         "sourceMap": true
     },
-    "exclude": ["./Judge0Extension"]
+    "exclude": ["./Judge0Extension", "./PluginExamples"]
 }

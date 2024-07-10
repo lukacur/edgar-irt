@@ -1,0 +1,105 @@
+{
+    "jobTypeAbbrev": "SOME_JOB_ABBREV",
+    "dbConnKey": "SOME_JOB/CUSTOM_CONNECTION",
+    "jobRequestParserKey": "SOME_JOB/REQUEST_PARSER",
+    "extraConfig": {
+        "note": "Passed to the job request parser 'fromJobRequest' method as the 'extraConfig' property of the object parameter"
+    },
+
+    "resultStalenessInterval": {
+        "hours": 5
+    },
+
+    "calculationRefreshInterval": {
+        "days": 30
+    },
+
+    "recalculationCheckInterval": {
+        "days": 1
+    },
+
+    "autoJobStartInfo": {
+        "interval": {
+            "days": 1,
+            "hours": 2,
+            "minutes": 15,
+            "seconds": 30
+        },
+
+        "jobRequestQueue": "some-random-queue",
+
+        "startJobRequest": {
+            "idJobType": "Can be any of the registered job types: 1 (STATPROC), and so on...",
+
+            "jobName": "Auto job start",
+            "userNote": null,
+            "periodical": false,
+            "idUserRequested": null,
+
+            "jobMaxTimeoutMs": 350000,
+
+            "request": {
+                "note": "A custom request, can be any object"
+            }
+        },
+
+        "restartIntervalWithNewRequest": true
+    },
+
+    "maxJobTimeoutMs": 250000,
+
+    "maxAllowedConcurrentCalculations": 3,
+
+    "incomingWorkRequestQueue": {
+        "type": "pg_boss", 
+        "queueName": "some-random-queue",
+        "connectionString": "postgres://postgres:bazepodataka@127.0.0.1:5433/boss_test"
+    },
+
+    "jobRunnerWorkingQueue": {
+        "type": "pg_boss",
+        "queueName": "some-random-work-queue",
+        "connectionString": "postgres://postgres:bazepodataka@127.0.0.1:5433/boss_test"
+    },
+
+    "comment": {
+        "queueExamples": [
+            {
+                "queueName": "edgar-irt-input-queue",
+                "type": "pg_boss",
+                "connectionString": "postgres://postgres:bazepodataka@127.0.0.1:5433/boss_test"
+            },
+            {
+                "queueName": "edgar-irt-input-queue-other-test",
+                "type": "pg_boss",
+                "configuration": {
+                    "host": "127.0.0.1",
+                    "port": 5433,
+                    "database": "boss_test",
+                    "comment": {
+                        "schema": "Property can be defined and set to a string containing schema name"
+                    },
+                    "user": "postgres",
+                    "password": "bazepodataka",
+    
+                    "minConnections": 2,
+                    "maxConnections": 10
+                }
+            },
+            {
+                "queueName": "test-file-queue",
+                "type": "file",
+                "location": "./queues/file/json-file-queue.queue.json"
+            },
+            {
+                "queueName": "test-dir-queue",
+                "type": "dir",
+                "location": "./queues/directory-queue",
+    
+                "prefix": "adap_daemon_",
+                "name": "queue_entry",
+                "suffix": "_for_stats_analysis"
+            }
+        ]
+    }
+}
