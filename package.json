@@ -12,7 +12,7 @@
     "dev-l": "tsc && npm run start"
   },
   "author": "Luka Curic",
-  "license": "ISC",
+  "license": "GPL-3.0-only",
   "dependencies": {
     "jszip": "^3.10.1",
     "node-fetch": "^3.3.2",
